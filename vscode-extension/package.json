@@ -1,0 +1,40 @@
+{
+  "name": "outcome-router-vscode",
+  "displayName": "Outcome-Indexed AI Spend Router for VSCode",
+  "description": "One-click routing setup for local AI models (Ollama, Continue.dev, LMStudio) with outcome optimization",
+  "version": "1.0.0",
+  "publisher": "outcome-router",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Programming Languages", "Machine Learning", "Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Outcome Router",
+      "properties": {
+        "outcomeRouter.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Outcome Router API Key (oir_live_...)"
+        },
+        "outcomeRouter.endpoint": {
+          "type": "string",
+          "default": "https://api.outcomerouter.com/api/v1",
+          "description": "API Gateway endpoint"
+        },
+        "outcomeRouter.localOllamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Local Ollama server URL"
+        },
+        "outcomeRouter.enableLocalFallback": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically route low-complexity coding tasks to local Ollama models"
+        }
+      }
+    }
+  }
+}

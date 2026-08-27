@@ -1,0 +1,116 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Outcome-Indexed AI Spend Router API",
+    "version": "1.0.0",
+    "description": "Production LLM API Router that routes requests to the cheapest model that achieves target business outcomes."
+  },
+  "servers": [
+    {
+      "url": "https://api.outcomerouter.com/api/v1",
+      "description": "Production Multi-Region Gateway"
+    },
+    {
+      "url": "http://localhost:8000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/chat/completions": {
+      "post": {
+        "summary": "Create chat completion with outcome routing",
+        "description": "OpenAI-compatible chat completion endpoint that intelligently evaluates complexity, historical win rates, and cost per outcome.",
+        "operationId": "createChatCompletion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": { "type": "string", "default": "auto" },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string" },
+                        "content": { "type": "string" }
+                      },
+                      "required": ["role", "content"]
+                    }
+                  },
+                  "routing_preferences": {
+                    "type": "object",
+                    "properties": {
+                      "strategy": { "type": "string", "enum": ["outcome_optimized", "cost_minimum", "latency_prioritized", "balanced_pareto"] },
+                      "max_latency_ms": { "type": "integer" },
+                      "max_cost_usd": { "type": "number" },
+                      "target_metric": { "type": "string" }
+                    }
+                  }
+                },
+                "required": ["messages"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful routed completion",
+            "headers": {
+              "X-Outcome-Request-Id": { "schema": { "type": "string" } },
+              "X-Outcome-Router-Model": { "schema": { "type": "string" } },
+              "X-Outcome-Router-Saved-USD": { "schema": { "type": "string" } },
+              "X-Outcome-Router-Cached": { "schema": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "/outcomes": {
+      "post": {
+        "summary": "Record business conversion outcome feedback",
+        "operationId": "recordOutcomeFeedback",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "request_id": { "type": "string" },
+                  "outcome_success": { "type": "boolean" },
+                  "metric_name": { "type": "string" },
+                  "revenue_impact_usd": { "type": "number" }
+                },
+                "required": ["request_id", "outcome_success"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Outcome recorded and weights updated" }
+        }
+      }
+    },
+    "/benchmarks": {
+      "get": {
+        "summary": "Get real-time model outcome leaderboard and win rates",
+        "operationId": "getBenchmarks",
+        "responses": {
+          "200": { "description": "Benchmark items list" }
+        }
+      }
+    },
+    "/analytics/savings": {
+      "get": {
+        "summary": "Get net cost savings, baseline spend, and cache hit metrics",
+        "operationId": "getSavingsAnalytics",
+        "responses": {
+          "200": { "description": "Analytics response" }
+        }
+      }
+    }
+  }
+}

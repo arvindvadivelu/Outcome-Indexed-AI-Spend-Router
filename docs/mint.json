@@ -1,0 +1,36 @@
+{
+  "name": "Outcome-Indexed AI Spend Router",
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "quickstart",
+        "how-it-works",
+        "sdks"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "outcome-vs-token",
+        "thompson-sampling",
+        "prompt-caching",
+        "context-compression"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api/chat-completions",
+        "api/outcomes",
+        "api/benchmarks",
+        "api/savings"
+      ]
+    }
+  ],
+  "colors": {
+    "primary": "#10B981",
+    "light": "#34D399",
+    "dark": "#059669"
+  }
+}

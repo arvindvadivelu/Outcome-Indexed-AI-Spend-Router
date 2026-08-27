@@ -1,0 +1,13 @@
+{
+  "name": "outcome-router",
+  "version": "1.0.0",
+  "description": "TypeScript / Node.js SDK for Outcome-Indexed AI Spend Router",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["ai", "router", "llm", "cost-reduction", "outcome-based", "openai"],
+  "author": "Outcome Router Team",
+  "license": "MIT"
+}

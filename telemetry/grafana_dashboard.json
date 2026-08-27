@@ -1,0 +1,55 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": 1,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Net Dollar Savings (% vs GPT-4o)",
+      "type": "stat",
+      "targets": [{ "expr": "sum(outcome_router_cost_saved_usd) / sum(outcome_router_baseline_cost_usd) * 100" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": 35 }] } } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "Average Outcome Win Rate",
+      "type": "stat",
+      "targets": [{ "expr": "avg(outcome_router_win_rate) * 100" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "fixedColor": "#10B981", "mode": "fixed" } } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "title": "P95 Request Latency",
+      "type": "stat",
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(outcome_router_latency_ms_bucket[5m])) by (le))" }],
+      "fieldConfig": { "defaults": { "unit": "ms", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 200 }, { "color": "red", "value": 500 }] } } }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "title": "Prompt Cache Hit Ratio",
+      "type": "stat",
+      "targets": [{ "expr": "sum(rate(outcome_router_cache_hits_total[5m])) / sum(rate(outcome_router_requests_total[5m])) * 100" }],
+      "fieldConfig": { "defaults": { "unit": "percent", "color": { "fixedColor": "#06B6D4", "mode": "fixed" } } }
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["ai", "router", "finops"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Outcome-Indexed AI Spend Router - Production Observability",
+  "version": 1
+}
