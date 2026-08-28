@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Zap, ArrowRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -21,21 +22,24 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] bg-white/80 backdrop-blur-xl transition-all">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0050FF] shadow-md shadow-[#0050FF]/25 group-hover:scale-105 transition-transform">
-            <Zap className="h-5 w-5 text-white stroke-[2.5]" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-[#1D1D1F] text-base leading-tight tracking-tight flex items-center gap-1.5">
-              OutcomeRouter
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-[#EEF4FF] text-[#0050FF] font-bold border border-[#0050FF]/20">
-                v1.0
+        {/* Left: Theme Toggle & Logo */}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0050FF] shadow-md shadow-[#0050FF]/25 group-hover:scale-105 transition-transform">
+              <Zap className="h-5 w-5 text-white stroke-[2.5]" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] text-base leading-tight tracking-tight flex items-center gap-1.5">
+                OutcomeRouter
+                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-bold border border-[#0050FF]/20">
+                  v1.0
+                </span>
               </span>
-            </span>
-            <span className="text-[11px] text-[#86868B] font-medium">Outcome-Indexed AI Spend</span>
-          </div>
-        </Link>
+              <span className="text-[11px] text-[#86868B] font-medium">Outcome-Indexed AI Spend</span>
+            </div>
+          </Link>
+        </div>
 
         {/* Navigation links */}
         <nav className="hidden md:flex items-center gap-8">

@@ -81,9 +81,23 @@ export interface AutoPilotState {
 }
 
 interface AppState {
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+  toggleTheme: () => void;
+
   currency: "USD" | "INR";
   setCurrency: (c: "USD" | "INR") => void;
   toggleCurrency: () => void;
+
+  // Authentication State
+  user: {
+    name: string;
+    email: string;
+    hasPin: boolean;
+    hasBiometrics: boolean;
+  } | null;
+  setAuthUser: (user: { name: string; email: string; hasPin: boolean; hasBiometrics: boolean } | null) => void;
+  logout: () => void;
   
   // Organization
   orgName: string;
@@ -376,23 +390,48 @@ export const useAppStore = create<AppState>((set) => {
   ];
 
   return {
+    theme: "light",
+    setTheme: (theme) => set({ theme }),
+    toggleTheme: () =>
+      set((state) => {
+        const nextTheme = state.theme === "light" ? "dark" : "light";
+        if (typeof document !== "undefined") {
+          if (nextTheme === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        }
+        return { theme: nextTheme };
+      }),
+
     currency: "USD",
     setCurrency: (currency) => set({ currency }),
     toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
     
+    // Auth
+    user: {
+      name: "Alex Vance",
+      email: "alex@company.com",
+      hasPin: true,
+      hasBiometrics: true
+    },
+    setAuthUser: (user) => set({ user }),
+    logout: () => set({ user: null }),
+
     orgName: "Acme AI Lab",
     planTier: "growth",
     monthlyQuota: 500000,
-    currentTokens: 184200,
-    monthlySpendUSD: 842.50,
-    baselineSpendUSD: 1450.80,
+    currentTokens: 0,
+    monthlySpendUSD: 0.00,
+    baselineSpendUSD: 0.00,
 
     autopilot: {
       enabled: true,
       mode: "optimal_pace",
-      burn_ratio: 0.97,
+      burn_ratio: 0.00,
       monthly_budget_usd: 1500.0,
-      projected_spend_usd: 972.10,
+      projected_spend_usd: 0.00,
       cost_weight_w2: 25.0,
       quality_weight_w1: 0.70
     },
@@ -487,7 +526,16 @@ export const useAppStore = create<AppState>((set) => {
     addLog: (log: LogItem) =>
       set((state) => {
         const updated = [log, ...state.logs];
-        return { logs: updated, telemetryLogs: updated };
+        const addedTokens = (log.tokens_in || 0) + (log.tokens_out || 0);
+        const addedCost = log.cost_usd || 0.001;
+        const baselineMultiplier = 1.74; // vs un-routed GPT-4o
+        return {
+          logs: updated,
+          telemetryLogs: updated,
+          currentTokens: state.currentTokens + addedTokens,
+          monthlySpendUSD: Number((state.monthlySpendUSD + addedCost).toFixed(4)),
+          baselineSpendUSD: Number((state.baselineSpendUSD + addedCost * baselineMultiplier).toFixed(4)),
+        };
       })
   };
 });

@@ -9,6 +9,7 @@ import {
 import { useAppStore } from "@/lib/store";
 import { formatCurrency } from "@/lib/utils";
 import { SimulateRequestModal } from "./SimulateRequestModal";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function AppHeader() {
   const { currency, monthlySpendUSD, baselineSpendUSD } = useAppStore();
@@ -21,15 +22,16 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full h-16 border-b border-black/[0.05] bg-white/80 backdrop-blur-xl flex items-center justify-between px-6">
-        {/* Left: Quick Search */}
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-40 w-full h-16 border-b border-black/[0.05] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl flex items-center justify-between px-6">
+        {/* Left: Night Mode Toggle & Quick Search */}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
             <input
               type="text"
               placeholder="Search models, requests, rules..."
-              className="w-64 sm:w-72 h-9 pl-9 pr-3.5 rounded-full bg-[#F5F5F7] border border-transparent text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/30 focus:bg-white transition-all"
+              className="w-64 sm:w-72 h-9 pl-9 pr-3.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/30 focus:bg-white dark:focus:bg-[#161618] transition-all"
             />
           </div>
         </div>
