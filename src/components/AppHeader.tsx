@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Bell,
   Search,
@@ -13,18 +13,24 @@ import { ThemeToggle } from "./ThemeToggle";
 
 export function AppHeader() {
   const { currency, monthlySpendUSD, baselineSpendUSD } = useAppStore();
+  const [mounted, setMounted] = useState(false);
   const [showSimulate, setShowSimulate] = useState(false);
 
-  const rate = currency === "INR" ? 86.5 : 1;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
   const currentSpend = monthlySpendUSD * rate;
   const baselineSpend = baselineSpendUSD * rate;
-  const savedAmount = baselineSpend - currentSpend;
+  const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full h-16 border-b border-black/[0.05] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl flex items-center justify-between px-6">
+      <header className="sticky top-0 z-40 w-full h-16 border-b border-black/[0.05] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl flex items-center justify-between px-6" suppressHydrationWarning>
         {/* Left: Night Mode Toggle & Quick Search */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" suppressHydrationWarning>
           <ThemeToggle />
           <div className="relative">
             <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
@@ -37,13 +43,13 @@ export function AppHeader() {
         </div>
 
         {/* Right: Net Savings Pill, Simulate Button, Avatar */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F5F5F7] text-xs">
+        <div className="flex items-center gap-3" suppressHydrationWarning>
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs" suppressHydrationWarning>
             <span className="text-[#86868B] font-medium">Saved:</span>
-            <span className="font-semibold text-[#0050FF]">
-              +{formatCurrency(savedAmount, currency)}
+            <span className="font-semibold text-[#0050FF] dark:text-[#3374FF]">
+              +{formatCurrency(savedAmount, activeCurrency)}
             </span>
-            <span className="text-[11px] text-[#0050FF] font-medium">(-42%)</span>
+            <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-medium">(-42%)</span>
           </div>
 
           {/* Simulate Action Button */}
@@ -56,8 +62,8 @@ export function AppHeader() {
           </button>
 
           {/* User Avatar */}
-          <div className="flex items-center pl-2 border-l border-black/[0.06]">
-            <div className="h-8 w-8 rounded-full bg-[#1D1D1F] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
+          <div className="flex items-center pl-2 border-l border-black/[0.06] dark:border-white/[0.08]">
+            <div className="h-8 w-8 rounded-full bg-[#1D1D1F] dark:bg-[#2C2C30] text-white flex items-center justify-center font-semibold text-xs shadow-sm">
               AR
             </div>
           </div>

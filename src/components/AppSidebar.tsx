@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,6 +24,19 @@ import { formatNumber } from "@/lib/utils";
 export function AppSidebar() {
   const pathname = usePathname();
   const { orgName, planTier, monthlyQuota, currentTokens, currency, toggleCurrency } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const activeOrg = mounted ? orgName : "Acme Corp FinOps";
+  const activePlan = mounted ? planTier : "enterprise";
+  const activeTokens = mounted ? currentTokens : 18450000;
+  const activeQuota = mounted ? monthlyQuota : 50000000;
+
+  const quotaPct = Math.min(100, Math.round((activeTokens / activeQuota) * 100));
 
   const navItems = [
     { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,30 +51,29 @@ export function AppSidebar() {
     { href: "/app/webhooks", label: "Webhooks", icon: Webhook },
   ];
 
-  const quotaPct = Math.min(100, Math.round((currentTokens / monthlyQuota) * 100));
-
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-black/[0.05] bg-[#FBFBFD] flex flex-col justify-between min-h-[calc(100vh-4rem)] select-none">
-      <div className="p-4 space-y-6">
+    <aside className="w-64 flex-shrink-0 border-r border-black/[0.05] dark:border-white/[0.08] bg-[#FBFBFD] dark:bg-[#111113] flex flex-col justify-between min-h-[calc(100vh-4rem)] select-none" suppressHydrationWarning>
+      <div className="p-4 space-y-6" suppressHydrationWarning>
         {/* Workspace Card */}
-        <div className="flex items-center justify-between p-3 rounded-2xl bg-white border border-black/[0.04] shadow-sm">
+        <div className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.04] dark:border-white/[0.06] shadow-sm" suppressHydrationWarning>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="h-8 w-8 rounded-xl bg-[#0050FF] text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-[#0050FF]/20">
               <Zap className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-[#1D1D1F] truncate">{orgName}</p>
+              <p className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{activeOrg}</p>
               <span className="text-[10px] text-[#86868B] font-medium capitalize">
-                {planTier} Plan
+                {activePlan} Plan
               </span>
             </div>
           </div>
           <button
             onClick={toggleCurrency}
-            className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-[#F5F5F7] text-[#515154] hover:text-[#0050FF] hover:bg-[#EEF4FF] transition-colors"
+            className="px-2 py-1 text-[10px] font-semibold rounded-lg bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 transition-colors"
             title="Switch Currency"
+            suppressHydrationWarning
           >
-            {currency}
+            {activeCurrency}
           </button>
         </div>
 
@@ -79,7 +92,7 @@ export function AppSidebar() {
                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
                   isActive
                     ? "bg-[#0050FF] text-white font-semibold shadow-sm shadow-[#0050FF]/25"
-                    : "text-[#515154] hover:text-[#1D1D1F] hover:bg-black/[0.03]"
+                    : "text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
                 }`}
               >
                 <Icon className={`h-4 w-4 ${isActive ? "text-white" : "text-[#86868B]"}`} />
@@ -91,27 +104,27 @@ export function AppSidebar() {
       </div>
 
       {/* Bottom Token Quota Meter & Docs */}
-      <div className="p-4 border-t border-black/[0.04] space-y-3">
-        <div className="p-3.5 rounded-2xl bg-white border border-black/[0.04] shadow-sm space-y-2">
+      <div className="p-4 border-t border-black/[0.04] dark:border-white/[0.06] space-y-3" suppressHydrationWarning>
+        <div className="p-3.5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.04] dark:border-white/[0.06] shadow-sm space-y-2" suppressHydrationWarning>
           <div className="flex items-center justify-between text-xs">
             <span className="text-[#86868B] font-medium">Monthly Tokens</span>
-            <span className="font-semibold text-[#1D1D1F]">{quotaPct}%</span>
+            <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{quotaPct}%</span>
           </div>
-          <div className="w-full bg-[#F5F5F7] h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-[#F5F5F7] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
             <div
               className="bg-[#0050FF] h-full rounded-full transition-all duration-500"
               style={{ width: `${quotaPct}%` }}
             ></div>
           </div>
           <div className="flex items-center justify-between text-[10px] text-[#86868B]">
-            <span>{formatNumber(currentTokens)}</span>
-            <span>{formatNumber(monthlyQuota)} max</span>
+            <span>{formatNumber(activeTokens)}</span>
+            <span>{formatNumber(activeQuota)} max</span>
           </div>
         </div>
 
         <Link
           href="/docs"
-          className="flex items-center justify-between px-3 py-2 rounded-xl bg-white hover:bg-black/[0.02] border border-black/[0.04] text-[#515154] hover:text-[#1D1D1F] text-xs transition-colors shadow-sm"
+          className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-[#161618] hover:bg-black/[0.02] dark:hover:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] text-xs transition-colors shadow-sm"
         >
           <div className="flex items-center gap-2">
             <Sparkles className="h-3.5 w-3.5 text-[#0050FF]" />

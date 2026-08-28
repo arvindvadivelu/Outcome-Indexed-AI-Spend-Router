@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -33,7 +33,14 @@ const TokenBarChart = dynamic(
 
 export default function TokenAnalyticsPage() {
   const { currentTokens, monthlyQuota, currency, deltaStats, addRule } = useAppStore();
-  const rate = currency === "INR" ? 86.5 : 1;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
 
   // AI Token Anomaly Analyzer state
   const [isAuditing, setIsAuditing] = useState(false);

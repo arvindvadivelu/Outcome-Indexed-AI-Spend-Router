@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAppStore } from "@/lib/store";
@@ -19,7 +19,14 @@ import Link from "next/link";
 
 export default function CaseStudiesPage() {
   const { currency } = useAppStore();
-  const rate = currency === "INR" ? 86.5 : 1;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
 
   // Custom AI Case Study Generator state
   const [industryInput, setIndustryInput] = useState("B2B SaaS DevTools");

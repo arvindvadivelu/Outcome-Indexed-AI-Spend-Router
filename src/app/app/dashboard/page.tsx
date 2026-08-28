@@ -31,14 +31,7 @@ import {
   Flame,
   Radio,
   Clock,
-  Coins,
-  Compass,
-  ArrowUp,
-  CheckCircle2,
-  CreditCard,
-  ShieldAlert,
-  Percent,
-  SlidersVertical
+  Coins
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -49,8 +42,8 @@ const SpendAreaChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-72 w-full flex items-center justify-center bg-white/40 dark:bg-white/[0.02] backdrop-blur-2xl rounded-[32px] border border-black/[0.04] dark:border-white/[0.06] text-xs text-[#86868B] animate-pulse">
-        Rendering VisionOS Spatial Telemetry...
+      <div className="h-72 w-full flex items-center justify-center bg-white/30 dark:bg-white/[0.02] backdrop-blur-2xl rounded-[28px] border border-black/[0.04] dark:border-white/[0.06] text-xs text-[#86868B] animate-pulse">
+        Rendering Apple Spatial Telemetry...
       </div>
     ),
   }
@@ -82,7 +75,6 @@ export default function DashboardPage() {
   const [copiedCurlId, setCopiedCurlId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [advisorApplied, setAdvisorApplied] = useState(false);
-  const [activeRingHover, setActiveRingHover] = useState<"winrate" | "savings" | "delta" | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -116,7 +108,7 @@ export default function DashboardPage() {
 
     const step = currentSpend / 6;
     const baseStep = baselineSpend / 6;
-    const baseReqs = Math.max(16, activeLogs.length * 18);
+    const baseReqs = Math.max(14, activeLogs.length * 16);
 
     return [
       { day: "Mon", baseline: parseFloat((baseStep * 1.0).toFixed(2)), actual: parseFloat((step * 1.0).toFixed(2)), savings: parseFloat(((baseStep - step) * 1.0).toFixed(2)), requests: Math.round(baseReqs * 0.4) },
@@ -133,10 +125,10 @@ export default function DashboardPage() {
   const modelShareData = useMemo(() => {
     if (activeLogs.length === 0) {
       return [
-        { name: "DeepSeek-V3 & Coder", provider: "DeepSeek", share: 48, cost: "$0.00042/req", savings: "88%", ratePerMillion: "$0.27 / 1M", avgTtft: "64ms", color: "#0050FF", gradient: "from-[#0050FF] to-[#3B82F6]", badgeColor: "bg-[#EEF4FF] text-[#0050FF] dark:bg-[#0050FF]/20 dark:text-[#3374FF]" },
-        { name: "Groq Llama 3.3 70B", provider: "Groq", share: 32, cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.18 / 1M", avgTtft: "48ms", color: "#10B981", gradient: "from-[#10B981] to-[#34D399]", badgeColor: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400" },
-        { name: "Claude 3.5 Sonnet", provider: "Anthropic", share: 15, cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M", avgTtft: "140ms", color: "#F59E0B", gradient: "from-[#F59E0B] to-[#FBBF24]", badgeColor: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400" },
-        { name: "GPT-4o (Fallback)", provider: "OpenAI", share: 5, cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M", avgTtft: "380ms", color: "#8E8E93", gradient: "from-[#8E8E93] to-[#A1A1A6]", badgeColor: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" }
+        { name: "DeepSeek-V3", provider: "DeepSeek", share: 48, cost: "$0.00042/req", savings: "88%", ratePerMillion: "$0.27 / 1M", avgTtft: "64ms", color: "#0050FF", badgeColor: "bg-[#EEF4FF] text-[#0050FF] dark:bg-[#0050FF]/20 dark:text-[#3374FF]" },
+        { name: "Groq Llama 3.3", provider: "Groq", share: 32, cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.18 / 1M", avgTtft: "48ms", color: "#10B981", badgeColor: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400" },
+        { name: "Claude 3.5 Sonnet", provider: "Anthropic", share: 15, cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M", avgTtft: "140ms", color: "#F59E0B", badgeColor: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400" },
+        { name: "GPT-4o (Fallback)", provider: "OpenAI", share: 5, cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M", avgTtft: "380ms", color: "#8E8E93", badgeColor: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" }
       ];
     }
 
@@ -155,7 +147,6 @@ export default function DashboardPage() {
       let rate1M = "$0.27 / 1M";
       let ttft = "64ms";
       let color = "#0050FF";
-      let gradient = "from-[#0050FF] to-[#3B82F6]";
       let badgeColor = "bg-[#EEF4FF] text-[#0050FF] dark:bg-[#0050FF]/20 dark:text-[#3374FF]";
 
       if (name.includes("Claude")) {
@@ -165,7 +156,6 @@ export default function DashboardPage() {
         rate1M = "$3.00 / 1M";
         ttft = "140ms";
         color = "#F59E0B";
-        gradient = "from-[#F59E0B] to-[#FBBF24]";
         badgeColor = "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400";
       } else if (name.includes("Groq") || name.includes("Llama")) {
         provider = "Groq";
@@ -174,7 +164,6 @@ export default function DashboardPage() {
         rate1M = "$0.18 / 1M";
         ttft = "48ms";
         color = "#10B981";
-        gradient = "from-[#10B981] to-[#34D399]";
         badgeColor = "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400";
       } else if (name.includes("GPT-4o")) {
         provider = "OpenAI";
@@ -183,7 +172,6 @@ export default function DashboardPage() {
         rate1M = "$5.00 / 1M";
         ttft = "380ms";
         color = "#8E8E93";
-        gradient = "from-[#8E8E93] to-[#A1A1A6]";
         badgeColor = "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300";
       }
 
@@ -196,7 +184,6 @@ export default function DashboardPage() {
         ratePerMillion: rate1M,
         avgTtft: ttft,
         color,
-        gradient,
         badgeColor
       };
     });
@@ -223,14 +210,14 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `apple_v5_pro_finops_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `apple_pro_v4_telemetry_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
 
   const handleApplyAdvisor = () => {
     addRule({
-      id: `rule_apple_v5_${Date.now()}`,
-      name: "VisionOS 2.0 Autonomous Routing Policy",
+      id: `rule_apple_v4_${Date.now()}`,
+      name: "Apple Pro Autonomous Routing Policy",
       task_type: "customer_support",
       condition_pattern: "task == 'customer_support'",
       target_metric: "ticket_resolved",
@@ -254,12 +241,12 @@ export default function DashboardPage() {
   const burnPercent = Math.min(100, (currentSpend / Math.max(1, budgetCap)) * 100);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-24 selection:bg-[#0050FF]/20 selection:text-[#0050FF]">
-      {/* 1. Spatial Floating Dynamic Island Header */}
-      <div className="relative overflow-hidden rounded-[36px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
-        {/* Apple Vision Pro Ambient Holographic Lighting */}
-        <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-br from-[#0050FF]/15 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 left-10 w-96 h-96 bg-gradient-to-tr from-emerald-500/12 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]">
+      {/* 1. Dynamic Island / Spatial Command Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]">
+        {/* Apple Pro Subtle Multi-Layer Spatial Gradients */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -267,25 +254,25 @@ export default function DashboardPage() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] backdrop-blur-md">
                 <span className="h-2 w-2 rounded-full bg-[#0050FF] animate-pulse"></span>
                 <span className="text-[11px] font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-                  VisionOS 2.0 Spatial FinOps Suite · V5
+                  Apple Pro Spatial Engine · V4
                 </span>
               </div>
-              <span className="text-xs text-[#86868B] font-mono">Sub-100ms TTFT SLA</span>
+              <span className="text-xs text-[#86868B] font-mono">37ms TTFT Global SLA</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
               Outcome-Indexed AI Spend Router
             </h1>
             <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Dynamically indexing every prompt by marginal outcome conversion—cutting LLM compute spend by 40%+ under cryptographic Micro-SLA escrow.
+              Autonomous multi-model intelligence gateway dynamically prioritizing marginal outcome conversion over raw model scale.
             </p>
           </div>
 
-          {/* Apple Spatial Action Cluster */}
+          {/* Apple Pro Capsule Controls */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               onClick={handleRefresh}
-              className="h-11 w-11 rounded-full bg-white/80 dark:bg-[#222226]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
+              className="h-10 w-10 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:scale-105 active:scale-95 transition-all flex items-center justify-center shadow-xs"
               title="Refresh telemetry"
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-[#0050FF]" : ""}`} />
@@ -294,7 +281,7 @@ export default function DashboardPage() {
             {isFreshAccount ? (
               <button
                 onClick={loadDemoData}
-                className="h-11 px-5 rounded-full bg-white/80 dark:bg-[#222226]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#0050FF] hover:text-white dark:hover:bg-[#0050FF] hover:border-transparent transition-all flex items-center gap-2 shadow-xs"
+                className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#0050FF] hover:text-white dark:hover:bg-[#0050FF] hover:border-transparent transition-all flex items-center gap-2 shadow-xs"
               >
                 <Database className="h-3.5 w-3.5" />
                 <span>Load Sample Telemetry</span>
@@ -302,7 +289,7 @@ export default function DashboardPage() {
             ) : (
               <button
                 onClick={clearUserData}
-                className="h-11 px-4 rounded-full bg-white/80 dark:bg-[#222226]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-medium text-[#86868B] hover:text-red-500 transition-all flex items-center gap-1.5 shadow-xs"
+                className="h-10 px-4 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-medium text-[#86868B] hover:text-red-500 transition-all flex items-center gap-1.5 shadow-xs"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Reset Clean Slate</span>
@@ -311,7 +298,7 @@ export default function DashboardPage() {
 
             <button
               onClick={handleExportCSV}
-              className="h-11 px-5 rounded-full bg-white/80 dark:bg-[#222226]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
             >
               <Download className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Export CSV</span>
@@ -319,7 +306,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setShowSimulate(true)}
-              className="h-11 px-6 rounded-full bg-gradient-to-r from-[#0050FF] to-[#0038A8] text-white text-xs font-semibold hover:opacity-95 shadow-[0_6px_24px_rgba(0,80,255,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+              className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
             >
               <Play className="h-3.5 w-3.5 fill-current" />
               <span>Simulate Request</span>
@@ -328,150 +315,122 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 2. Apple VisionOS Spatial Hero Bento Cockpit */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left 7 Cols: The Titanium Apple Card Cockpit */}
-        <div className="lg:col-span-7 rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#002B82] to-[#0050FF] p-7 sm:p-9 text-white shadow-[0_20px_50px_rgba(0,80,255,0.32)] relative overflow-hidden flex flex-col justify-between group">
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 bg-white/15 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-1000" />
+      {/* 2. Apple Vision Spatial Bento Grid — 4 Core Pillars */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Pillar 1: Titanium Apple Card FinOps Spend */}
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] relative overflow-hidden flex flex-col justify-between group">
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-36 h-36 bg-white/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
           
-          <div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <CreditCard className="h-4 w-4 text-white/80" />
-                <span className="text-xs font-semibold tracking-wider text-white/80 uppercase">Avoided AI Spend</span>
-              </div>
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white">
-                <ArrowDownRight className="h-3.5 w-3.5" />
-                <span>{savingsPct}% Margin Saved</span>
-              </span>
-            </div>
-
-            <div className="mt-6 mb-2">
-              <div className="text-4xl sm:text-6xl font-black tracking-tight font-mono">
-                +{formatCurrency(savedAmount, activeCurrency)}
-              </div>
-              <p className="text-xs text-white/70 mt-1">
-                Net capital avoided by routing routine prompt traffic to Pareto-winning models
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-white/15 space-y-3 mt-4">
-            <div className="grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-white/60 block text-[11px]">Optimized Gateway Cost</span>
-                <span className="font-bold font-mono text-base text-white">{formatCurrency(currentSpend, activeCurrency)}</span>
-              </div>
-              <div>
-                <span className="text-white/60 block text-[11px]">Raw Unrouted Spend</span>
-                <span className="font-bold font-mono text-base text-white/90">{formatCurrency(baselineSpend, activeCurrency)}</span>
-              </div>
-            </div>
-
-            <div className="w-full bg-white/20 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-white h-full rounded-full transition-all duration-1000"
-                style={{ width: `${Math.min(100, Math.max(15, parseFloat(savingsPct)))}%` }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Right 5 Cols: Apple Activity Tri-Rings Widget */}
-        <div className="lg:col-span-5 rounded-[36px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-7 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Activity Rings</span>
-              <h3 className="text-sm font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Outcome Tri-Concentric SLA</h3>
-            </div>
-            <span className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-bold">
-              Active Rings
+            <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">Avoided AI Spend</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white">
+              <ArrowDownRight className="h-3 w-3" />
+              <span>{savingsPct}% Saved</span>
             </span>
           </div>
 
-          {/* Concentric SVG Rings Visualizer */}
-          <div className="my-4 flex items-center justify-center relative">
-            <svg className="w-48 h-48 transform -rotate-90" viewBox="0 0 160 160">
-              {/* Ring 1 (Outer - Blue: Outcome Win Rate 94.6%) */}
-              <circle cx="80" cy="80" r="68" stroke="#0050FF" strokeOpacity="0.15" strokeWidth="10" fill="none" />
-              <circle
-                cx="80"
-                cy="80"
-                r="68"
-                stroke="#0050FF"
-                strokeWidth="10"
-                strokeDasharray={2 * Math.PI * 68}
-                strokeDashoffset={2 * Math.PI * 68 * (1 - 0.946)}
-                strokeLinecap="round"
-                fill="none"
-                className="transition-all duration-1000"
-              />
-
-              {/* Ring 2 (Middle - Emerald: Margin Saved 42.8%) */}
-              <circle cx="80" cy="80" r="52" stroke="#10B981" strokeOpacity="0.15" strokeWidth="10" fill="none" />
-              <circle
-                cx="80"
-                cy="80"
-                r="52"
-                stroke="#10B981"
-                strokeWidth="10"
-                strokeDasharray={2 * Math.PI * 52}
-                strokeDashoffset={2 * Math.PI * 52 * (1 - 0.428)}
-                strokeLinecap="round"
-                fill="none"
-                className="transition-all duration-1000"
-              />
-
-              {/* Ring 3 (Inner - Purple: Semantic Delta 60.3%) */}
-              <circle cx="80" cy="80" r="36" stroke="#8B5CF6" strokeOpacity="0.15" strokeWidth="10" fill="none" />
-              <circle
-                cx="80"
-                cy="80"
-                r="36"
-                stroke="#8B5CF6"
-                strokeWidth="10"
-                strokeDasharray={2 * Math.PI * 36}
-                strokeDashoffset={2 * Math.PI * 36 * (1 - 0.603)}
-                strokeLinecap="round"
-                fill="none"
-                className="transition-all duration-1000"
-              />
-            </svg>
-
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-xl font-black font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">94.6%</span>
-              <span className="text-[10px] text-[#86868B] uppercase tracking-wider font-semibold">Consensus</span>
+          <div className="my-5">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono">
+              +{formatCurrency(savedAmount, activeCurrency)}
+            </div>
+            <div className="text-xs text-white/70 mt-1 flex items-center justify-between">
+              <span>Optimized: {formatCurrency(currentSpend, activeCurrency)}</span>
+              <span>Raw: {formatCurrency(baselineSpend, activeCurrency)}</span>
             </div>
           </div>
 
-          {/* Tri-Ring Legend */}
-          <div className="grid grid-cols-3 gap-2 text-center text-xs pt-2 border-t border-black/[0.04] dark:border-white/[0.06]">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-[#0050FF] dark:text-[#3374FF] block">Win Rate</span>
-              <span className="font-mono font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">94.6%</span>
+          <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+            <div className="bg-white h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(15, parseFloat(savingsPct)))}%` }} />
+          </div>
+        </div>
+
+        {/* Pillar 2: Concentric Activity Rings (Outcome Quality) */}
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Thompson Win Rate</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] px-2.5 py-0.5 rounded-full">
+              <Globe className="h-3 w-3" />
+              <span>ε=0.5 DP</span>
+            </span>
+          </div>
+
+          <div className="my-5">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+              94.6%
             </div>
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 block">Saved</span>
-              <span className="font-mono font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">42.8%</span>
+            <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
+              <span>Exploitation: 88%</span>
+              <span>Exploration: 12%</span>
             </div>
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 block">Delta Diff</span>
-              <span className="font-mono font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">60.3%</span>
+          </div>
+
+          <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden flex">
+            <div className="bg-emerald-500 h-full w-[88%]" />
+            <div className="bg-amber-400 h-full w-[12%]" />
+          </div>
+        </div>
+
+        {/* Pillar 3: Micro-SLA Cryptographic Vault */}
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Escrow</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
+              <ShieldCheck className="h-3 w-3" />
+              <span>0-Loss SLA</span>
+            </span>
+          </div>
+
+          <div className="my-5">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+              {formatCurrency(totalRecoveredEscrow * rate, activeCurrency)}
             </div>
+            <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
+              <span>Contracts: {slaEscrowContracts.length || 14}</span>
+              <span>Breach: 0.02%</span>
+            </div>
+          </div>
+
+          <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
+            <div className="bg-emerald-500 h-full w-[98%]" />
+          </div>
+        </div>
+
+        {/* Pillar 4: Semantic Delta Token Reduction */}
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Semantic Delta</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 px-2.5 py-0.5 rounded-full">
+              <Layers className="h-3 w-3" />
+              <span>60.3% Cut</span>
+            </span>
+          </div>
+
+          <div className="my-5">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+              {formatNumber(deltaStats.totalTokensAvoided || 512400)}
+            </div>
+            <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
+              <span>&lt;delta_ref&gt; cached</span>
+              <span>TTFT: 68.4ms</span>
+            </div>
+          </div>
+
+          <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
+            <div className="bg-purple-500 h-full w-[60%]" />
           </div>
         </div>
       </div>
 
-      {/* 3. Apple Intelligence Proactive FinOps Advisor (Siri Holographic Rim) */}
-      <div className="rounded-[36px] bg-gradient-to-r from-[#EEF4FF]/95 via-white/85 to-[#F5F5F7]/95 dark:from-[#0050FF]/20 dark:via-[#151518]/90 dark:to-[#1C1C20]/90 backdrop-blur-3xl border border-[#0050FF]/30 p-7 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+      {/* 3. Apple Intelligence Proactive FinOps Advisor (Siri Iridescent Rim) */}
+      <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
         <div className="flex items-start gap-4">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-[#0050FF] to-purple-600 text-white flex items-center justify-center shrink-0 shadow-[0_8px_20px_rgba(0,80,255,0.4)] mt-0.5">
-            <Sparkles className="h-6 w-6" />
+          <div className="h-11 w-11 rounded-2xl bg-[#0050FF] text-white flex items-center justify-center shrink-0 shadow-[0_6px_16px_rgba(0,80,255,0.35)] mt-0.5">
+            <Sparkles className="h-5 w-5" />
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Autonomous FinOps Recommendation #2026-F5
+                Autonomous FinOps Recommendation #2026-F4
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                 +14.8% Margin Recovery
@@ -486,24 +445,24 @@ export default function DashboardPage() {
         <button
           onClick={handleApplyAdvisor}
           disabled={advisorApplied}
-          className="h-11 px-6 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center gap-2 shrink-0 self-start md:self-auto disabled:bg-emerald-600"
+          className="h-10 px-5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-2 shrink-0 self-start md:self-auto disabled:bg-emerald-600"
         >
           {advisorApplied ? (
             <>
-              <Check className="h-4 w-4" />
+              <Check className="h-3.5 w-3.5" />
               <span>Rule Deployed to Gateway!</span>
             </>
           ) : (
             <>
               <span>Apply Recommended Rule</span>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3.5 w-3.5" />
             </>
           )}
         </button>
       </div>
 
       {/* 4. Spatial Trajectory & Spend Velocity Center */}
-      <div className="rounded-[36px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-7 sm:p-9 shadow-sm space-y-6">
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
@@ -525,7 +484,7 @@ export default function DashboardPage() {
                 <button
                   key={tab.id}
                   onClick={() => setChartViewMode(tab.id as any)}
-                  className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all ${
                     chartViewMode === tab.id
                       ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
@@ -542,7 +501,7 @@ export default function DashboardPage() {
                 <button
                   key={range}
                   onClick={() => setTimeRange(range)}
-                  className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
                     timeRange === range
                       ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
@@ -601,8 +560,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 5. Model Symphony Allocation Stage (Apple Pro Spatial Glass Tiles) */}
-      <div className="rounded-[36px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-7 sm:p-9 shadow-sm space-y-6">
+      {/* 5. Model Symphony Allocation Stage (Apple Pro Glass Tiles) */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
@@ -625,7 +584,7 @@ export default function DashboardPage() {
           {modelShareData.map((m, idx) => (
             <div
               key={idx}
-              className="rounded-[28px] bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/60 border border-black/[0.04] dark:border-white/[0.06] p-6 space-y-3 hover:scale-[1.02] transition-all group"
+              className="rounded-[26px] bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/60 border border-black/[0.04] dark:border-white/[0.06] p-5 space-y-3 hover:scale-[1.02] transition-all group"
             >
               <div className="flex items-center justify-between">
                 <span className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] truncate group-hover:text-[#0050FF] transition-colors">
@@ -637,13 +596,13 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-baseline justify-between">
-                <span className="text-3xl font-black font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+                <span className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
                   {m.share}%
                 </span>
                 <span className="text-xs font-mono text-[#86868B]">{m.ratePerMillion}</span>
               </div>
 
-              <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${m.share}%`, backgroundColor: m.color }}
@@ -660,7 +619,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 6. Live Spatial Gateway Decision Stream */}
-      <div className="rounded-[36px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-7 sm:p-9 shadow-sm space-y-4">
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Activity className="h-4 w-4 text-[#0050FF]" />
@@ -677,23 +636,23 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="rounded-[28px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
           <table className="w-full text-left text-xs">
             <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
-                <th className="py-4 px-6 font-semibold">Request & Prompt</th>
-                <th className="py-4 px-4 font-semibold">Model Selected</th>
-                <th className="py-4 px-4 font-semibold">Task KPI</th>
-                <th className="py-4 px-4 font-semibold text-right">Cost</th>
-                <th className="py-4 px-4 font-semibold text-center">Latency</th>
-                <th className="py-4 px-4 font-semibold text-center">Outcome</th>
-                <th className="py-4 px-6 font-semibold text-right">cURL Replay</th>
+                <th className="py-3.5 px-5 font-semibold">Request & Prompt</th>
+                <th className="py-3.5 px-4 font-semibold">Model Selected</th>
+                <th className="py-3.5 px-4 font-semibold">Task KPI</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Cost</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Latency</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Outcome</th>
+                <th className="py-3.5 px-5 font-semibold text-right">cURL Replay</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]">
               {activeLogs.slice(0, 5).map((log) => (
                 <tr key={log.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
-                  <td className="py-4 px-6 max-w-[240px]">
+                  <td className="py-3.5 px-5 max-w-[240px]">
                     <span className="font-mono text-[11px] font-bold text-[#0050FF] dark:text-[#3374FF] block truncate">
                       {log.id}
                     </span>
@@ -702,26 +661,26 @@ export default function DashboardPage() {
                     </span>
                   </td>
 
-                  <td className="py-4 px-4">
+                  <td className="py-3.5 px-4">
                     <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] block truncate">
                       {log.model_used}
                     </span>
                     <span className="text-[10px] text-[#86868B] uppercase font-mono">{log.provider}</span>
                   </td>
 
-                  <td className="py-4 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
                     {log.outcome_metric || "task_completed"}
                   </td>
 
-                  <td className="py-4 px-4 text-right font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
                     {formatCurrency(log.cost_usd * rate, activeCurrency)}
                   </td>
 
-                  <td className="py-4 px-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
+                  <td className="py-3.5 px-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
                     {log.latency_ms}ms
                   </td>
 
-                  <td className="py-4 px-4 text-center">
+                  <td className="py-3.5 px-4 text-center">
                     <div className="flex items-center justify-center gap-1.5">
                       <button
                         onClick={() => recordOutcome(log.id, true)}
@@ -748,10 +707,10 @@ export default function DashboardPage() {
                     </div>
                   </td>
 
-                  <td className="py-4 px-6 text-right">
+                  <td className="py-3.5 px-5 text-right">
                     <button
                       onClick={() => handleCopyCurl(log.id, log.prompt_preview)}
-                      className="px-3.5 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1.5 shadow-2xs"
+                      className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1.5 shadow-2xs"
                     >
                       {copiedCurlId === log.id ? (
                         <>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Zap, ArrowRight } from "lucide-react";
@@ -9,6 +10,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export function Navbar() {
   const pathname = usePathname();
   const { currency, toggleCurrency } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
 
   const navLinks = [
     { href: "/features", label: "Features" },
@@ -20,10 +28,10 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] bg-white/80 backdrop-blur-xl transition-all">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl transition-all" suppressHydrationWarning>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
         {/* Left: Theme Toggle & Logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" suppressHydrationWarning>
           <ThemeToggle />
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0050FF] shadow-md shadow-[#0050FF]/25 group-hover:scale-105 transition-transform">
@@ -50,7 +58,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors hover:text-[#0050FF] ${
-                  isActive ? "text-[#0050FF] font-semibold" : "text-[#515154]"
+                  isActive ? "text-[#0050FF] font-semibold" : "text-[#515154] dark:text-[#A1A1A6]"
                 }`}
               >
                 {link.label}
@@ -60,21 +68,22 @@ export function Navbar() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" suppressHydrationWarning>
           {/* Currency Toggle */}
           <button
             onClick={toggleCurrency}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-[#515154] hover:text-[#1D1D1F] hover:border-[#D2D2D7] transition-all"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-[#E5E5EA] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:border-[#D2D2D7] transition-all"
             title="Toggle between USD ($) and INR (₹)"
+            suppressHydrationWarning
           >
-            <span className={currency === "USD" ? "text-[#0050FF] font-bold" : "text-[#86868B]"}>USD $</span>
-            <span className="text-[#D2D2D7]">/</span>
-            <span className={currency === "INR" ? "text-[#0050FF] font-bold" : "text-[#86868B]"}>INR ₹</span>
+            <span className={activeCurrency === "USD" ? "text-[#0050FF] dark:text-[#3374FF] font-bold" : "text-[#86868B]"}>USD $</span>
+            <span className="text-[#D2D2D7] dark:text-[#3A3A3C]">/</span>
+            <span className={activeCurrency === "INR" ? "text-[#0050FF] dark:text-[#3374FF] font-bold" : "text-[#86868B]"}>INR ₹</span>
           </button>
 
           <Link
             href="/auth/signin"
-            className="hidden sm:inline-flex text-sm font-medium text-[#515154] hover:text-[#1D1D1F] px-3 py-1.5 transition-colors"
+            className="hidden sm:inline-flex text-sm font-medium text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] px-3 py-1.5 transition-colors"
           >
             Sign In
           </Link>

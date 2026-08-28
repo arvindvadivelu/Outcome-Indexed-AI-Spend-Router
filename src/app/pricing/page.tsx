@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAppStore } from "@/lib/store";
@@ -22,9 +22,16 @@ import Link from "next/link";
 
 export default function PricingPage() {
   const { currency } = useAppStore();
+  const [mounted, setMounted] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const rate = currency === "INR" ? 86.5 : 1;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
 
   // Dynamic AI Plan Recommender state
   const [tokensInput, setTokensInput] = useState(350000);

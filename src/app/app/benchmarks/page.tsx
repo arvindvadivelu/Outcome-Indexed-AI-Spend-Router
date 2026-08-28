@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -25,6 +25,7 @@ import {
 
 export default function BenchmarksPage() {
   const { benchmarks, currency, federationSettings, setFederationWeight, addRule, recordOutcome } = useAppStore();
+  const [mounted, setMounted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"win_rate" | "cost" | "latency" | "thompson">("win_rate");
@@ -34,7 +35,12 @@ export default function BenchmarksPage() {
   const [isRunningBatch, setIsRunningBatch] = useState(false);
   const [batchResults, setBatchResults] = useState<any[] | null>(null);
 
-  const rate = currency === "INR" ? 86.5 : 1;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
 
   const filteredBenchmarks = benchmarks
     .filter((b) => {
