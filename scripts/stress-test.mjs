@@ -23,12 +23,14 @@ const ROUTES_TO_TEST = [
   '/app/billing'
 ];
 
+const agent = new http.Agent({ keepAlive: true, maxSockets: 50 });
+
 function makeRequest(url) {
   return new Promise((resolve) => {
     const startTime = process.hrtime.bigint();
     let firstByteTime = null;
 
-    const req = http.get(url, (res) => {
+    const req = http.get(url, { agent }, (res) => {
       res.once('data', () => {
         if (!firstByteTime) {
           firstByteTime = process.hrtime.bigint();
