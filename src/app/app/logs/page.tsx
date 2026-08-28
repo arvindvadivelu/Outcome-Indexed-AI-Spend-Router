@@ -39,6 +39,8 @@ export default function LogsPage() {
   const [aiExplaining, setAiExplaining] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const activeLogs = logs.length > 0 ? logs : telemetryLogs;
 
@@ -54,6 +56,10 @@ export default function LogsPage() {
       (selectedStatusFilter === "losses" && log.outcome_success === false);
     return matchesSearch && matchesTask && matchesStatus;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const winCount = filteredLogs.filter((l) => l.outcome_success === true).length;
 
   const handleExplainWithAI = (log: LogItem) => {
     setSelectedLog(log);
@@ -161,8 +167,23 @@ export default function LogsPage() {
               <span>Analyzing routing trace and verifying cryptographic SLA contract...</span>
             </div>
           ) : (
-            <div className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed whitespace-pre-wrap font-sans">
+            <div className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed whitespace-pre-wrap font-sans space-y-1">
               {aiExplanation}
+              {selectedLog && (
+                <div className="mt-3 pt-3 border-t border-black/[0.05] dark:border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { label: "Speculative Win", value: selectedLog.speculative_win ? "Yes ✓" : "No" },
+                    { label: "Cached Hit", value: selectedLog.cached_hit ? "Yes ✓" : "No" },
+                    { label: "Fallback Triggered", value: selectedLog.fallback_triggered ? "Yes ⚠" : "No" },
+                    { label: "Critic Escalated", value: selectedLog.critic_escalated ? "Yes ⚠" : "No" }
+                  ].map((f) => (
+                    <div key={f.label} className="p-2 rounded-xl bg-[#FBFBFD] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06]">
+                      <p className="text-[10px] text-[#86868B]">{f.label}</p>
+                      <p className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-[11px]">{f.value}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -207,8 +228,8 @@ export default function LogsPage() {
         <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] self-start sm:self-auto">
           {[
             { id: "all", label: "All Status" },
-            { id: "wins", label: "Wins (93%)" },
-            { id: "losses", label: "Losses" }
+            { id: "wins", label: `Wins (${activeLogs.filter(l=>l.outcome_success===true).length})` },
+            { id: "losses", label: `Losses (${activeLogs.filter(l=>l.outcome_success===false).length})` }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -243,12 +264,18 @@ export default function LogsPage() {
             <tbody className="divide-y divide-[#F5F5F7] dark:divide-white/[0.06]">
               {filteredLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-xs text-[#86868B]">
-                    No request logs found. Click <strong>Simulate Request</strong> or <strong>Sandbox Demo</strong> in Spend Overview to evaluate live models.
+                  <td colSpan={7} className="p-10 text-center">
+                    <p className="text-xs text-[#86868B] mb-3">No request logs found matching current filters.</p>
+                    <button
+                      onClick={() => setShowSimulate(true)}
+                      className="px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] inline-flex items-center gap-1.5 shadow-sm"
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" /> Simulate First Request
+                    </button>
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => {
+                paginatedLogs.map((log) => {
                   const tokSpeed = Math.round(((log.tokens_in + log.tokens_out) / Math.max(1, log.latency_ms)) * 1000);
                   return (
                     <tr key={log.id} className="hover:bg-[#FBFBFD] dark:hover:bg-[#1E1E22] transition-colors">
@@ -324,6 +351,29 @@ export default function LogsPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {filteredLogs.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between text-xs text-[#86868B]">
+          <span>{filteredLogs.length} total logs — page {currentPage} of {totalPages}</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-medium disabled:opacity-40 hover:text-[#0050FF] transition-colors"
+            >
+              ← Prev
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-medium disabled:opacity-40 hover:text-[#0050FF] transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
 
       {showSimulate && (
         <SimulateRequestModal onClose={() => setShowSimulate(false)} />

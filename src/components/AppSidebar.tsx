@@ -28,6 +28,7 @@ export function AppSidebar() {
     { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/app/routing", label: "Routing Rules", icon: GitFork },
     { href: "/app/benchmarks", label: "Benchmarks", icon: BarChart3 },
+    { href: "/app/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/app/analytics/tokens", label: "Token Analytics", icon: Coins },
     { href: "/app/logs", label: "Audit Logs", icon: ScrollText },
     { href: "/app/settings/api-keys", label: "API Keys", icon: Key },

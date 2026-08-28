@@ -116,12 +116,37 @@ export default function DashboardPage() {
     ];
   }, [activeLogs]);
 
-  // Outcome win rates calculated from logs
-  const outcomeWinRates = [
-    { task: "Sales Email Outreach", winRate: 93.4, model: "Claude 3.5 Sonnet", metric: "Demo Booked" },
-    { task: "Code Review & PRs", winRate: 92.1, model: "DeepSeek Coder", metric: "Code Merged" },
-    { task: "Customer Support FAQ", winRate: 96.2, model: "Groq Llama 3.3", metric: "Ticket Resolved" }
-  ];
+  // Outcome win rates computed dynamically from logs
+  const outcomeWinRates = useMemo(() => {
+    const taskMap: Record<string, { wins: number; total: number; model: string; metric: string }> = {};
+    const staticFallback = [
+      { task: "Sales Email Outreach", winRate: 93.4, model: "Claude 3.5 Sonnet", metric: "Demo Booked" },
+      { task: "Code Review & PRs", winRate: 92.1, model: "DeepSeek Coder", metric: "Code Merged" },
+      { task: "Customer Support FAQ", winRate: 96.2, model: "Groq Llama 3.3", metric: "Ticket Resolved" }
+    ];
+    if (activeLogs.length === 0) return staticFallback;
+    activeLogs.forEach((l) => {
+      if (!taskMap[l.task_type]) {
+        taskMap[l.task_type] = { wins: 0, total: 0, model: l.model_used, metric: l.outcome_metric };
+      }
+      taskMap[l.task_type].total++;
+      if (l.outcome_success === true) taskMap[l.task_type].wins++;
+    });
+    return Object.entries(taskMap).map(([task, { wins, total, model, metric }]) => ({
+      task: task.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      winRate: parseFloat(((wins / Math.max(1, total)) * 100).toFixed(1)),
+      model,
+      metric: metric.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    }));
+  }, [activeLogs]);
+
+  // P95 Latency from real logs
+  const p95Latency = useMemo(() => {
+    if (activeLogs.length === 0) return null;
+    const sorted = [...activeLogs].map((l) => l.latency_ms).sort((a, b) => a - b);
+    const idx = Math.floor(sorted.length * 0.95);
+    return sorted[Math.min(idx, sorted.length - 1)];
+  }, [activeLogs]);
 
   const handleExportCsv = () => {
     setExportNotice(true);
@@ -278,7 +303,10 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
-              {isFreshAccount ? "100.0%" : "93.4%"}
+              {isFreshAccount ? "—" : `${(
+                activeLogs.filter((l) => l.outcome_success === true).length /
+                Math.max(1, activeLogs.filter((l) => l.outcome_success !== null).length) * 100
+              ).toFixed(1)}%`}
             </div>
             <div className="text-xs text-[#86868B] mt-1">
               {isFreshAccount ? "Priors calibrated across 10+ models" : "+12.2% vs single-model setup"}
@@ -296,11 +324,11 @@ export default function DashboardPage() {
           </div>
           <div>
             <div className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
-              {isFreshAccount ? "0ms" : "140ms"}
+              {isFreshAccount ? "—" : `${p95Latency}ms`}
             </div>
             <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
-              <span>Sub-150ms SLA Compliant (Optimal)</span>
+              <span>{isFreshAccount ? "Gateway ready — no requests yet" : (p95Latency! < 200 ? "Sub-200ms SLA Compliant" : "Above 200ms SLA threshold")}</span>
             </div>
           </div>
         </div>
@@ -386,7 +414,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-[#0050FF] dark:text-[#3374FF] font-mono">
-                    {isFreshAccount ? "100.0%" : `${item.winRate}%`}
+                    {`${item.winRate}%`}
                   </span>
                   <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">High Pareto</p>
                 </div>

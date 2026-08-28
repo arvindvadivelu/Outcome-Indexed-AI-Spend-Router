@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -41,11 +41,27 @@ export default function BillingPage() {
   const [disputeExported, setDisputeExported] = useState(false);
   const [showPlanMatrix, setShowPlanMatrix] = useState(false);
 
+  // ── Debounced budget slider ─────────────────────────────────────────────────
+  const budgetDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleBudgetSlider = useCallback((val: number) => {
+    if (budgetDebounceRef.current) clearTimeout(budgetDebounceRef.current);
+    budgetDebounceRef.current = setTimeout(() => setMonthlyBudget(val), 120);
+  }, [setMonthlyBudget]);
+
+  // ── Escape key closes plan matrix ─────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape" && showPlanMatrix) setShowPlanMatrix(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showPlanMatrix]);
+
   const handleForecast = async () => {
     setIsForecasting(true);
     setForecastResult(null);
 
-    const response = await apiClient.forecastBill(monthlySpendUSD || 842.50, autopilot.monthly_budget_usd);
+    // Use actual spend if available, otherwise use a meaningful default
+    const spendToForecast = monthlySpendUSD > 0 ? monthlySpendUSD : 0;
+    const response = await apiClient.forecastBill(spendToForecast || 100, autopilot.monthly_budget_usd);
     if (response && response.success) {
       setForecastResult({
         projectedInvoiceUSD: response.projected_invoice_usd,
@@ -77,8 +93,9 @@ export default function BillingPage() {
 
   const quotaPct = Math.min(100, Math.round((currentTokens / monthlyQuota) * 100));
   const refundedContracts = slaEscrowContracts.filter((c) => c.status === "breached_escrow_refunded");
-  const totalRecoveredUsd = refundedContracts.reduce((acc, c) => acc + c.refundUsd, 0.0142);
-  const totalRecoveredTokens = refundedContracts.reduce((acc, c) => acc + c.refundTokens, 1280);
+  // ── FIX: removed hardcoded seed values (0.0142 / 1280) ─────────────────────
+  const totalRecoveredUsd = refundedContracts.reduce((acc, c) => acc + c.refundUsd, 0);
+  const totalRecoveredTokens = refundedContracts.reduce((acc, c) => acc + c.refundTokens, 0);
 
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
@@ -168,8 +185,8 @@ export default function BillingPage() {
           min="500"
           max="10000"
           step="250"
-          value={autopilot.monthly_budget_usd}
-          onChange={(e) => setMonthlyBudget(parseFloat(e.target.value))}
+          defaultValue={autopilot.monthly_budget_usd}
+          onChange={(e) => handleBudgetSlider(parseFloat(e.target.value))}
           className="w-full accent-[#0050FF] h-2 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded-lg cursor-pointer"
         />
       </div>
@@ -243,7 +260,10 @@ export default function BillingPage() {
 
       {/* Plan Matrix Modal */}
       {showPlanMatrix && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowPlanMatrix(false); }}
+        >
           <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-black/[0.05] dark:border-white/[0.06]">
               <h3 className="font-semibold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">Plan Tier Comparison</h3>
