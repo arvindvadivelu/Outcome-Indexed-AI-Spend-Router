@@ -77,7 +77,7 @@ export default function BenchmarksPage() {
                 <th className="p-4 font-medium">Task Domain</th>
                 <th className="p-4 font-medium">Outcome Win Rate</th>
                 <th className="p-4 font-medium text-right">Cost / Outcome</th>
-                <th className="p-4 font-medium text-center">P95 Latency</th>
+                <th className="p-4 font-medium text-center">Avg Latency</th>
                 <th className="p-4 pr-6 font-medium text-right">Status</th>
               </tr>
             </thead>
@@ -108,15 +108,15 @@ export default function BenchmarksPage() {
                     {currency === "INR" ? `₹${(b.cost_per_outcome_usd * rate).toFixed(3)}` : `$${b.cost_per_outcome_usd.toFixed(4)}`}
                   </td>
                   <td className="p-4 text-center font-mono text-[#515154]">
-                    {b.latency_p95_ms}ms
+                    {b.avg_latency_ms}ms
                   </td>
                   <td className="p-4 pr-6 text-right">
                     <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                      b.pareto_optimal
+                      b.pareto_tier === "frontier"
                         ? "bg-[#EEF4FF] text-[#0050FF]"
                         : "bg-[#F5F5F7] text-[#86868B]"
                     }`}>
-                      {b.pareto_optimal ? "Optimal" : "Fallback"}
+                      {b.pareto_tier === "frontier" ? "Optimal" : "Fallback"}
                     </span>
                   </td>
                 </tr>

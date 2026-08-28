@@ -111,6 +111,7 @@ interface AppState {
   recordOutcome: (requestId: string, success: boolean) => void;
   addRule: (rule: RoutingRule) => void;
   toggleRule: (id: string) => void;
+  deleteRule: (id: string) => void;
   updateRulePriority?: (id: string, newPriority: string[]) => void;
   createApiKey: (name: string, envOrLimit?: string | number) => void;
   deleteApiKey: (id: string) => void;
@@ -441,6 +442,12 @@ export const useAppStore = create<AppState>((set) => {
         const updated = state.rules.map((r) =>
           r.id === id ? { ...r, is_active: !r.is_active, enabled: !r.enabled } : r
         );
+        return { rules: updated, routingRules: updated };
+      }),
+
+    deleteRule: (id: string) =>
+      set((state) => {
+        const updated = state.rules.filter((r) => r.id !== id);
         return { rules: updated, routingRules: updated };
       }),
 

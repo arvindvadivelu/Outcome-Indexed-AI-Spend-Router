@@ -132,12 +132,12 @@ export default function RoutingRulesPage() {
           <button
             onClick={toggleAutopilot}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-              autopilot.is_active
+              autopilot.enabled
                 ? "bg-[#EEF4FF] text-[#0050FF] border border-[#0050FF]/20"
                 : "bg-[#F5F5F7] text-[#86868B]"
             }`}
           >
-            {autopilot.is_active ? "Auto-Pilot Active" : "Auto-Pilot Paused"}
+            {autopilot.enabled ? "Auto-Pilot Active" : "Auto-Pilot Paused"}
           </button>
         </div>
 
