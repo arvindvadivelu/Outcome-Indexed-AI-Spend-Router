@@ -15,15 +15,19 @@ import {
   ArrowUpRight,
   SlidersHorizontal
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const SpendAreaChart = dynamic(
+  () => import("@/components/SpendAreaChart").then((mod) => mod.SpendAreaChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 sm:h-72 w-full flex items-center justify-center bg-[#FBFBFD] rounded-xl border border-black/[0.04] text-xs text-[#86868B] animate-pulse">
+        Loading chart metrics...
+      </div>
+    ),
+  }
+);
 import Link from "next/link";
 
 export default function DashboardPage() {
@@ -197,32 +201,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="h-64 sm:h-72 w-full pt-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={spendTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0050FF" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#0050FF" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F2" />
-              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid rgba(0,0,0,0.06)",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                  fontSize: "12px"
-                }}
-              />
-              <Area type="monotone" dataKey="baseline" stroke="#D2D2D7" strokeWidth={1.5} strokeDasharray="4 4" fill="none" />
-              <Area type="monotone" dataKey="actual" stroke="#0050FF" strokeWidth={2.5} fillOpacity={1} fill="url(#actualGradient)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <SpendAreaChart data={spendTrendData} />
       </div>
 
       {/* 2-Column Grid: Model Share & Recent Verified Outcomes */}

@@ -1,5 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { GlobalAICopilot } from "@/components/GlobalAICopilot";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+  preload: true,
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-mono",
+  display: "swap",
+  preload: false,
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -25,23 +43,13 @@ export const metadata: Metadata = {
   authors: [{ name: "Outcome Router Team" }],
 };
 
-import { GlobalAICopilot } from "@/components/GlobalAICopilot";
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={`${plusJakarta.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased bg-[#FBFBFD] text-[#1D1D1F] selection:bg-[#0050FF] selection:text-white">
         {children}
         <GlobalAICopilot />
