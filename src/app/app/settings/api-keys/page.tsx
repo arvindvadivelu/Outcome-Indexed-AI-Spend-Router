@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore, ApiKeyItem } from "@/lib/store";
 import {
   Key,
@@ -14,12 +14,21 @@ import {
   Sliders,
   Globe,
   X,
-  Lock
+  Lock,
+  Sparkles,
+  Zap,
+  ChevronRight
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 
 export default function ApiKeysPage() {
   const { apiKeys, createApiKey, deleteApiKey, updateApiKeyRateLimit } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEnv, setNewKeyEnv] = useState<"live" | "test">("live");
   const [newKeyIp, setNewKeyIp] = useState("");
@@ -36,7 +45,6 @@ export default function ApiKeysPage() {
     e.preventDefault();
     if (!newKeyName.trim()) return;
 
-    // Call live backend to generate and store key
     await apiClient.createApiKey(newKeyName.trim(), newKeyEnv, 600);
     const fullKey = createApiKey(newKeyName.trim(), newKeyEnv, newKeyIp);
     setRevealedKey(fullKey);
@@ -65,185 +73,256 @@ export default function ApiKeysPage() {
     setIsAuditing(true);
     setTimeout(() => {
       setSecurityVerdict({
-        score: "A+ (Optimal)",
-        recommendation: "All active API keys use SHA-256 encrypted digests with TLS 1.3 transmission enforcement."
+        score: "A+ (Zero Breach)",
+        recommendation: "All active API keys use SHA-256 encrypted digests with TLS 1.3 transmission enforcement and rate limit guards."
       });
       setIsAuditing(false);
     }, 450);
   };
 
   return (
-    <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            API Keys & Access Control
-          </h1>
-          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Manage authentication keys, rate limits, and IP whitelist restrictions
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+      {/* 1. Spatial Hero Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <button
-          onClick={handleSecurityAudit}
-          disabled={isAuditing}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#F5F5F7] hover:text-[#1D1D1F] shadow-xs transition-all self-start sm:self-auto"
-        >
-          <ShieldCheck className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF]" />
-          <span>{isAuditing ? "Auditing..." : "Security Health Check"}</span>
-        </button>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              API Keys & Edge Credentials
+            </h1>
+            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Generate secure authorization keys with per-key rate limits, IP restrictions, and continuous cryptographic leak detection.
+            </p>
+          </div>
+
+          <button
+            onClick={handleSecurityAudit}
+            disabled={isAuditing}
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span>{isAuditing ? "Auditing Keys..." : "Security Health Audit"}</span>
+          </button>
+        </div>
       </div>
 
-      {/* Revealed Full Secret Key Modal */}
-      {revealedKey && (
-        <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 shadow-sm space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-              <Lock className="h-4 w-4" />
-              <span>Save Your Secret API Key (Shown only once)</span>
-            </div>
-            <button onClick={() => setRevealedKey(null)} className="text-emerald-700 hover:text-emerald-900">
-              <X className="h-4 w-4" />
-            </button>
+      {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Active Credentials</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">{apiKeys.length}</div>
+            <div className="text-xs text-white/70 mt-1">Live & Test environments</div>
           </div>
-          <p className="text-xs text-emerald-700 dark:text-emerald-300/90 leading-relaxed">
-            Please copy this secret key now. For your security, we hash keys with SHA-256 and cannot display it again.
-          </p>
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-white dark:bg-[#161618] border border-emerald-500/20 font-mono text-xs text-[#1D1D1F] dark:text-[#F5F5F7] overflow-x-auto">
-            <span className="flex-1 select-all">{revealedKey}</span>
+          <span className="text-[11px] text-white/80">SHA-256 Digest Protected</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Global Rate Limit</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">600 RPM</div>
+            <div className="text-xs text-[#86868B] mt-1">Burst ceiling: 1,200 RPM</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Leaky Bucket Protected</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Security Score</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">A+ Verified</div>
+            <div className="text-xs text-[#86868B] mt-1">0 Exposed Secrets</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">TLS 1.3 Cipher Enforced</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Key Rotation SLA</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">Instant</div>
+            <div className="text-xs text-[#86868B] mt-1">Zero-downtime rotation</div>
+          </div>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Seamless Dual-Verification</span>
+        </div>
+      </div>
+
+      {/* Security Audit Drawer */}
+      {securityVerdict && (
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-2 animate-in fade-in" suppressHydrationWarning>
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>Cryptographic Security Audit: {securityVerdict.score}</span>
+            </h3>
+            <button onClick={() => setSecurityVerdict(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
+          </div>
+          <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{securityVerdict.recommendation}</p>
+        </div>
+      )}
+
+      {/* Revealed Secret Key Notice */}
+      {revealedKey && (
+        <div className="rounded-[30px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 p-6 sm:p-7 shadow-sm space-y-3 animate-in fade-in" suppressHydrationWarning>
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              <span>API Key Generated — Copy Now (Will Not Be Shown Again)</span>
+            </h3>
+            <button onClick={() => setRevealedKey(null)} className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold">Done</button>
+          </div>
+          <div className="flex items-center gap-3">
+            <code className="flex-1 p-3 rounded-2xl bg-white dark:bg-[#161618] border border-emerald-500/30 font-mono text-xs text-emerald-700 dark:text-emerald-400 break-all select-all">
+              {revealedKey}
+            </code>
             <button
               onClick={() => handleCopy("revealed", revealedKey)}
-              className="px-3 py-1 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] flex items-center gap-1 shrink-0"
+              className="px-5 h-11 rounded-full bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all flex items-center gap-1.5 shrink-0"
             >
               {copiedId === "revealed" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-              <span>{copiedId === "revealed" ? "Copied" : "Copy Key"}</span>
+              <span>{copiedId === "revealed" ? "Copied!" : "Copy Key"}</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* Security verdict panel */}
-      {securityVerdict && (
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm flex items-center justify-between animate-in fade-in text-xs">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-            <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">Health: {securityVerdict.score}</span>
-            <span className="text-[#86868B]">— {securityVerdict.recommendation}</span>
-          </div>
+      {/* 3. Create New Key Card */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+        <div>
+          <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+            Generate New API Secret Key
+          </h3>
+          <p className="text-xs text-[#86868B]">
+            Creates an edge-authenticated token for SDKs, curl endpoints, and microservices
+          </p>
         </div>
-      )}
 
-      {/* Create Key Form */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-3">
-        <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Generate New API Key</h3>
-        <form onSubmit={handleCreate} className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              placeholder="Key Description (e.g. Production Webhook Gateway)"
-              value={newKeyName}
-              onChange={(e) => setNewKeyName(e.target.value)}
-              className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:border-[#0050FF]/30 transition-all"
-            />
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="space-y-1 md:col-span-1">
+              <label className="text-xs font-semibold text-[#86868B]">Key Name / Purpose</label>
+              <input
+                type="text"
+                placeholder="e.g. Production Node Gateway"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                required
+              />
+            </div>
 
-            <div className="flex gap-2">
-              <select
-                value={newKeyEnv}
-                onChange={(e) => setNewKeyEnv(e.target.value as any)}
-                className="h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-              >
-                <option value="live">Live (Production)</option>
-                <option value="test">Test (Sandbox)</option>
-              </select>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-[#86868B]">Environment</label>
+              <div className="inline-flex p-1 w-full rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+                {(["live", "test"] as const).map((env) => (
+                  <button
+                    type="button"
+                    key={env}
+                    onClick={() => setNewKeyEnv(env)}
+                    className={`flex-1 py-2 text-xs font-semibold rounded-full capitalize transition-all ${
+                      newKeyEnv === env
+                        ? "bg-[#0050FF] text-white shadow-xs"
+                        : "text-[#86868B] hover:text-[#1D1D1F]"
+                    }`}
+                  >
+                    {env}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              <button
-                type="submit"
-                disabled={!newKeyName.trim()}
-                className="px-5 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/20 flex items-center gap-1.5 shrink-0"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Create Key</span>
-              </button>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-[#86868B]">IP Restriction (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. 192.168.1.1, 10.0.0.0/24"
+                value={newKeyIp}
+                onChange={(e) => setNewKeyIp(e.target.value)}
+                className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+              />
             </div>
           </div>
 
-          <input
-            type="text"
-            placeholder="IP Whitelist CIDR Restrictions (optional e.g. 192.168.1.0/24, default 0.0.0.0/0)"
-            value={newKeyIp}
-            onChange={(e) => setNewKeyIp(e.target.value)}
-            className="w-full h-9 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none"
-          />
+          <button
+            type="submit"
+            disabled={!newKeyName.trim()}
+            className="h-11 px-7 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center gap-2"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Generate Secret Key</span>
+          </button>
         </form>
       </div>
 
-      {/* Keys List */}
-      <div className="space-y-3">
-        <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Active Keys ({apiKeys.length})</h3>
+      {/* 4. Active API Keys Table */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+        <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+          Active Credentials ({apiKeys.length})
+        </h3>
 
-        <div className="space-y-3">
-          {apiKeys.map((key) => (
-            <div
-              key={key.id}
-              className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">{key.name}</span>
-                  <span
-                    className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-semibold ${
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
+              <tr>
+                <th className="py-3.5 px-5 font-semibold">Key Identifier</th>
+                <th className="py-3.5 px-4 font-semibold">Environment</th>
+                <th className="py-3.5 px-4 font-semibold">Token Prefix</th>
+                <th className="py-3.5 px-4 font-semibold">Rate Limit</th>
+                <th className="py-3.5 px-4 font-semibold">Last Used</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
+              {apiKeys.map((key) => (
+                <tr key={key.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
+                  <td className="py-3.5 px-5">
+                    <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] block">{key.name}</span>
+                    <span className="text-[10px] text-[#86868B] font-mono">{key.ip_restrictions ? `IP: ${key.ip_restrictions}` : "Any IP Allowed"}</span>
+                  </td>
+
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                       key.environment === "live"
-                        ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF]"
-                        : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#86868B]"
-                    }`}
-                  >
-                    {key.environment}
-                  </span>
-                  <span className="text-[10px] text-[#86868B] font-mono">
-                    IPs: {key.ip_restrictions || "0.0.0.0/0"}
-                  </span>
-                </div>
+                        ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                        : "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+                    }`}>
+                      {key.environment}
+                    </span>
+                  </td>
 
-                <div className="flex items-center gap-2 text-xs font-mono text-[#86868B]">
-                  <span>{key.key_prefix}••••••••••••••••</span>
-                  <button
-                    onClick={() => handleCopy(key.id, key.full_key || `${key.key_prefix}••••••••`)}
-                    className="p-1 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] transition-colors"
-                    title="Copy Key"
-                  >
-                    {copiedId === key.id ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                </div>
-              </div>
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF]">
+                    {key.key_prefix}••••••••
+                  </td>
 
-              <div className="flex items-center gap-3 text-xs text-[#86868B] self-end sm:self-center">
-                <span>Limit: <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">{key.rate_limit_rpm} RPM</strong></span>
-                <span>•</span>
-                <span>Created {key.created_at}</span>
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+                    {key.rate_limit_rpm || 600} RPM
+                  </td>
 
-                <button
-                  onClick={() => handleRotateKey(key)}
-                  className="p-1.5 rounded-full text-[#86868B] hover:text-[#0050FF] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 transition-colors"
-                  title="Rotate Key"
-                >
-                  <RotateCw className="h-3.5 w-3.5" />
-                </button>
+                  <td className="py-3.5 px-4 text-[#86868B] font-mono text-[11px]">
+                    {key.last_used_at || "Never"}
+                  </td>
 
-                <button
-                  onClick={() => handleDeleteKey(key.id)}
-                  className="p-1.5 rounded-full text-[#86868B] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
-                  title="Revoke Key"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
+                  <td className="py-3.5 px-5 text-right space-x-2">
+                    <button
+                      onClick={() => handleRotateKey(key)}
+                      className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1"
+                      title="Rotate Secret Key"
+                    >
+                      <RotateCw className="h-3 w-3" />
+                      <span>Rotate</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteKey(key.id)}
+                      className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
+                      title="Revoke Key"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

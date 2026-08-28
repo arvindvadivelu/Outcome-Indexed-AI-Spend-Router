@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Layers,
   CheckCircle2,
@@ -14,10 +14,17 @@ import {
   Zap,
   Activity,
   Key,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles,
+  ChevronRight
 } from "lucide-react";
 
 export default function IntegrationsPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [integrations, setIntegrations] = useState([
     {
       id: "langchain",
@@ -98,173 +105,201 @@ export default function IntegrationsPage() {
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
 
-  const filtered = integrations.filter(
-    (item) => selectedCategory === "all" || item.category.toLowerCase() === selectedCategory.toLowerCase()
-  );
+  const handleTestDiagnostics = () => {
+    setIsDiagnosing(true);
+    setDiagnosticResult(null);
 
-  const handleOpenConnect = (item: any) => {
-    setConnectingItem(item);
-    setProviderKey("");
+    setTimeout(() => {
+      setDiagnosticResult({
+        healthyCount: 7,
+        avgPingMs: 12.4,
+        status: "All upstream API bridges operational with zero SLA timeout breaches."
+      });
+      setIsDiagnosing(false);
+    }, 500);
   };
 
-  const handleSaveConnection = (e: React.FormEvent) => {
+  const handleConnect = (e: React.FormEvent) => {
     e.preventDefault();
     if (!providerKey.trim()) return;
 
     setIsVerifying(true);
     setTimeout(() => {
       setIntegrations((prev) =>
-        prev.map((it) => (it.id === connectingItem.id ? { ...it, connected: true, latency: "12ms" } : it))
+        prev.map((item) =>
+          item.id === connectingItem.id
+            ? { ...item, connected: true, latency: "24ms" }
+            : item
+        )
       );
       setIsVerifying(false);
       setConnectingItem(null);
+      setProviderKey("");
     }, 600);
   };
 
-  const handleDisconnect = (id: string) => {
+  const handleToggleConnection = (id: string) => {
     setIntegrations((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, connected: false, latency: "—" } : it))
+      prev.map((item) =>
+        item.id === id ? { ...item, connected: !item.connected } : item
+      )
     );
   };
 
-  const handleRunDiagnostics = () => {
-    setIsDiagnosing(true);
-    setTimeout(() => {
-      setDiagnosticResult({
-        status: "All 7 Connected Connectors Healthy",
-        recommendation: "LiteLLM, LangChain, and Vercel AI SDK edge routes verified with sub-15ms proxy latency. Circuit breaker and SLA escrow active."
-      });
-      setIsDiagnosing(false);
-    }, 450);
-  };
-
-  const getCodeSnippet = (item: any) => {
-    if (item.id === "langchain") {
-      return `from langchain_openai import ChatOpenAI\n\n# Point LangChain to OutcomeRouter Gateway\nllm = ChatOpenAI(\n    base_url="https://gateway.outcomerouter.ai/v1",\n    api_key="oir_live_...",\n    model="outcome-indexed-auto",\n    extra_body={"strategy": "outcome_optimized", "target_metric": "demo_booked"}\n)`;
-    }
-    if (item.id === "litellm") {
-      return `model_list:\n  - model_name: outcome-router\n    litellm_params:\n      model: openai/outcome-indexed-auto\n      api_base: https://gateway.outcomerouter.ai/v1\n      api_key: os.environ/OUTCOME_ROUTER_KEY`;
-    }
-    return `import { OpenAI } from "openai";\n\nconst client = new OpenAI({\n  baseURL: "https://gateway.outcomerouter.ai/v1",\n  apiKey: process.env.OUTCOME_ROUTER_KEY\n});\n\nconst res = await client.chat.completions.create({\n  model: "outcome-indexed-auto",\n  messages: [{ role: "user", content: "..." }],\n  headers: { "X-Outcome-Strategy": "outcome_optimized" }\n});`;
-  };
-
-  const handleCopyCode = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(true);
-    setTimeout(() => setCopiedCode(false), 2000);
-  };
+  const filteredIntegrations = integrations.filter((item) => {
+    if (selectedCategory === "all") return true;
+    return item.category.toLowerCase() === selectedCategory.toLowerCase();
+  });
 
   return (
-    <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Integrations & SDK Hub
-          </h1>
-          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Connect OutcomeRouter into your LangChain, LiteLLM, Vercel AI, and agent workflows
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+      {/* 1. Spatial Hero Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2">
-          {/* Category Filter */}
-          <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
-            {[
-              { id: "all", label: "All" },
-              { id: "framework", label: "Frameworks" },
-              { id: "provider", label: "Providers" },
-              { id: "proxy", label: "Proxies" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedCategory(tab.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-                  selectedCategory === tab.id
-                    ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                    : "text-[#86868B] hover:text-[#1D1D1F]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Ecosystem & SDK Integrations
+            </h1>
+            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Connect LangChain, LlamaIndex, LiteLLM, and upstream model providers with zero configuration changes.
+            </p>
           </div>
 
           <button
-            onClick={handleRunDiagnostics}
+            onClick={handleTestDiagnostics}
             disabled={isDiagnosing}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#F5F5F7] hover:text-[#1D1D1F] shadow-xs transition-all"
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
           >
-            <Bot className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF]" />
-            <span>{isDiagnosing ? "Checking..." : "Health Check"}</span>
+            <Activity className="h-3.5 w-3.5" />
+            <span>{isDiagnosing ? "Pinging Bridges..." : "Ping Health Diagnostics"}</span>
           </button>
         </div>
       </div>
 
-      {/* Diagnostics panel */}
+      {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Connected Bridges</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">
+              {integrations.filter(i => i.connected).length} / {integrations.length}
+            </div>
+            <div className="text-xs text-white/70 mt-1">OpenAI Wire-Compatible</div>
+          </div>
+          <span className="text-[11px] text-white/80">Active Edge Proxy</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Gateway Overhead</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">12.4ms</div>
+            <div className="text-xs text-[#86868B] mt-1">Zero-copy streaming pipeline</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-15ms Wire Latency</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">SDK Compatibility</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">100% Drop-In</div>
+            <div className="text-xs text-[#86868B] mt-1">Python & TypeScript</div>
+          </div>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Change 1 base_url parameter</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Security Architecture</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">Encrypted</div>
+            <div className="text-xs text-[#86868B] mt-1">Zero Egress Private VPC</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">BYOK Key Vaulting</span>
+        </div>
+      </div>
+
+      {/* Diagnostics Result Drawer */}
       {diagnosticResult && (
-        <div className="p-4 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-1 animate-in fade-in text-xs">
-          <span className="text-[#0050FF] dark:text-[#3374FF] font-semibold block flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>{diagnosticResult.status}</span>
-          </span>
-          <p className="text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{diagnosticResult.recommendation}</p>
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-2 animate-in fade-in" suppressHydrationWarning>
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+              <Activity className="h-4 w-4 text-[#0050FF]" />
+              <span>Bridge Diagnostics: {diagnosticResult.healthyCount} Operational ({diagnosticResult.avgPingMs}ms Avg Ping)</span>
+            </h3>
+            <button onClick={() => setDiagnosticResult(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
+          </div>
+          <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{diagnosticResult.status}</p>
         </div>
       )}
 
-      {/* Integrations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {filtered.map((item) => (
+      {/* 3. Category Filter Capsule */}
+      <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md overflow-x-auto">
+        {[
+          { id: "all", label: "All Integrations" },
+          { id: "framework", label: "Frameworks" },
+          { id: "provider", label: "Providers" },
+          { id: "proxy", label: "Proxies" },
+          { id: "agents", label: "Agents" }
+        ].map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-4 py-2 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+              selectedCategory === cat.id
+                ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                : "text-[#86868B] hover:text-[#1D1D1F]"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 4. Integrations Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
+        {filteredIntegrations.map((item) => (
           <div
             key={item.id}
-            className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
+            className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group"
           >
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold text-[#0050FF] dark:text-[#3374FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-2.5 py-0.5 rounded-full">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/[0.04] dark:bg-white/[0.06] text-[#86868B] uppercase">
                   {item.category}
                 </span>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    item.connected
-                      ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
-                      : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#86868B]"
-                  }`}
-                >
-                  {item.connected ? "Active ✓" : "Disconnected"}
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  item.connected
+                    ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                }`}>
+                  {item.connected ? "CONNECTED" : "AVAILABLE"}
                 </span>
               </div>
 
               <div>
-                <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">{item.name}</h3>
-                <p className="text-xs text-[#86868B] mt-1 leading-relaxed">{item.desc}</p>
+                <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] group-hover:text-[#0050FF] transition-colors">
+                  {item.name}
+                </h3>
+                <p className="text-[11px] text-[#86868B] mt-1 leading-relaxed">{item.desc}</p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.06] flex items-center justify-between">
+            <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
+              <span className="text-[11px] font-mono text-[#86868B]">Latency: {item.latency}</span>
               <button
-                onClick={() => setSelectedIntegration(item)}
-                className="text-xs text-[#0050FF] dark:text-[#3374FF] font-medium hover:underline flex items-center gap-1"
+                onClick={() => {
+                  if (item.connected) {
+                    setSelectedIntegration(item);
+                  } else {
+                    setConnectingItem(item);
+                  }
+                }}
+                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1"
               >
-                <Code2 className="h-3.5 w-3.5" />
-                <span>Code Setup</span>
+                <Code2 className="h-3 w-3" />
+                <span>{item.connected ? "Snippet" : "Connect"}</span>
               </button>
-
-              {item.connected ? (
-                <button
-                  onClick={() => handleDisconnect(item.id)}
-                  className="text-xs text-red-600 dark:text-red-400 font-medium hover:underline"
-                >
-                  Disconnect
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleOpenConnect(item)}
-                  className="px-3 py-1 text-xs font-semibold rounded-full bg-[#0050FF] text-white hover:bg-[#0043D6] transition-all shadow-xs"
-                >
-                  Connect
-                </button>
-              )}
             </div>
           </div>
         ))}
@@ -272,30 +307,35 @@ export default function IntegrationsPage() {
 
       {/* Code Snippet Modal */}
       {selectedIntegration && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-xl rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-black/[0.05] dark:border-white/[0.06]">
-              <div>
-                <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                  {selectedIntegration.name} Integration
-                </h3>
-                <p className="text-xs text-[#86868B]">1-line drop-in configuration</p>
-              </div>
-              <button onClick={() => setSelectedIntegration(null)} className="text-[#86868B] hover:text-[#1D1D1F]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                {selectedIntegration.name} Integration
+              </h3>
+              <button
+                onClick={() => setSelectedIntegration(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="relative">
-              <pre className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] overflow-x-auto text-xs text-[#1D1D1F] dark:text-[#F5F5F7] font-mono leading-relaxed">
-                {getCodeSnippet(selectedIntegration)}
-              </pre>
+            <div className="p-4 rounded-2xl bg-[#0F172A] text-white font-mono text-xs space-y-2 overflow-x-auto">
+              <div className="text-slate-400"># 1-Line Drop-in router base URL wrapper</div>
+              <div className="text-emerald-400">from openai import OpenAI</div>
+              <div>client = OpenAI(</div>
+              <div className="pl-4 text-cyan-300">base_url=&quot;https://gateway.outcomerouter.ai/v1&quot;,</div>
+              <div className="pl-4 text-cyan-300">api_key=&quot;oir_live_8f9a2b...&quot;</div>
+              <div>)</div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
               <button
-                onClick={() => handleCopyCode(getCodeSnippet(selectedIntegration))}
-                className="absolute top-3 right-3 px-3 py-1 rounded-full bg-white dark:bg-[#2C2C30] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1 shadow-xs"
+                onClick={() => setSelectedIntegration(null)}
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold"
               >
-                {copiedCode ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                <span>{copiedCode ? "Copied" : "Copy"}</span>
+                Done
               </button>
             </div>
           </div>
@@ -304,44 +344,47 @@ export default function IntegrationsPage() {
 
       {/* Connect API Key Modal */}
       {connectingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-black/[0.05] dark:border-white/[0.06]">
-              <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Connect {connectingItem.name}
               </h3>
-              <button onClick={() => setConnectingItem(null)} className="text-[#86868B] hover:text-[#1D1D1F]">
+              <button
+                onClick={() => setConnectingItem(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveConnection} className="space-y-3 text-xs">
-              <div>
-                <label className="text-[#86868B] block mb-1 font-medium">Provider API Key</label>
+            <form onSubmit={handleConnect} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-[#86868B]">API Secret Key</label>
                 <input
                   type="password"
-                  required
                   placeholder="sk-..."
                   value={providerKey}
                   onChange={(e) => setProviderKey(e.target.value)}
-                  className="w-full h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none"
+                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono focus:outline-none"
+                  required
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setConnectingItem(null)}
-                  className="px-4 py-2 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] font-medium"
+                  className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isVerifying || !providerKey.trim()}
-                  className="px-5 py-2 rounded-full bg-[#0050FF] text-white font-semibold shadow-sm shadow-[#0050FF]/25 flex items-center gap-1.5"
+                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40"
                 >
-                  {isVerifying ? "Verifying..." : "Connect Provider"}
+                  {isVerifying ? "Verifying..." : "Verify & Save"}
                 </button>
               </div>
             </form>

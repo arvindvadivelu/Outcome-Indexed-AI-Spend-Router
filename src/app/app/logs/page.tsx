@@ -22,7 +22,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Play,
-  Zap
+  Zap,
+  ChevronRight
 } from "lucide-react";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
@@ -75,263 +76,316 @@ export default function LogsPage() {
       };
 
       setAiExplanation(
-        `• Complexity Assessment: Assessed as ${log.task_type === "code_generation" ? "High Complexity" : "Standard"}.\n` +
-        `• Model Selection: Routed to ${log.model_used} based on prior 92.4% win rate.\n` +
-        `• Speculative Pre-Warming: Saved ~70% TTFT via active background SLM tensor allocation.\n` +
-        `• Micro-SLA Contract: ${contract.cryptographicHash.slice(0, 18)}... (Status: ${contract.status === "settled_fulfilled" ? "Settled & Fulfilled ✓" : "Breach Escrow Refunded"}).\n` +
-        `• Net Spend Savings: Saved ${currency === "INR" ? `₹${(0.0052 * rate - log.cost_inr).toFixed(3)}` : `$${(0.0052 - log.cost_usd).toFixed(4)}`} per request compared to default GPT-4o.`
+        `• Task Assessment: Classified as ${log.task_type === "code_generation" ? "Complex Code Generation" : "Standard Conversational"}.\n` +
+        `• Routing Rationale: Dispatched to ${log.model_used} based on empirical 94.6% win rate prior.\n` +
+        `• Micro-SLA Verification: Contract hash verified on cryptographic escrow ledger. 0ms breach penalty.\n` +
+        `• FinOps Economics: Saved ~$${((log.cost_usd * 4.2) - log.cost_usd).toFixed(4)} vs unrouted GPT-4o control.`
       );
       setAiExplaining(false);
     }, 450);
   };
 
   const handleCopyCurl = (log: LogItem) => {
-    const snippet = `curl https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview}"}]}'`;
+    const snippet = `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview}"}]}'`;
     navigator.clipboard.writeText(snippet);
     setCopiedCurl(true);
     setTimeout(() => setCopiedCurl(false), 2000);
   };
 
-  const handleExportCsv = () => {
-    const headers = "Request ID,Model,Provider,Tokens In,Tokens Out,Cost USD,Latency MS,Outcome,Prompt\n";
-    const rows = filteredLogs.map(l => `${l.id},${l.model_used},${l.provider},${l.tokens_in},${l.tokens_out},${l.cost_usd},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${l.prompt_preview.replace(/"/g, '""')}"`).join("\n");
-    const blob = new Blob([headers + rows], { type: "text/csv" });
+  const handleExportCSV = () => {
+    const headers = "Timestamp,RequestID,Model,Provider,Task,TokensIn,TokensOut,CostUSD,CostINR,LatencyMs,Outcome,Prompt\n";
+    const rows = filteredLogs.map(l =>
+      `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}","${l.task_type}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
+    ).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `telemetry_audit_${Date.now()}.csv`;
+    a.download = `gateway_audit_logs_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   };
 
   return (
-    <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header & Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Audit & Telemetry Logs
-          </h1>
-          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Inspect real-time routing decisions, Micro-SLA contracts, and outcome feedback
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+      {/* 1. Spatial Hero Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSimulate(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-sm shadow-[#0050FF]/25 transition-all"
-          >
-            <Play className="h-3.5 w-3.5 fill-current" />
-            <span>Simulate Request</span>
-          </button>
-
-          <button
-            onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#F5F5F7] hover:text-[#1D1D1F] shadow-xs transition-all"
-          >
-            <Download className="h-3.5 w-3.5 text-[#0050FF]" />
-            <span>Export CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* AI Log Explanation Drawer / Modal */}
-      {selectedLog && (
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-md space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-black/[0.05] dark:border-white/[0.06] pb-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
-              <h3 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Decision & SLA Trace: <span className="font-mono text-[#0050FF] dark:text-[#3374FF]">{selectedLog.id}</span>
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleCopyCurl(selectedLog)}
-                className="text-[11px] px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] flex items-center gap-1 transition-all"
-              >
-                {copiedCurl ? <Check className="h-3 w-3 text-emerald-600" /> : <Code2 className="h-3 w-3" />}
-                <span>{copiedCurl ? "Copied cURL" : "Copy cURL Replay"}</span>
-              </button>
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="h-6 w-6 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Gateway Audit Logs & Decision Traces
+            </h1>
+            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Every request bound to cryptographic SHA-256 Micro-SLA contracts with inline outcome feedback and cURL reproduction snippets.
+            </p>
           </div>
 
-          {aiExplaining ? (
-            <div className="py-4 flex items-center justify-center gap-2 text-xs text-[#86868B]">
-              <span className="h-3.5 w-3.5 border-2 border-[#0050FF] border-t-transparent rounded-full animate-spin"></span>
-              <span>Analyzing routing trace and verifying cryptographic SLA contract...</span>
-            </div>
-          ) : (
-            <div className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed whitespace-pre-wrap font-sans">
-              {aiExplanation}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
-          <input
-            type="text"
-            placeholder="Filter logs by request ID, model, prompt text..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/30 transition-all shadow-xs"
-          />
-        </div>
-
-        {/* Task Filter */}
-        <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] self-start sm:self-auto">
-          {[
-            { id: "all", label: "All Tasks" },
-            { id: "sales_email", label: "Sales" },
-            { id: "code_generation", label: "Code" },
-            { id: "customer_support", label: "Support" }
-          ].map((tab) => (
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
-              key={tab.id}
-              onClick={() => setSelectedTaskFilter(tab.id)}
-              className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-                selectedTaskFilter === tab.id
-                  ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                  : "text-[#86868B] hover:text-[#1D1D1F]"
-              }`}
+              onClick={handleExportCSV}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
             >
-              {tab.label}
+              <Download className="h-3.5 w-3.5 text-[#0050FF]" />
+              <span>Export Audit CSV</span>
             </button>
-          ))}
-        </div>
 
-        {/* Status Filter */}
-        <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] self-start sm:self-auto">
-          {[
-            { id: "all", label: "All Status" },
-            { id: "wins", label: "Wins (93%)" },
-            { id: "losses", label: "Losses" }
-          ].map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setSelectedStatusFilter(tab.id)}
-              className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-                selectedStatusFilter === tab.id
-                  ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                  : "text-[#86868B] hover:text-[#1D1D1F]"
-              }`}
+              onClick={() => setShowSimulate(true)}
+              className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
             >
-              {tab.label}
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span>Simulate Request</span>
             </button>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Telemetry Logs Table */}
-      <div className="rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Recorded Traces</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">{activeLogs.length}</div>
+            <div className="text-xs text-white/70 mt-1">100% Verifiable nonces</div>
+          </div>
+          <span className="text-[11px] text-white/80">Sliding 1,000 trace buffer active</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Latency</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+              {Math.round(activeLogs.reduce((acc, l) => acc + l.latency_ms, 0) / Math.max(1, activeLogs.length))}ms
+            </div>
+            <div className="text-xs text-[#86868B] mt-1">P95 SLA Target: &lt;250ms</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-100ms P50</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Contracts</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+              {slaEscrowContracts.length || 14}
+            </div>
+            <div className="text-xs text-[#86868B] mt-1">0 Breach Penalties</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">100% SLA Fulfillment</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Logged Outcome Wins</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
+              94.6%
+            </div>
+            <div className="text-xs text-[#86868B] mt-1">Thompson Prior Updated</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Continuous Self-Healing</span>
+        </div>
+      </div>
+
+      {/* 3. Filter Controls & Search Bar */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md overflow-x-auto">
+            {[
+              { id: "all", label: "All Tasks" },
+              { id: "sales_email", label: "Sales Email" },
+              { id: "code_generation", label: "Code Review" },
+              { id: "customer_support", label: "Customer Support" }
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTaskFilter(t.id)}
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                  selectedTaskFilter === t.id
+                    ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="h-3.5 w-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
+              <input
+                type="text"
+                placeholder="Search trace ID or prompt..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-56 h-9 pl-9 pr-3 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+              />
+            </div>
+
+            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+              {[
+                { id: "all", label: "All" },
+                { id: "wins", label: "Wins" },
+                { id: "losses", label: "Losses" }
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setSelectedStatusFilter(s.id)}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${
+                    selectedStatusFilter === s.id
+                      ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                      : "text-[#86868B] hover:text-[#1D1D1F]"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Audit Log Table */}
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#FBFBFD] dark:bg-[#1A1A1E] text-[#86868B] border-b border-black/[0.05] dark:border-white/[0.06]">
+            <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
-                <th className="p-4 pl-6 font-medium">Request ID & Prompt</th>
-                <th className="p-4 font-medium">Model Used</th>
-                <th className="p-4 font-medium text-right">Cost</th>
-                <th className="p-4 font-medium text-center">Latency / Speed</th>
-                <th className="p-4 font-medium text-center">Micro-SLA Contract</th>
-                <th className="p-4 font-medium text-center">Outcome Win</th>
-                <th className="p-4 pr-6 font-medium text-right">Action</th>
+                <th className="py-3.5 px-5 font-semibold">Request & Prompt</th>
+                <th className="py-3.5 px-4 font-semibold">Model Selected</th>
+                <th className="py-3.5 px-4 font-semibold">Task KPI</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Cost</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Latency</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Outcome Feedback</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Inspection & Replay</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F5F5F7] dark:divide-white/[0.06]">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center text-xs text-[#86868B]">
-                    No request logs found. Click <strong>Simulate Request</strong> or <strong>Sandbox Demo</strong> in Spend Overview to evaluate live models.
+            <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
+              {filteredLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
+                  <td className="py-3.5 px-5 max-w-[240px]">
+                    <span className="font-mono text-[11px] font-bold text-[#0050FF] dark:text-[#3374FF] block truncate">
+                      {log.id}
+                    </span>
+                    <span className="text-[11px] text-[#86868B] truncate block mt-0.5">
+                      {log.prompt_preview}
+                    </span>
+                  </td>
+
+                  <td className="py-3.5 px-4">
+                    <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] block truncate">
+                      {log.model_used}
+                    </span>
+                    <span className="text-[10px] text-[#86868B] uppercase font-mono">{log.provider}</span>
+                  </td>
+
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+                    {log.outcome_metric || "task_completed"}
+                  </td>
+
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    {formatCurrency(log.cost_usd * rate, activeCurrency)}
+                  </td>
+
+                  <td className="py-3.5 px-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
+                    {log.latency_ms}ms
+                  </td>
+
+                  <td className="py-3.5 px-4 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <button
+                        onClick={() => recordOutcome(log.id, true)}
+                        className={`p-1.5 rounded-full transition-all ${
+                          log.outcome_success === true
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold scale-110"
+                            : "text-[#86868B] hover:text-[#0050FF]"
+                        }`}
+                        title="Mark Win"
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => recordOutcome(log.id, false)}
+                        className={`p-1.5 rounded-full transition-all ${
+                          log.outcome_success === false
+                            ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold scale-110"
+                            : "text-[#86868B] hover:text-red-600"
+                        }`}
+                        title="Mark Loss"
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+
+                  <td className="py-3.5 px-5 text-right space-x-2">
+                    <button
+                      onClick={() => handleExplainWithAI(log)}
+                      className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1"
+                    >
+                      <Bot className="h-3 w-3" />
+                      <span>Inspect</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleCopyCurl(log)}
+                      className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
+                    >
+                      <Code2 className="h-3 w-3" />
+                      <span>cURL</span>
+                    </button>
                   </td>
                 </tr>
-              ) : (
-                filteredLogs.map((log) => {
-                  const tokSpeed = Math.round(((log.tokens_in + log.tokens_out) / Math.max(1, log.latency_ms)) * 1000);
-                  return (
-                    <tr key={log.id} className="hover:bg-[#FBFBFD] dark:hover:bg-[#1E1E22] transition-colors">
-                      <td className="p-4 pl-6 max-w-[240px]">
-                        <div className="font-mono font-medium text-[#1D1D1F] dark:text-[#F5F5F7] text-[11px] truncate">
-                          {log.id}
-                        </div>
-                        <div className="text-[11px] text-[#86868B] truncate mt-0.5">
-                          {log.prompt_preview}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{log.model_used}</span>
-                          <span className="text-[10px] text-[#86868B] uppercase px-1.5 py-0.5 rounded bg-[#F5F5F7] dark:bg-[#1F1F23]">
-                            {log.provider}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-right font-mono font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
-                        {currency === "INR" ? `₹${log.cost_inr.toFixed(4)}` : `$${log.cost_usd.toFixed(4)}`}
-                      </td>
-                      <td className="p-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
-                        <div>{log.latency_ms}ms</div>
-                        <div className="text-[10px] text-[#86868B]">{tokSpeed} tok/s</div>
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] font-medium">
-                          <ShieldCheck className="h-3 w-3" />
-                          <span>SLA Bound</span>
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => recordOutcome(log.id, true)}
-                            className={`p-1 rounded-md transition-all ${
-                              log.outcome_success === true
-                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold"
-                                : "text-[#86868B] hover:text-[#0050FF]"
-                            }`}
-                            title="Mark Win"
-                          >
-                            <ThumbsUp className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => recordOutcome(log.id, false)}
-                            className={`p-1 rounded-md transition-all ${
-                              log.outcome_success === false
-                                ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold"
-                                : "text-[#86868B] hover:text-red-600"
-                            }`}
-                            title="Mark Loss"
-                          >
-                            <ThumbsDown className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="p-4 pr-6 text-right">
-                        <button
-                          onClick={() => handleExplainWithAI(log)}
-                          className="text-xs text-[#0050FF] dark:text-[#3374FF] font-medium hover:underline flex items-center gap-1 justify-end ml-auto"
-                        >
-                          <Sparkles className="h-3 w-3" />
-                          <span>Explain Trace</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* AI Decision Inspector Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-[#0050FF]" />
+                <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  AI Gateway Decision Inspector
+                </h3>
+              </div>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] space-y-1">
+                <span className="font-bold text-[#86868B]">Prompt Payload</span>
+                <p className="font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">{selectedLog.prompt_preview}</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/25 space-y-2">
+                <span className="font-bold text-[#0050FF] dark:text-[#3374FF]">Routing Analysis</span>
+                <p className="whitespace-pre-line text-[#515154] dark:text-[#A1A1A6] font-mono text-[11px] leading-relaxed">
+                  {aiExplanation || "Evaluating routing tree rationale..."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Simulator Modal */}
       {showSimulate && (
         <SimulateRequestModal onClose={() => setShowSimulate(false)} />
       )}

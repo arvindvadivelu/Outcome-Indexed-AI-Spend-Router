@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Webhook,
   Bot,
@@ -15,13 +15,21 @@ import {
   Key,
   History,
   RotateCcw,
-  Sliders
+  Sliders,
+  Sparkles,
+  ChevronRight
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useAppStore, WebhookLogItem } from "@/lib/store";
 
 export default function WebhooksPage() {
   const { webhookConfig, setWebhookConfig, webhookLogs, addWebhookLog } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simResult, setSimResult] = useState<any>(null);
@@ -68,7 +76,7 @@ export default function WebhooksPage() {
       event_payload: {
         event: selectedEvent,
         request_id: `oir_wh_${Math.random().toString(36).substr(2, 6)}`,
-        model_used: "DeepSeek Coder",
+        model_used: "DeepSeek-V3",
         target_metric: "code_merged",
         saved_usd: 0.00555,
         timestamp: Math.floor(Date.now() / 1000)
@@ -92,159 +100,189 @@ export default function WebhooksPage() {
   };
 
   return (
-    <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-              Webhooks & Event Telemetry
-            </h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] font-semibold">
-              99.98% Delivery SLA
-            </span>
-          </div>
-          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Stream asynchronous downstream conversion rewards and telemetry events to your backend
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+      {/* 1. Spatial Hero Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedEvent}
-            onChange={(e) => setSelectedEvent(e.target.value)}
-            className="h-10 px-3 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-          >
-            <option value="outcome.indexed.success">outcome.indexed.success</option>
-            <option value="sla.breach.escrow_refunded">sla.breach.escrow_refunded</option>
-            <option value="autopilot.weight_adjusted">autopilot.weight_adjusted</option>
-          </select>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Webhook Subscriptions & Real-Time Events
+            </h1>
+            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Stream live routing telemetry, micro-SLA refund confirmations, and budget ceiling breach alerts signed with HMAC-SHA256.
+            </p>
+          </div>
 
           <button
             onClick={handleSimulateWebhook}
             disabled={isSimulating}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/20"
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
           >
             <Send className="h-3.5 w-3.5" />
-            <span>{isSimulating ? "Dispatching..." : "Dispatch Webhook"}</span>
+            <span>{isSimulating ? "Dispatching..." : "Dispatch Test Webhook"}</span>
           </button>
         </div>
       </div>
 
-      {/* Live Dispatch Result Panel */}
-      {simResult && (
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2.5 animate-in fade-in text-xs">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4" />
-              HTTP {simResult.http_status} OK ({simResult.latency_ms}ms) — HMAC-SHA256 Signature Verified ✓
-            </span>
-            <span className="text-[10px] font-mono text-[#86868B]">Live Dispatcher Bridge</span>
+      {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Delivery Rate</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">99.98%</div>
+            <div className="text-xs text-white/70 mt-1">Automatic 3x exponential retry</div>
           </div>
-          <pre className="p-3.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] overflow-x-auto text-[11px] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
+          <span className="text-[11px] text-white/80">0 Dropped Payloads</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Dispatch Latency</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">38ms</div>
+            <div className="text-xs text-[#86868B] mt-1">Direct HTTPS Edge Delivery</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Real-time HTTP Push</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Signature Verification</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">HMAC-SHA256</div>
+            <div className="text-xs text-[#86868B] mt-1">X-Outcome-Signature header</div>
+          </div>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Anti-Tamper Enforced</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Total Dispatches</span>
+          <div className="my-4">
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
+              {webhookLogs.length}
+            </div>
+            <div className="text-xs text-[#86868B] mt-1">Recorded audit ledger</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">100% Verified Nonces</span>
+        </div>
+      </div>
+
+      {/* Simulation Result Drawer */}
+      {simResult && (
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-3 animate-in fade-in" suppressHydrationWarning>
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#0050FF]" />
+              <span>Test Webhook Dispatched (HTTP {simResult.http_status} · {simResult.latency_ms}ms)</span>
+            </h3>
+            <button onClick={() => setSimResult(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
+          </div>
+          <pre className="p-4 rounded-2xl bg-[#0F172A] text-emerald-400 font-mono text-xs overflow-x-auto">
             {JSON.stringify(simResult.event_payload, null, 2)}
           </pre>
         </div>
       )}
 
-      {/* Webhook Endpoint Settings */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
+      {/* 3. Endpoint Configuration Card */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Endpoint Configuration</h3>
-          {savedStatus ? (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-              <Check className="h-3.5 w-3.5" />
-              <span>Saved Permanently</span>
+          <div>
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Webhook Endpoint & Signing Secret
+            </h3>
+            <p className="text-xs text-[#86868B]">
+              Configure your listener URL and verify incoming payloads with your private secret
+            </p>
+          </div>
+          {savedStatus && (
+            <span className="text-xs text-emerald-600 font-semibold animate-in fade-in">
+              ✓ Settings saved!
             </span>
-          ) : (
-            <span className="text-xs text-[#86868B]">Automatic 3-retry exponential backoff</span>
           )}
         </div>
 
-        <div className="space-y-3 text-xs">
-          <div>
-            <label className="text-[#86868B] block mb-1 font-medium">Target Webhook URL (Saved across reloads & sessions)</label>
+        <div className="space-y-4 text-xs">
+          <div className="space-y-1">
+            <label className="font-semibold text-[#86868B]">Destination URL</label>
             <input
-              type="text"
+              type="url"
               value={webhookConfig.endpointUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
-              placeholder="https://api.yourdomain.com/webhooks/outcome-events"
-              className="w-full h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
+              placeholder="https://api.yourcompany.com/webhooks/spend-router"
+              className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono focus:outline-none"
             />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[#86868B] font-medium">Signing Secret (HMAC SHA-256)</label>
-              <button
-                type="button"
-                onClick={handleGenerateSecret}
-                className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-medium hover:underline flex items-center gap-1"
-              >
-                <Key className="h-3 w-3" />
-                <span>Regenerate Secret</span>
-              </button>
-            </div>
-            <div className="flex gap-2">
+          <div className="space-y-1">
+            <label className="font-semibold text-[#86868B]">Signing Secret (HMAC-SHA256)</label>
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={webhookConfig.secretKey}
                 onChange={(e) => handleSecretChange(e.target.value)}
-                className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
+                className="flex-1 h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono focus:outline-none select-all"
               />
               <button
                 type="button"
                 onClick={handleCopySecret}
-                className="px-4 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1.5 transition-all"
+                className="px-4 h-11 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs"
               >
-                {copiedSecret ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedSecret ? "Copied" : "Copy Secret"}</span>
+                {copiedSecret ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
+                <span>{copiedSecret ? "Copied" : "Copy"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateSecret}
+                className="px-4 h-11 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <RotateCcw className="h-3 w-3" />
+                <span>Regenerate</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Webhook Delivery History Logs */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="h-4 w-4 text-[#0050FF]" />
-            <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Recent Webhook Delivery Events</h3>
-          </div>
-          <span className="text-xs text-[#86868B]">{webhookLogs.length} Events Logged</span>
-        </div>
+      {/* 4. Webhook Delivery Log Table */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+        <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+          Recent Webhook Delivery Events ({webhookLogs.length})
+        </h3>
 
-        <div className="overflow-x-auto">
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#FBFBFD] dark:bg-[#1A1A1E] text-[#86868B] border-b border-black/[0.05] dark:border-white/[0.06]">
+            <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
-                <th className="p-3 pl-4 font-medium">Event Type</th>
-                <th className="p-3 font-medium">Target URL</th>
-                <th className="p-3 font-medium text-center">Status</th>
-                <th className="p-3 font-medium text-center">Latency</th>
-                <th className="p-3 pr-4 font-medium text-right">Time</th>
+                <th className="py-3.5 px-5 font-semibold">Delivery ID</th>
+                <th className="py-3.5 px-4 font-semibold">Event Topic</th>
+                <th className="py-3.5 px-4 font-semibold">Endpoint URL</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Status</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Latency</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Timestamp</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#F5F5F7] dark:divide-white/[0.06]">
-              {webhookLogs.map((item) => (
-                <tr key={item.id} className="hover:bg-[#FBFBFD] dark:hover:bg-[#1E1E22]">
-                  <td className="p-3 pl-4 font-mono font-medium text-[#0050FF] dark:text-[#3374FF]">
-                    {item.event}
+            <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
+              {webhookLogs.map((log) => (
+                <tr key={log.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
+                  <td className="py-3.5 px-5 font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF]">
+                    {log.id}
                   </td>
-                  <td className="p-3 text-[11px] text-[#515154] dark:text-[#A1A1A6] font-mono truncate max-w-[200px]">
-                    {item.targetUrl}
+                  <td className="py-3.5 px-4 font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    {log.event}
                   </td>
-                  <td className="p-3 text-center">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]">
-                      HTTP {item.httpStatus} OK
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#86868B] truncate max-w-[200px]">
+                    {log.targetUrl}
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]">
+                      HTTP {log.httpStatus}
                     </span>
                   </td>
-                  <td className="p-3 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
-                    {item.latencyMs}ms
+                  <td className="py-3.5 px-4 text-center font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+                    {log.latencyMs}ms
                   </td>
-                  <td className="p-3 pr-4 text-right text-[11px] text-[#86868B]">
-                    {item.timestamp}
+                  <td className="py-3.5 px-5 text-right text-[#86868B] font-mono text-[11px]">
+                    {log.timestamp}
                   </td>
                 </tr>
               ))}

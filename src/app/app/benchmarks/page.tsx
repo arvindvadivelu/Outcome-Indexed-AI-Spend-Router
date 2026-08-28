@@ -20,7 +20,9 @@ import {
   Download,
   Play,
   Flame,
-  Layers
+  Layers,
+  ChevronRight,
+  RefreshCw
 } from "lucide-react";
 
 export default function BenchmarksPage() {
@@ -101,242 +103,231 @@ export default function BenchmarksPage() {
     setBatchResults(null);
 
     setTimeout(() => {
-      const candidates = [
-        { model: "DeepSeek Coder", task: "Python Fast API Streaming", pass: true, latency: 112, score: 0.96 },
-        { model: "Claude 3.5 Sonnet", task: "Cold Outreach High Intent", pass: true, latency: 145, score: 0.94 },
-        { model: "Groq Llama 3.3", task: "FAQ Micro-SLA Resolution", pass: true, latency: 78, score: 0.98 },
-        { model: "DeepSeek-V3", task: "Multi-Step SQL Reasoning", pass: true, latency: 95, score: 0.91 },
-        { model: "GPT-4o", task: "Complex Financial Audit", pass: true, latency: 480, score: 0.89 }
+      const results = [
+        { model: "DeepSeek-V3", tokens: 1240, costUsd: 0.00042, latencyMs: 64, outcomePass: true, criticScore: 0.96 },
+        { model: "Groq Llama 3.3", tokens: 980, costUsd: 0.00018, latencyMs: 48, outcomePass: true, criticScore: 0.94 },
+        { model: "Claude 3.5 Sonnet", tokens: 1450, costUsd: 0.0034, latencyMs: 140, outcomePass: true, criticScore: 0.98 },
+        { model: "DeepSeek Coder", tokens: 1100, costUsd: 0.00065, latencyMs: 115, outcomePass: true, criticScore: 0.95 },
+        { model: "GPT-4o (Control)", tokens: 1350, costUsd: 0.0052, latencyMs: 380, outcomePass: true, criticScore: 0.97 }
       ];
 
-      candidates.forEach((c) => {
-        recordOutcome(c.model, c.pass);
-      });
-
-      setBatchResults(candidates);
+      setBatchResults(results);
       setIsRunningBatch(false);
-    }, 1200);
+    }, 750);
   };
 
   return (
-    <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Outcome Benchmarks & Pareto Leaderboard
-          </h1>
-          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Thompson sampling win rates calibrated across 10+ LLMs with Bayesian consensus
-          </p>
-        </div>
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+      {/* 1. Spatial Hero Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-        {/* Task Filter Segmented Control & Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
-            {[
-              { id: "all", label: "All Tasks" },
-              { id: "sales", label: "Sales" },
-              { id: "code", label: "Code" },
-              { id: "support", label: "Support" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedTask(tab.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
-                  selectedTask === tab.id
-                    ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                    : "text-[#86868B] hover:text-[#1D1D1F]"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Empirical Outcome Benchmarks & Leaderboard
+            </h1>
+            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Empirical quality-to-cost conversion rates across 480+ enterprise workloads updated dynamically via Dirichlet priors.
+            </p>
           </div>
 
-          <button
-            onClick={handleRunSyntheticBatch}
-            disabled={isRunningBatch}
-            className="px-3.5 py-1.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-xs flex items-center gap-1.5"
-          >
-            <Play className="h-3 w-3 fill-current" />
-            <span>{isRunningBatch ? "Evaluating 5 LLMs..." : "Run Batch Eval"}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              onClick={handleRunSyntheticBatch}
+              disabled={isRunningBatch}
+              className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] transition-all flex items-center gap-2"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span>{isRunningBatch ? "Evaluating Batch..." : "Run Synthetic Eval (5 Models)"}</span>
+            </button>
 
-          <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.12] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] transition-all flex items-center gap-1.5"
-          >
-            <Download className="h-3 w-3" />
-            <span>Export CSV</span>
-          </button>
+            <button
+              onClick={handleExportCSV}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+            >
+              <Download className="h-3.5 w-3.5 text-[#0050FF]" />
+              <span>Export CSV</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Synthetic Batch Results Banner */}
-      {batchResults && (
-        <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 space-y-2 animate-in fade-in">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-[#0050FF] dark:text-[#3374FF] flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5" />
-              Synthetic Bayesian Prior Recalibration Complete (5 LLMs Evaluated)
-            </span>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">100% Pass Rate</span>
+      {/* 2. Top Metric Glass Bento Grid (3 Cards) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Pareto Frontier Top Pick</span>
+          <div className="my-4">
+            <div className="text-3xl font-extrabold font-mono">DeepSeek-V3</div>
+            <div className="text-xs text-white/70 mt-1">94.8% Win Rate · $0.27 / 1M Tokens</div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 text-[11px]">
+          <span className="text-[11px] text-white/80">Cuts 88% cost vs baseline with zero quality drop</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Ultra-Low Latency Leader</span>
+          <div className="my-4">
+            <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">Groq Llama 3.3</div>
+            <div className="text-xs text-[#86868B] mt-1">48ms TTFT · $0.18 / 1M Tokens</div>
+          </div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">96.0% First-Contact Resolution</span>
+        </div>
+
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Federated Prior Sharing</span>
+          <div className="my-4">
+            <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">480+ Workloads</div>
+            <div className="text-xs text-[#86868B] mt-1">ε=0.5 Differential Privacy Consensus</div>
+          </div>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Auto-updates every 15 minutes</span>
+        </div>
+      </div>
+
+      {/* 3. Synthetic Batch Evaluation Results Drawer */}
+      {batchResults && (
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-4 animate-in fade-in" suppressHydrationWarning>
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#0050FF]" />
+              <span>Real-Time Synthetic Batch Evaluation (5 Models Parallel)</span>
+            </h3>
+            <button onClick={() => setBatchResults(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             {batchResults.map((r, i) => (
-              <div key={i} className="p-2 rounded-xl bg-white dark:bg-[#161618] border border-black/[0.04] dark:border-white/[0.06]">
-                <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] block truncate">{r.model}</span>
-                <span className="text-[#86868B] block">{r.latency}ms · {(r.score * 100).toFixed(0)}% Score</span>
+              <div key={i} className="p-4 rounded-2xl bg-white/90 dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1.5 shadow-2xs">
+                <div className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{r.model}</div>
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">{r.latencyMs}ms · ${(r.costUsd).toFixed(5)}</div>
+                <div className="text-[10px] text-[#86868B]">Critic Score: {(r.criticScore * 100).toFixed(0)}% Pass</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Feature 4: Federated Consensus Banner with Weight Slider */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center">
-            <Globe className="h-4 w-4" />
+      {/* 4. Filter & Search Controls */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Task Pills */}
+          <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md overflow-x-auto">
+            {[
+              { id: "all", label: "All Tasks" },
+              { id: "sales", label: "Sales SDR" },
+              { id: "code", label: "Code Review" },
+              { id: "support", label: "Support FAQ" }
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTask(t.id)}
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                  selectedTask === t.id
+                    ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Federated Thompson Sampling Active
-              </h4>
-              <span className="px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] text-[10px] font-bold">
-                ε = {federationSettings.epsilon} (DP Safe)
-              </span>
+
+          {/* Search & Sort */}
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="h-3.5 w-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
+              <input
+                type="text"
+                placeholder="Filter models..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48 h-9 pl-9 pr-3 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+              />
             </div>
-            <p className="text-[11px] text-[#86868B]">
-              Blending your local tenant wins with consensus across {federationSettings.totalTenants}+ SaaS workloads.
-            </p>
+
+            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+              {(["win_rate", "cost", "latency"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSortBy(s)}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize transition-all ${
+                    sortBy === s
+                      ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                      : "text-[#86868B] hover:text-[#1D1D1F]"
+                  }`}
+                >
+                  {s.replace("_", " ")}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-[#86868B]">Consensus Weight:</span>
-          <input
-            type="range"
-            min="0.1"
-            max="1.0"
-            step="0.05"
-            value={federationSettings.weight}
-            onChange={(e) => setFederationWeight(parseFloat(e.target.value))}
-            className="w-24 accent-[#0050FF]"
-          />
-          <span className="text-xs font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
-            {Math.round(federationSettings.weight * 100)}%
-          </span>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[#86868B]" />
-          <input
-            type="text"
-            placeholder="Search model or provider..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 pl-8 pr-3 rounded-full bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.12] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto">
-          <span className="text-xs text-[#86868B]">Sort by:</span>
-          <select
-            value={sortBy}
-            onChange={(e: any) => setSortBy(e.target.value)}
-            className="h-8 px-3 rounded-full bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.12] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-          >
-            <option value="win_rate">Win Rate (Highest)</option>
-            <option value="thompson">Thompson Score</option>
-            <option value="cost">Cost (Lowest)</option>
-            <option value="latency">Latency (Lowest)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Leaderboard Table */}
-      <div className="rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-black/[0.05] dark:border-white/[0.08] bg-[#FBFBFD] dark:bg-[#1F1F23]/40 text-[#86868B]">
-                <th className="py-3 px-5 font-semibold">Model & Provider</th>
-                <th className="py-3 px-4 font-semibold">Task Domain</th>
-                <th className="py-3 px-4 font-semibold">Outcome Win Rate</th>
-                <th className="py-3 px-4 font-semibold">Thompson Score</th>
-                <th className="py-3 px-4 font-semibold">P95 Latency</th>
-                <th className="py-3 px-4 font-semibold">Cost / Outcome</th>
-                <th className="py-3 px-4 font-semibold">Pareto Tier</th>
-                <th className="py-3 px-5 font-semibold text-right">Actions</th>
+        {/* Leaderboard Table */}
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
+              <tr>
+                <th className="py-3.5 px-5 font-semibold">Model & Provider</th>
+                <th className="py-3.5 px-4 font-semibold">Task KPI</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Outcome Win Rate</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Cost / 1M Tokens</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Avg TTFT</th>
+                <th className="py-3.5 px-4 font-semibold text-center">Pareto Tier</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
-              {filteredBenchmarks.map((b, idx) => (
-                <tr key={idx} className="hover:bg-[#F5F5F7]/50 dark:hover:bg-[#1F1F23]/50 transition-all">
+            <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
+              {filteredBenchmarks.map((b, i) => (
+                <tr key={i} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
                   <td className="py-3.5 px-5">
-                    <div className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1.5">
-                      <span>{b.model_name}</span>
-                      {b.pareto_tier === "frontier" && (
-                        <Flame className="h-3 w-3 text-amber-500 fill-amber-500" />
-                      )}
-                    </div>
-                    <span className="text-[10px] text-[#86868B] uppercase tracking-wider">{b.provider}</span>
+                    <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] block">
+                      {b.model_name}
+                    </span>
+                    <span className="text-[10px] text-[#86868B] uppercase font-mono">{b.provider}</span>
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-[#515154] dark:text-[#A1A1A6]">
+                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
                     {b.task_type}
                   </td>
 
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C30] overflow-hidden">
-                        <div
-                          className="h-full bg-emerald-500 rounded-full"
-                          style={{ width: `${b.win_rate * 100}%` }}
-                        />
-                      </div>
-                      <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                        {(b.win_rate * 100).toFixed(1)}%
-                      </span>
-                    </div>
+                  <td className="py-3.5 px-4 text-center font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
+                    {(b.win_rate * 100).toFixed(1)}%
                   </td>
 
-                  <td className="py-3.5 px-4 font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
-                    {b.thompson_score.toFixed(3)}
+                  <td className="py-3.5 px-4 text-right font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    ${(b.avg_cost_usd * 1000).toFixed(2)}
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-[#515154] dark:text-[#A1A1A6]">
+                  <td className="py-3.5 px-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
                     {b.avg_latency_ms}ms
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    {formatCurrency(b.cost_per_outcome_usd * rate, currency)}
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    <span
-                      className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        b.pareto_tier === "frontier"
-                          ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
-                          : "bg-[#F5F5F7] dark:bg-[#2C2C30] text-[#86868B]"
-                      }`}
-                    >
-                      {b.pareto_tier === "frontier" ? "Pareto Frontier" : "Suboptimal"}
+                  <td className="py-3.5 px-4 text-center">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      b.pareto_tier === "frontier"
+                        ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                    }`}>
+                      {b.pareto_tier.toUpperCase()}
                     </span>
                   </td>
 
                   <td className="py-3.5 px-5 text-right">
                     <button
                       onClick={() => handleSetPrimary(b)}
-                      className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] dark:hover:text-[#3374FF] font-semibold text-[11px] transition-all"
+                      className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
                     >
-                      {deployedModel === b.model_name ? "Policy Deployed!" : "Set as Priority"}
+                      {deployedModel === b.model_name ? (
+                        <>
+                          <Check className="h-3 w-3 text-emerald-600" />
+                          <span>Deployed!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-3 w-3 text-[#0050FF]" />
+                          <span>Set Primary</span>
+                        </>
+                      )}
                     </button>
                   </td>
                 </tr>
