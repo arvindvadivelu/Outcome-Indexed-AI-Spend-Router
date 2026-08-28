@@ -1,5 +1,38 @@
 [
   {
+    "name": "Sam Altman",
+    "email": "sam@openai.com",
+    "workspace": "OpenAI Frontier Lab",
+    "plan_tier": "enterprise",
+    "monthly_token_quota": 2000000,
+    "pin": "556677",
+    "currency": "USD",
+    "id": "usr_1787951031002_f5rk7",
+    "created_at": "2026-08-28T21:03:51.002Z"
+  },
+  {
+    "name": "Elon Musk",
+    "email": "elon@x.ai",
+    "workspace": "xAI Compute Group",
+    "plan_tier": "enterprise",
+    "monthly_token_quota": 2000000,
+    "pin": "112233",
+    "currency": "USD",
+    "id": "usr_1787950936986_46op6",
+    "created_at": "2026-08-28T21:02:16.986Z"
+  },
+  {
+    "name": "Sarah Connor",
+    "email": "sarah@skynet-defense.com",
+    "workspace": "Cyberdyne Systems",
+    "plan_tier": "growth",
+    "monthly_token_quota": 500000,
+    "pin": "777888",
+    "currency": "USD",
+    "id": "usr_1787950908932_bg0j0",
+    "created_at": "2026-08-28T21:01:48.932Z"
+  },
+  {
     "name": "Arvind V",
     "email": "varvind2004@gmail.com",
     "workspace": "Solvst",
@@ -7,8 +40,8 @@
     "monthly_token_quota": 10000,
     "pin": "111111",
     "currency": "INR",
-    "id": "usr_1787950360668_x3tfu",
-    "created_at": "2026-08-28T20:52:40.668Z"
+    "id": "usr_1787951110028_qbutq",
+    "created_at": "2026-08-28T21:05:10.028Z"
   },
   {
     "name": "Jane Doe",

@@ -25,12 +25,15 @@ export async function POST(req: Request) {
       currency: currency || "USD"
     });
 
-    // Also sync to Google Sheets endpoint
+    // Dispatch directly to Google Apps Script Webhook
+    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
     try {
-      await fetch("http://127.0.0.1:8000/api/v1/auth/google-sheet-sync", {
+      await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          localTime: new Date().toLocaleString(),
           action: "SIGNUP",
           name: user.name,
           email: user.email,
@@ -40,10 +43,11 @@ export async function POST(req: Request) {
           currency: user.currency,
           auth_method: "PIN_PASSWORD"
         }),
-        signal: AbortSignal.timeout(2000)
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000)
       });
     } catch (e) {
-      // ignore
+      console.warn("Google Sheet webhook notice:", e);
     }
 
     return NextResponse.json({
