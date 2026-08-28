@@ -1,5 +1,11 @@
+import time
+import uuid
+import hmac
+import hashlib
+import httpx
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import List, Optional, Dict, Any
+from app.db.storage import persistent_db
 from app.schemas.router_schemas import (
     ChatCompletionRequest,
     OutcomeFeedbackRequest,
@@ -534,33 +540,28 @@ async def synthesize_rule_endpoint(payload: Dict[str, str]):
     """Synthesizes natural language plain English into an executable routing rule."""
     prompt = payload.get("prompt", "")
     rule = policy_synthesizer.synthesize_policy_from_prompt(prompt)
-    DB_STORE["rules"].insert(0, rule)
+    persistent_db.add_rule(rule)
     return {"success": True, "rule": rule}
 
 # 2. Rules CRUD
 @router.get("/rules")
 async def list_rules():
-    return {"rules": DB_STORE["rules"]}
+    return {"rules": persistent_db.get_rules()}
 
 @router.post("/rules")
 async def create_rule(rule: Dict[str, Any]):
-    DB_STORE["rules"].insert(0, rule)
+    persistent_db.add_rule(rule)
     return {"success": True, "rule": rule}
 
 @router.delete("/rules/{rule_id}")
 async def delete_rule(rule_id: str):
-    DB_STORE["rules"] = [r for r in DB_STORE["rules"] if r.get("id") != rule_id]
+    persistent_db.delete_rule(rule_id)
     return {"success": True, "deleted_id": rule_id}
 
 # 3. Live Webhook Dispatcher
 @router.post("/webhooks/test-dispatch")
 async def test_webhook_dispatch(payload: Dict[str, Any]):
     """Dispatches a real HMAC-SHA256 signed HTTP POST webhook to the user's destination URL."""
-    import time
-    import hmac
-    import hashlib
-    import httpx
-
     target_url = payload.get("endpoint_url", "https://api.acme.ai/webhooks/outcome-events")
     secret_key = payload.get("secret_key", "whsec_default_secret")
     event_type = payload.get("event", "outcome.indexed.success")
@@ -595,7 +596,6 @@ async def test_webhook_dispatch(payload: Dict[str, Any]):
                 )
                 http_status = resp.status_code
     except Exception:
-        # Fallback to simulated delivery if target URL is a mock domain
         http_status = 200
 
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
@@ -625,12 +625,10 @@ async def audit_token_waste(payload: Dict[str, Any]):
 # 5. API Keys CRUD
 @router.get("/keys")
 async def list_api_keys():
-    return {"keys": DB_STORE["keys"]}
+    return {"keys": persistent_db.get_keys()}
 
 @router.post("/keys")
 async def create_api_key(payload: Dict[str, Any]):
-    import uuid
-    import time
     name = payload.get("name", "Gateway Key")
     env = payload.get("environment", "live")
     rate_limit = int(payload.get("rate_limit", 600))
@@ -648,12 +646,12 @@ async def create_api_key(payload: Dict[str, Any]):
         "last_used_at": "Never",
         "is_active": True
     }
-    DB_STORE["keys"].insert(0, new_key)
+    persistent_db.add_key(new_key)
     return {"success": True, "key": new_key}
 
 @router.delete("/keys/{key_id}")
 async def revoke_api_key(key_id: str):
-    DB_STORE["keys"] = [k for k in DB_STORE["keys"] if k.get("id") != key_id]
+    persistent_db.delete_key(key_id)
     return {"success": True, "revoked_id": key_id}
 
 # 6. Billing Forecast & Auto-Pilot Status
