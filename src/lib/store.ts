@@ -158,10 +158,12 @@ interface AppState {
     hasBiometrics: boolean;
   } | null;
   setAuthUser: (user: { name: string; email: string; hasPin: boolean; hasBiometrics: boolean } | null) => void;
+  updateUserProfile: (name: string, email: string) => void;
   logout: () => void;
   
   // Organization
   orgName: string;
+  setOrgName: (name: string) => void;
   planTier: string;
   monthlyQuota: number;
   currentTokens: number;
@@ -402,9 +404,16 @@ export const useAppStore = create<AppState>()(
         hasBiometrics: true
       },
       setAuthUser: (user) => set({ user }),
+      updateUserProfile: (name: string, email: string) =>
+        set((state) => ({
+          user: state.user
+            ? { ...state.user, name, email }
+            : { name, email, hasPin: true, hasBiometrics: true }
+        })),
       logout: () => set({ user: null }),
 
       orgName: "Acme AI Lab",
+      setOrgName: (orgName: string) => set({ orgName }),
       planTier: "growth",
       monthlyQuota: 500000,
       currentTokens: 0,

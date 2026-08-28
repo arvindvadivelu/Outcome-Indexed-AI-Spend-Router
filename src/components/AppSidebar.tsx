@@ -16,7 +16,8 @@ import {
   ScrollText,
   Zap,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  Settings as SettingsIcon
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { formatNumber } from "@/lib/utils";
@@ -49,6 +50,7 @@ export function AppSidebar() {
     { href: "/app/team", label: "Team Members", icon: Users },
     { href: "/app/integrations", label: "Integrations", icon: Blocks },
     { href: "/app/webhooks", label: "Webhooks", icon: Webhook },
+    { href: "/app/settings", label: "Settings", icon: SettingsIcon },
   ];
 
   return (
