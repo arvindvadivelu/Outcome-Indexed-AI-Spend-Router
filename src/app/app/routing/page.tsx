@@ -23,7 +23,20 @@ import {
 import { apiClient } from "@/lib/api-client";
 
 export default function RoutingRulesPage() {
-  const { routingRules, toggleRule, addRule, deleteRule, updateRulePriority, autopilot, setAutopilotMode, toggleAutopilot, federationSettings, setFederationWeight, setFederationEpsilon, toggleFederation, prewarmMetrics } = useAppStore();
+  const {
+    routingRules,
+    toggleRule,
+    addRule,
+    deleteRule,
+    updateRulePriority,
+    autopilot,
+    setAutopilotMode,
+    toggleAutopilot,
+    federationSettings,
+    setFederationWeight,
+    toggleFederation,
+    prewarmMetrics
+  } = useAppStore();
 
   // Synthesizer state
   const [aiPrompt, setAiPrompt] = useState("");
@@ -103,9 +116,6 @@ export default function RoutingRulesPage() {
   const handleCreateManualRule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualName.trim()) return;
-    // FIX: validate inputs — prevent negative values
-    if (manualMaxLatency <= 0) return;
-    if (manualMaxCost <= 0) return;
 
     let priority = ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"];
     if (manualTask === "code_generation") priority = ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"];
@@ -132,22 +142,8 @@ export default function RoutingRulesPage() {
     };
 
     addRule(newRule);
-    // FIX: fully reset modal on close
     setShowManualModal(false);
     setManualName("");
-    setManualTask("sales_email");
-    setManualStrategy("outcome_optimized");
-    setManualMaxLatency(400);
-    setManualMaxCost(0.0035);
-  };
-
-  const handleCloseManualModal = () => {
-    setShowManualModal(false);
-    setManualName("");
-    setManualTask("sales_email");
-    setManualStrategy("outcome_optimized");
-    setManualMaxLatency(400);
-    setManualMaxCost(0.0035);
   };
 
   const handleTestDryRun = (e: React.FormEvent) => {
@@ -535,7 +531,7 @@ export default function RoutingRulesPage() {
               <div className="pt-2 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={handleCloseManualModal}
+                  onClick={() => setShowManualModal(false)}
                   className="px-4 py-2 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] font-medium"
                 >
                   Cancel
