@@ -142,9 +142,9 @@ export default function ApiKeysPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono text-[#86868B]">
-                  <span>{key.prefix}••••••••••••••••</span>
+                  <span>{key.key_prefix}••••••••••••••••</span>
                   <button
-                    onClick={() => handleCopy(key.id, key.prefix)}
+                    onClick={() => handleCopy(key.id, key.key_prefix)}
                     className="text-[#0050FF] hover:underline flex items-center gap-1 text-[11px]"
                   >
                     {copiedId === key.id ? (
