@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -26,16 +26,22 @@ import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function HomePage() {
   const { currency } = useAppStore();
+  const [mounted, setMounted] = useState(false);
   const [monthlySpend, setMonthlySpend] = useState(15000);
   const [activeTab, setActiveTab] = useState<"sales" | "code" | "support">("sales");
   const [showSimulate, setShowSimulate] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Dynamic AI Workload Tailor state
   const [customWorkloadInput, setCustomWorkloadInput] = useState("");
   const [isTailoring, setIsTailoring] = useState(false);
   const [tailoredResult, setTailoredResult] = useState<any>(null);
 
-  const rate = currency === "INR" ? 86.5 : 1;
+  const activeCurrency = mounted ? currency : "USD";
+  const rate = activeCurrency === "INR" ? 86.5 : 1;
   const savingsPct = 42;
   const calculatedSavings = monthlySpend * (savingsPct / 100);
 
@@ -218,7 +224,7 @@ export default function HomePage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-[#86868B]">Monthly LLM Spend (Raw GPT-4o / Claude)</span>
               <span className="text-lg font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
-                {formatCurrency(monthlySpend * rate, currency)} / mo
+                {formatCurrency(monthlySpend * rate, activeCurrency)} / mo
               </span>
             </div>
 
@@ -236,7 +242,7 @@ export default function HomePage() {
               <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 space-y-1">
                 <span className="text-xs text-[#0050FF] dark:text-[#3374FF] font-semibold">Estimated Net Savings</span>
                 <div className="text-3xl font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
-                  +{formatCurrency(calculatedSavings * rate, currency)} / mo
+                  +{formatCurrency(calculatedSavings * rate, activeCurrency)} / mo
                 </div>
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">42.0% immediate margin recovery</p>
               </div>
@@ -244,7 +250,7 @@ export default function HomePage() {
               <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06] space-y-1">
                 <span className="text-xs text-[#86868B] font-semibold">Annual Capital Saved</span>
                 <div className="text-3xl font-bold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-                  +{formatCurrency(calculatedSavings * 12 * rate, currency)} / yr
+                  +{formatCurrency(calculatedSavings * 12 * rate, activeCurrency)} / yr
                 </div>
                 <p className="text-[11px] text-[#86868B]">Guaranteed under Micro-SLA escrow</p>
               </div>

@@ -11,34 +11,63 @@ import {
 } from "recharts";
 
 interface SpendAreaChartProps {
-  data: Array<{ day: string; baseline: number; actual: number; savings: number }>;
+  data: Array<{ day: string; baseline: number; actual: number; savings: number; requests?: number }>;
+  currencySymbol?: string;
+  viewMode?: "spend" | "savings" | "volume";
 }
 
-export function SpendAreaChart({ data }: SpendAreaChartProps) {
+export function SpendAreaChart({ data, currencySymbol = "$", viewMode = "spend" }: SpendAreaChartProps) {
   return (
-    <div className="h-64 sm:h-72 w-full pt-2">
+    <div className="h-64 sm:h-80 w-full pt-2">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
           <defs>
             <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0050FF" stopOpacity={0.2} />
+              <stop offset="5%" stopColor="#0050FF" stopOpacity={0.35} />
               <stop offset="95%" stopColor="#0050FF" stopOpacity={0.0} />
             </linearGradient>
+            <linearGradient id="savingsGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10B981" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+            </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F2" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.12)" />
           <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
+          <YAxis
+            tick={{ fontSize: 11, fill: "#86868B" }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(val) => viewMode === "volume" ? `${val}` : `${currencySymbol}${val}`}
+          />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#FFFFFF",
-              border: "1px solid rgba(0,0,0,0.06)",
-              borderRadius: "12px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-              fontSize: "12px"
+              backgroundColor: "rgba(22, 22, 24, 0.95)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: "14px",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+              fontSize: "12px",
+              color: "#F5F5F7"
+            }}
+            formatter={(value: any, name: string) => {
+              if (viewMode === "volume") return [`${value} requests`, "Traffic"];
+              if (name === "actual") return [`${currencySymbol}${Number(value).toFixed(2)}`, "Optimized Spend"];
+              if (name === "baseline") return [`${currencySymbol}${Number(value).toFixed(2)}`, "Raw Unrouted Cost"];
+              if (name === "savings") return [`${currencySymbol}${Number(value).toFixed(2)}`, "Net Avoided Waste"];
+              return [value, name];
             }}
           />
-          <Area type="monotone" dataKey="baseline" stroke="#D2D2D7" strokeWidth={1.5} strokeDasharray="4 4" fill="none" />
-          <Area type="monotone" dataKey="actual" stroke="#0050FF" strokeWidth={2.5} fillOpacity={1} fill="url(#actualGradient)" />
+          {viewMode === "spend" && (
+            <>
+              <Area type="monotone" dataKey="baseline" stroke="#86868B" strokeWidth={1.5} strokeDasharray="4 4" fill="none" />
+              <Area type="monotone" dataKey="actual" stroke="#0050FF" strokeWidth={2.5} fillOpacity={1} fill="url(#actualGradient)" />
+            </>
+          )}
+          {viewMode === "savings" && (
+            <Area type="monotone" dataKey="savings" stroke="#10B981" strokeWidth={2.5} fillOpacity={1} fill="url(#savingsGradient)" />
+          )}
+          {viewMode === "volume" && (
+            <Area type="monotone" dataKey="requests" stroke="#8B5CF6" strokeWidth={2.5} fillOpacity={1} fill="url(#actualGradient)" />
+          )}
         </AreaChart>
       </ResponsiveContainer>
     </div>
