@@ -10,11 +10,27 @@ import {
   CheckCircle2,
   Bot,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Globe,
+  Cpu,
+  ShieldCheck,
+  Activity
 } from "lucide-react";
 
 export default function RoutingRulesPage() {
-  const { routingRules, toggleRule, addRule, deleteRule, autopilot, setAutopilotMode, toggleAutopilot } = useAppStore();
+  const {
+    routingRules,
+    toggleRule,
+    addRule,
+    deleteRule,
+    autopilot,
+    setAutopilotMode,
+    toggleAutopilot,
+    federationSettings,
+    setFederationWeight,
+    toggleFederation,
+    prewarmMetrics
+  } = useAppStore();
 
   // Natural Language Synthesizer state
   const [aiPrompt, setAiPrompt] = useState("");
@@ -72,27 +88,27 @@ export default function RoutingRulesPage() {
       setSynthesizedSuccess(true);
       setAiPrompt("");
       setTimeout(() => setSynthesizedSuccess(false), 3000);
-    }, 550);
+    }, 450);
   };
 
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
-          Routing Rules & Auto-Pilot
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+          Routing Rules & Autonomous Engines
         </h1>
         <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
           Configure how requests are distributed across LLMs to hit business targets
         </p>
       </div>
 
-      {/* 1. Natural Language Policy Synthesizer (Apple Spotlight Style) */}
-      <div className="p-6 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-3">
+      {/* 1. Natural Language Policy Synthesizer */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#0050FF]" />
-            <h3 className="font-semibold text-[#1D1D1F] text-sm">Create Rule with AI</h3>
+            <Sparkles className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+            <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">Create Rule with AI</h3>
           </div>
           <span className="text-[11px] text-[#86868B]">Plain English to Policy</span>
         </div>
@@ -100,155 +116,227 @@ export default function RoutingRulesPage() {
         <form onSubmit={handleSynthesize} className="flex gap-2">
           <input
             type="text"
-            placeholder="e.g. Route code review PRs to DeepSeek Coder under 300ms latency"
+            placeholder="e.g. Route code review PRs to DeepSeek Coder to optimize merge rates and keep latency <200ms"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] border border-transparent text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
+            className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:border-[#0050FF]/30 transition-all"
           />
           <button
             type="submit"
             disabled={isSynthesizing || !aiPrompt.trim()}
-            className="px-5 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm flex items-center gap-1.5"
+            className="px-5 h-10 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/25 shrink-0 flex items-center gap-1.5"
           >
-            {isSynthesizing ? "Synthesizing..." : "Create Policy"}
+            {isSynthesizing ? "Synthesizing..." : "Generate Rule"}
+            <ArrowRight className="h-3 w-3" />
           </button>
         </form>
 
         {synthesizedSuccess && (
-          <div className="p-3 rounded-xl bg-[#EEF4FF] text-xs text-[#0050FF] font-medium flex items-center gap-2 animate-in fade-in">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>Policy generated and activated successfully!</span>
+          <div className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 pt-1">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>Policy synthesized and deployed to gateway!</span>
           </div>
         )}
       </div>
 
-      {/* 2. Auto-Pilot Mode Switcher */}
-      <div className="p-6 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* 2. Dual Breakthrough Engines Grid: Federated Thompson + Speculative Pre-Warming */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Feature 4: Cross-Tenant Federated Thompson Prior Federation */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+              <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">
+                Cross-Tenant Prior Federation
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] font-semibold">
+              Epsilon=0.5 DP Certified
+            </span>
+          </div>
+
+          <p className="text-xs text-[#86868B]">
+            Blends local tenant data with anonymous Beta priors from <strong>{federationSettings.totalTenants}+ SaaS workloads</strong>, eliminating cold-start routing penalties.
+          </p>
+
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="text-[#515154] dark:text-[#8E8E93]">Consensus Weight Blend</span>
+              <span className="text-[#0050FF] dark:text-[#3374FF] font-bold font-mono">
+                {Math.round(federationSettings.weight * 100)}% Global / {Math.round((1 - federationSettings.weight) * 100)}% Local
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={federationSettings.weight}
+              onChange={(e) => setFederationWeight(parseFloat(e.target.value))}
+              className="w-full accent-[#0050FF] h-1.5 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded-lg cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-[#86868B]">
+              <span>Purely Local (0%)</span>
+              <span>Balanced (50%)</span>
+              <span>Aggressive Global (100%)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Feature 1: Predictive Multi-Agent Speculative Pre-Warming */}
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cpu className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+              <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">
+                Speculative Pre-Warming Engine
+              </h3>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-semibold">
+              Active ({prewarmMetrics.activeHotSlots} GPU Slots)
+            </span>
+          </div>
+
+          <p className="text-xs text-[#86868B]">
+            Analyzes keystroke streaming buffers to pre-warm lightweight SLM contexts in background before user hits submit.
+          </p>
+
+          <div className="grid grid-cols-3 gap-2 text-center pt-1">
+            <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06]">
+              <p className="text-[10px] text-[#86868B]">Speculative Hit Rate</p>
+              <p className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono mt-0.5">{prewarmMetrics.hitRatePct}%</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06]">
+              <p className="text-[10px] text-[#86868B]">Avg TTFT</p>
+              <p className="text-xs font-bold text-[#0050FF] dark:text-[#3374FF] font-mono mt-0.5">{prewarmMetrics.acceleratedTtftMs}ms</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06]">
+              <p className="text-[10px] text-[#86868B]">Latency Drop</p>
+              <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">-{prewarmMetrics.reductionPct}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Auto-Pilot Mode Switcher */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-semibold text-[#1D1D1F] text-sm">Autonomous Budget Auto-Pilot</h3>
-            <p className="text-xs text-[#86868B]">Automatically rebalances model weights to ensure $0 budget overruns</p>
+            <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">Budget Auto-Pilot Mode</h3>
+            <p className="text-xs text-[#86868B]">Autonomous weight balancing for cost vs. outcome quality</p>
           </div>
           <button
             onClick={toggleAutopilot}
             className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
               autopilot.enabled
-                ? "bg-[#EEF4FF] text-[#0050FF] border border-[#0050FF]/20"
-                : "bg-[#F5F5F7] text-[#86868B]"
+                ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20"
+                : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#86868B]"
             }`}
           >
             {autopilot.enabled ? "Auto-Pilot Active" : "Auto-Pilot Paused"}
           </button>
         </div>
 
-        {/* 3-Way Mode Switch */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             {
-              id: "optimal",
-              label: "Optimal Balance",
-              desc: "Balances 40% cost reduction with >92% win rates"
+              id: "optimal_pace",
+              label: "Optimal Pace",
+              desc: "Dynamic balance between cost reduction and peak outcome win rates"
             },
             {
               id: "aggressive_savings",
               label: "Maximum Savings",
-              desc: "Pushes maximum traffic to lowest-cost models ($0.18/1M)"
+              desc: "Aggressively routes to DeepSeek & Groq for up to 60%+ spend savings"
             },
             {
               id: "quality_boost",
               label: "Quality Priority",
-              desc: "Favors flagship models for mission-critical tasks"
+              desc: "Prioritizes Claude 3.5 Sonnet and frontier models for critical paths"
             }
           ].map((mode) => (
-            <button
+            <div
               key={mode.id}
               onClick={() => setAutopilotMode(mode.id as any)}
-              className={`p-4 rounded-xl border text-left transition-all ${
+              className={`p-4 rounded-xl border cursor-pointer transition-all ${
                 autopilot.mode === mode.id
-                  ? "bg-[#EEF4FF]/50 border-[#0050FF] shadow-sm"
-                  : "bg-white border-black/[0.06] hover:border-black/[0.12]"
+                  ? "border-[#0050FF] bg-[#EEF4FF]/40 dark:bg-[#0050FF]/15 shadow-xs"
+                  : "border-black/[0.06] dark:border-white/[0.08] bg-[#FBFBFD] dark:bg-[#1F1F23] hover:border-black/[0.12]"
               }`}
             >
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold ${autopilot.mode === mode.id ? "text-[#0050FF]" : "text-[#1D1D1F]"}`}>
-                  {mode.label}
-                </span>
-                {autopilot.mode === mode.id && <span className="h-2 w-2 rounded-full bg-[#0050FF]"></span>}
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">{mode.label}</span>
+                {autopilot.mode === mode.id && (
+                  <CheckCircle2 className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+                )}
               </div>
-              <p className="text-[11px] text-[#86868B] mt-1 leading-relaxed">{mode.desc}</p>
-            </button>
+              <p className="text-[11px] text-[#86868B] leading-relaxed">{mode.desc}</p>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* 3. Active Routing Policies List */}
-      <div className="p-6 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-4">
+      {/* 4. Active Rules List */}
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-semibold text-[#1D1D1F] text-sm">Active Routing Policies</h3>
-            <p className="text-xs text-[#86868B]">{routingRules.length} rules configured</p>
-          </div>
+          <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">
+            Active Routing Rules ({routingRules.length})
+          </h3>
         </div>
 
-        <div className="divide-y divide-[#F5F5F7]">
-          {routingRules.map((rule) => {
-            const isRuleActive = rule.enabled ?? rule.is_active ?? true;
-            return (
-              <div key={rule.id} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-[#1D1D1F]">{rule.name}</span>
-                    {rule.ai_synthesized && (
-                      <span className="text-[10px] bg-[#EEF4FF] text-[#0050FF] font-medium px-2 py-0.5 rounded-full">
-                        AI Generated
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#86868B]">
-                    <span>Task: <strong className="text-[#515154] capitalize">{rule.task_type.replace("_", " ")}</strong></span>
-                    <span>•</span>
-                    <span>Target Metric: <strong className="text-[#515154] capitalize">{rule.target_metric.replace("_", " ")}</strong></span>
-                    <span>•</span>
-                    <span>Max Latency: <strong className="text-[#515154]">{rule.max_latency_ms}ms</strong></span>
-                  </div>
-                  {/* Priority Chain */}
-                  <div className="flex items-center gap-1.5 pt-1">
-                    <span className="text-[10px] text-[#86868B]">Priority:</span>
-                    {(rule.priority_models || rule.models_priority || []).map((m, i) => (
-                      <span key={i} className="text-[10px] font-medium bg-[#F5F5F7] text-[#515154] px-2 py-0.5 rounded-md">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
+        <div className="space-y-3">
+          {routingRules.map((rule) => (
+            <div
+              key={rule.id}
+              className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
+            >
+              <div className="space-y-1.5 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">{rule.name}</span>
+                  {rule.ai_synthesized && (
+                    <span className="text-[10px] bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] px-2 py-0.5 rounded-full font-medium">
+                      AI Synthesized
+                    </span>
+                  )}
+                  <span className="text-[10px] text-[#86868B] uppercase px-1.5 py-0.5 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded">
+                    {rule.task_type}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {/* Toggle Switch */}
-                  <button
-                    onClick={() => toggleRule(rule.id)}
-                    className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
-                      isRuleActive ? "bg-[#0050FF]" : "bg-[#E5E5EA]"
-                    }`}
-                  >
-                    <span
-                      className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                        isRuleActive ? "translate-x-5" : "translate-x-0"
-                      }`}
-                    ></span>
-                  </button>
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => deleteRule(rule.id)}
-                    className="p-1.5 rounded-lg text-[#86868B] hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Delete rule"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#86868B]">
+                  <span>Target: <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">{rule.target_metric}</strong></span>
+                  <span>•</span>
+                  <span>Strategy: <strong className="text-[#1D1D1F] dark:text-[#F5F5F7] capitalize">{rule.strategy.replace("_", " ")}</strong></span>
+                  <span>•</span>
+                  <div className="flex items-center gap-1">
+                    <span>Priority:</span>
+                    <span className="font-medium text-[#0050FF] dark:text-[#3374FF]">{rule.priority_models.join(" → ")}</span>
+                  </div>
                 </div>
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-3 self-end sm:self-center">
+                <button
+                  onClick={() => toggleRule(rule.id)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                    rule.is_active
+                      ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                      : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#86868B]"
+                  }`}
+                >
+                  {rule.is_active ? "Active" : "Disabled"}
+                </button>
+
+                <button
+                  onClick={() => deleteRule(rule.id)}
+                  className="p-1.5 rounded-full text-[#86868B] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                  title="Delete rule"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -10,9 +10,12 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sparkles,
-  Bot
+  Bot,
+  ShieldCheck,
+  Cpu,
+  Layers
 } from "lucide-react";
-import { useAppStore, LogItem } from "@/lib/store";
+import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
 
 const SAMPLE_PROMPTS = [
   {
@@ -33,7 +36,7 @@ const SAMPLE_PROMPTS = [
 ];
 
 export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
-  const { currency, addLog, recordOutcome } = useAppStore();
+  const { currency, addLog, recordOutcome, addSlaContract, deltaStats, prewarmMetrics } = useAppStore();
   const [selectedTask, setSelectedTask] = useState("sales_email");
   const [promptText, setPromptText] = useState(SAMPLE_PROMPTS[0].prompt);
   const [strategy, setStrategy] = useState("outcome_optimized");
@@ -81,6 +84,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
       const savedAmount = Math.max(0, baselineCost - cost);
       const savedPct = Math.round((savedAmount / baselineCost) * 100);
       const reqId = `oir_sim_${Math.random().toString(36).substr(2, 6)}`;
+      const contractHash = `0x${Math.random().toString(36).substr(2, 12)}${Math.random().toString(36).substr(2, 12)}`;
 
       const simResult = {
         requestId: reqId,
@@ -94,8 +98,11 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
         savedINR: savedAmount * 86.5,
         savedPct,
         latencyMs: latency,
+        prewarmedTtftMs: 68.4,
+        deltaCompressionSavedPct: 58.2,
+        slaContractHash: contractHash,
         responseContent: isCode
-          ? `// Stream Handler Refactored\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
+          ? `// Stream Handler Refactored (Pre-warmed in 68ms)\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
           : `Subject: Cut AI token spend by 40% with Outcome-Indexed Routing\n\nHi Alex,\n\nI noticed your team is scaling LLM features. OutcomeRouter dynamically routes requests to Claude 3.5, DeepSeek, and Groq based on conversion KPIs—saving teams $12K/month while closing +14% more pipeline.\n\nOpen to a quick 10-minute demo this Thursday?\n\nBest,\nArjun`
       };
 
@@ -123,7 +130,22 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
         status: "success"
       };
       addLog(logEntry);
-    }, 550);
+
+      const slaContract: SlaContractItem = {
+        id: `sla_cnt_${Date.now() % 1000000}`,
+        requestId: reqId,
+        createdAt: "Just now",
+        provider,
+        model,
+        latencyLimitMs: 400,
+        actualLatencyMs: latency,
+        status: "settled_fulfilled",
+        refundUsd: 0.0,
+        refundTokens: 0,
+        cryptographicHash: contractHash
+      };
+      addSlaContract(slaContract);
+    }, 450);
   };
 
   const handleFeedback = (success: boolean) => {
@@ -134,22 +156,22 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl rounded-3xl bg-white border border-black/[0.06] shadow-2xl p-6 sm:p-7 overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-2xl p-6 sm:p-7 overflow-hidden max-h-[90vh] flex flex-col transition-colors">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-black/[0.05]">
+        <div className="flex items-center justify-between pb-4 border-b border-black/[0.05] dark:border-white/[0.06]">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-2xl bg-[#EEF4FF] text-[#0050FF] flex items-center justify-center">
+            <div className="h-9 w-9 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center">
               <Zap className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-semibold text-[#1D1D1F] text-base">Test Prompt Routing</h3>
-              <p className="text-xs text-[#86868B]">Simulate real-time Bayesian model selection</p>
+              <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-base">Test Prompt Routing</h3>
+              <p className="text-xs text-[#86868B]">Bayesian routing with Speculative Pre-Warming & Micro-SLA</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-full text-[#86868B] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] flex items-center justify-center transition-colors"
+            className="h-8 w-8 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -171,7 +193,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
                   className={`text-xs px-3.5 py-1.5 rounded-full transition-all ${
                     promptText === p.prompt
                       ? "bg-[#0050FF] text-white font-medium shadow-sm shadow-[#0050FF]/25"
-                      : "bg-[#F5F5F7] text-[#515154] hover:text-[#1D1D1F]"
+                      : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
                   }`}
                 >
                   {p.label}
@@ -188,7 +210,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
               onChange={(e) => setPromptText(e.target.value)}
               rows={3}
               placeholder="Enter your prompt here..."
-              className="w-full rounded-2xl bg-[#F5F5F7] border border-transparent p-3.5 text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:bg-white focus:border-[#0050FF]/30 transition-all resize-none"
+              className="w-full rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] p-3.5 text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:border-[#0050FF]/30 transition-all resize-none"
             />
           </div>
 
@@ -201,7 +223,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Evaluating optimal model...
+                Evaluating optimal model & pre-warming context...
               </span>
             ) : (
               <>
@@ -213,47 +235,63 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
 
           {/* Results Display */}
           {result && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-[#FBFBFD] border border-black/[0.05] space-y-3.5 animate-in fade-in duration-200">
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FBFBFD] dark:bg-[#1A1A1E] border border-black/[0.05] dark:border-white/[0.08] space-y-3.5 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-[#86868B]">Winner:</span>
-                  <span className="text-xs font-semibold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-2.5 py-0.5 rounded-full">
                     {result.selectedModel}
                   </span>
                 </div>
-                <span className="text-xs font-semibold text-emerald-600">
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   -{result.savedPct}% vs GPT-4o
                 </span>
               </div>
 
-              {/* 4 Clean Metric Pills */}
+              {/* 4 Metric Pills */}
               <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="p-2.5 rounded-xl bg-white border border-black/[0.04] shadow-sm">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] shadow-xs">
                   <p className="text-[10px] text-[#86868B]">Win Rate</p>
-                  <p className="text-xs font-semibold text-[#1D1D1F] mt-0.5">{result.winRate}%</p>
+                  <p className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mt-0.5">{result.winRate}%</p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white border border-black/[0.04] shadow-sm">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] shadow-xs">
                   <p className="text-[10px] text-[#86868B]">Cost</p>
-                  <p className="text-xs font-semibold text-[#1D1D1F] mt-0.5">
+                  <p className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mt-0.5">
                     {currency === "INR" ? `₹${result.costINR.toFixed(3)}` : `$${result.costUSD.toFixed(4)}`}
                   </p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white border border-black/[0.04] shadow-sm">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] shadow-xs">
                   <p className="text-[10px] text-[#86868B]">Latency</p>
-                  <p className="text-xs font-semibold text-[#1D1D1F] mt-0.5">{result.latencyMs}ms</p>
+                  <p className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] mt-0.5">{result.latencyMs}ms</p>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white border border-black/[0.04] shadow-sm">
-                  <p className="text-[10px] text-[#86868B]">Saved</p>
-                  <p className="text-xs font-semibold text-[#0050FF] mt-0.5">
+                <div className="p-2.5 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] shadow-xs">
+                  <p className="text-[10px] text-[#86868B]">Net Saved</p>
+                  <p className="text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] mt-0.5">
                     +{currency === "INR" ? `₹${result.savedINR.toFixed(3)}` : `$${result.savedUSD.toFixed(4)}`}
                   </p>
+                </div>
+              </div>
+
+              {/* 3 Breakthrough Pillars Strip */}
+              <div className="grid grid-cols-3 gap-2 text-[10px] pt-1">
+                <div className="p-2 rounded-xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 flex items-center gap-1.5 text-[#0050FF] dark:text-[#3374FF]">
+                  <Cpu className="h-3.5 w-3.5 shrink-0" />
+                  <span>Pre-warmed: <strong>{result.prewarmedTtftMs}ms TTFT</strong></span>
+                </div>
+                <div className="p-2 rounded-xl bg-[#E6F4EA] dark:bg-[#1E3A2F] border border-[#137333]/20 flex items-center gap-1.5 text-[#137333] dark:text-[#81C995]">
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                  <span>SLA Escrow: <strong>Bound ✓</strong></span>
+                </div>
+                <div className="p-2 rounded-xl bg-[#F5F5F7] dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] flex items-center gap-1.5 text-[#515154] dark:text-[#A1A1A6]">
+                  <Layers className="h-3.5 w-3.5 shrink-0" />
+                  <span>Delta Diff: <strong>-{result.deltaCompressionSavedPct}% tokens</strong></span>
                 </div>
               </div>
 
               {/* Response Preview */}
               <div className="space-y-1">
                 <p className="text-[10px] font-medium text-[#86868B] uppercase">Output</p>
-                <div className="p-3 rounded-xl bg-white border border-black/[0.04] text-xs text-[#1D1D1F] whitespace-pre-wrap font-mono leading-relaxed">
+                <div className="p-3 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-pre-wrap font-mono leading-relaxed">
                   {result.responseContent}
                 </div>
               </div>
@@ -265,23 +303,23 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleFeedback(true)}
-                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#EEF4FF] hover:bg-[#0050FF] hover:text-white text-[#0050FF] text-xs font-medium transition-colors"
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 hover:bg-[#0050FF] hover:text-white text-[#0050FF] dark:text-[#3374FF] text-xs font-medium transition-colors"
                     >
                       <ThumbsUp className="h-3 w-3" />
                       <span>Yes (Win)</span>
                     </button>
                     <button
                       onClick={() => handleFeedback(false)}
-                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#F5F5F7] hover:bg-red-50 text-[#86868B] hover:text-red-600 text-xs font-medium transition-colors"
+                      className="flex items-center gap-1 px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 text-xs font-medium transition-colors"
                     >
                       <ThumbsDown className="h-3 w-3" />
                       <span>No</span>
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-xs text-[#0050FF] font-medium">
+                  <div className="flex items-center gap-1 text-xs text-[#0050FF] dark:text-[#3374FF] font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Prior Recorded</span>
+                    <span>Prior Recorded & SLA Settled</span>
                   </div>
                 )}
               </div>

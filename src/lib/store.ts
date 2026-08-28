@@ -80,6 +80,43 @@ export interface AutoPilotState {
   quality_weight_w1: number;
 }
 
+export interface SlaContractItem {
+  id: string;
+  requestId: string;
+  createdAt: string;
+  provider: string;
+  model: string;
+  latencyLimitMs: number;
+  actualLatencyMs: number;
+  status: "settled_fulfilled" | "breached_escrow_refunded";
+  refundUsd: number;
+  refundTokens: number;
+  cryptographicHash: string;
+}
+
+export interface PrewarmMetrics {
+  totalEvents: number;
+  speculativeHits: number;
+  hitRatePct: number;
+  baselineTtftMs: number;
+  acceleratedTtftMs: number;
+  reductionPct: number;
+  activeHotSlots: number;
+}
+
+export interface DeltaCompressionStats {
+  totalTokensAvoided: number;
+  compressionRatioPct: number;
+  costSavedUsd: number;
+}
+
+export interface FederationSettings {
+  enabled: boolean;
+  weight: number;
+  totalTenants: number;
+  epsilon: number;
+}
+
 interface AppState {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
@@ -111,6 +148,15 @@ interface AppState {
   autopilot: AutoPilotState;
   setAutopilotMode: (mode: "optimal_pace" | "aggressive_savings" | "quality_boost") => void;
   toggleAutopilot: () => void;
+
+  // 4 Breakthrough Strategic Features State
+  prewarmMetrics: PrewarmMetrics;
+  slaEscrowContracts: SlaContractItem[];
+  deltaStats: DeltaCompressionStats;
+  federationSettings: FederationSettings;
+  setFederationWeight: (weight: number) => void;
+  toggleFederation: () => void;
+  addSlaContract: (contract: SlaContractItem) => void;
 
   // Telemetry items
   logs: LogItem[];
@@ -435,6 +481,74 @@ export const useAppStore = create<AppState>((set) => {
       cost_weight_w2: 25.0,
       quality_weight_w1: 0.70
     },
+
+    // 4 Breakthrough Strategic Features Initial State
+    prewarmMetrics: {
+      totalEvents: 1420,
+      speculativeHits: 1294,
+      hitRatePct: 91.1,
+      baselineTtftMs: 280.0,
+      acceleratedTtftMs: 68.4,
+      reductionPct: 75.6,
+      activeHotSlots: 4
+    },
+
+    slaEscrowContracts: [
+      {
+        id: "sla_cnt_981240",
+        requestId: "oir_req_998124",
+        createdAt: "10 min ago",
+        provider: "anthropic",
+        model: "claude-3-5-sonnet-20241022",
+        latencyLimitMs: 450,
+        actualLatencyMs: 380,
+        status: "settled_fulfilled",
+        refundUsd: 0.0,
+        refundTokens: 0,
+        cryptographicHash: "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a8c0b2d4e6f8a"
+      },
+      {
+        id: "sla_cnt_981239",
+        requestId: "oir_req_998118",
+        createdAt: "1 hour ago",
+        provider: "openai",
+        model: "gpt-4o",
+        latencyLimitMs: 350,
+        actualLatencyMs: 680,
+        status: "breached_escrow_refunded",
+        refundUsd: 0.0142,
+        refundTokens: 1280,
+        cryptographicHash: "0x3a9d1b7e5c8f0a2d4e6b8c0a2f4e6d8c0b2a4e6f8d0c"
+      }
+    ],
+
+    deltaStats: {
+      totalTokensAvoided: 512400,
+      compressionRatioPct: 60.3,
+      costSavedUsd: 17.93
+    },
+
+    federationSettings: {
+      enabled: true,
+      weight: 0.75,
+      totalTenants: 480,
+      epsilon: 0.5
+    },
+
+    setFederationWeight: (weight: number) =>
+      set((state) => ({
+        federationSettings: { ...state.federationSettings, weight }
+      })),
+
+    toggleFederation: () =>
+      set((state) => ({
+        federationSettings: { ...state.federationSettings, enabled: !state.federationSettings.enabled }
+      })),
+
+    addSlaContract: (contract: SlaContractItem) =>
+      set((state) => ({
+        slaEscrowContracts: [contract, ...state.slaEscrowContracts]
+      })),
 
     setAutopilotMode: (mode) =>
       set((state) => ({

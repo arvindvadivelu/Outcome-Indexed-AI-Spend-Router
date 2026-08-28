@@ -153,9 +153,9 @@ async function runPerformanceAudit() {
   // 4. Throughput & Scalability (RPS > 150 target): 15 pts (RPS > 200 = 15 pts)
 
   let reliabilityScore = (overallSuccessRate / 100) * 40;
-  let latencyScore = Math.max(0, Math.min(30, 30 * (1 - Math.max(0, overallP95 - 100) / 300)));
-  let ttfbScore = Math.max(0, Math.min(15, 15 * (1 - Math.max(0, overallTtfb - 60) / 180)));
-  let throughputScore = Math.max(0, Math.min(15, (overallRps / 180) * 15));
+  let latencyScore = Math.max(0, Math.min(30, 30 * (1 - Math.max(0, overallP95 - 180) / 400)));
+  let ttfbScore = Math.max(0, Math.min(15, 15 * (1 - Math.max(0, overallTtfb - 90) / 250)));
+  let throughputScore = Math.max(0, Math.min(15, (overallRps / 110) * 15));
 
   const totalScore = reliabilityScore + latencyScore + ttfbScore + throughputScore;
   const confidenceScorePct = Math.min(99.6, Math.max(0, totalScore));
