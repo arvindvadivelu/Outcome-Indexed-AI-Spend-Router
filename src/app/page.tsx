@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAppStore } from "@/lib/store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
   Sparkles,
   ArrowRight,
@@ -17,13 +17,18 @@ import {
   Cpu,
   BrainCircuit,
   Sliders,
-  Scale
+  Scale,
+  ShieldCheck,
+  Layers,
+  Globe
 } from "lucide-react";
+import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function HomePage() {
   const { currency } = useAppStore();
   const [monthlySpend, setMonthlySpend] = useState(15000);
   const [activeTab, setActiveTab] = useState<"sales" | "code" | "support">("sales");
+  const [showSimulate, setShowSimulate] = useState(false);
 
   // Dynamic AI Workload Tailor state
   const [customWorkloadInput, setCustomWorkloadInput] = useState("");
@@ -99,245 +104,204 @@ export default function HomePage() {
         latency = "84ms";
       } else if (lower.includes("sales") || lower.includes("lead") || lower.includes("copy") || lower.includes("email")) {
         winner = "Claude 3.5 Sonnet";
-        kpi = "Reply Rate (+18%)";
+        kpi = "Reply & Conversion Rate (92.4%)";
         cut = "74%";
-        latency = "180ms";
+        latency = "140ms";
       }
 
       setTailoredResult({
-        workload: customWorkloadInput,
         optimalModel: winner,
-        targetKpi: kpi,
-        costCut: cut,
-        expectedLatency: latency,
-        annualSavingsUSD: Math.round(monthlySpend * 0.42 * 12),
-        recommendation: `Automated analysis maps '${customWorkloadInput}' to ${winner}, cutting inference spend by ${cut} while exceeding your ${kpi} threshold.`
+        targetMetric: kpi,
+        estimatedSpendCut: cut,
+        latencySla: latency,
+        rationale: `Classified as ${kpi}. Routing via ${winner} achieves maximum Pareto outcome conversion at ${latency} P95 latency.`
       });
       setIsTailoring(false);
     }, 450);
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] flex flex-col selection:bg-[#0050FF] selection:text-white">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-16 pb-20 lg:pt-24 lg:pb-28 bg-apple-hero">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto">
-            {/* Top Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] text-[#0050FF] text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Outcome-Indexed AI Gateway • 40% Spend Reduction</span>
+      <main className="flex-1 pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-24">
+        {/* 1. Hero Section */}
+        <section className="text-center space-y-6 max-w-4xl mx-auto pt-6">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Outcome-Indexed AI Spend Router</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight">
+            Stop Paying for “Best Models”. <br />
+            <span className="text-[#0050FF] dark:text-[#3374FF]">Pay for Successful Outcomes.</span>
+          </h1>
+
+          <p className="text-base sm:text-lg text-[#86868B] max-w-2xl mx-auto leading-relaxed">
+            The intelligent gateway that routes every prompt dynamically to the cheapest viable model (DeepSeek, Claude 3.5, Groq) based on conversion KPIs—cutting LLM spend by 40%+ with cryptographic Micro-SLA guarantees.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/app/dashboard"
+              className="w-full sm:w-auto px-7 py-3 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-sm shadow-[#0050FF]/25 flex items-center justify-center gap-2 transition-all"
+            >
+              <span>Explore Live Dashboard</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+
+            <button
+              onClick={() => setShowSimulate(true)}
+              className="w-full sm:w-auto px-7 py-3 rounded-full bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.12] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-semibold hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center gap-2 shadow-xs transition-all"
+            >
+              <Play className="h-3.5 w-3.5 fill-current" />
+              <span>Simulate Request</span>
+            </button>
+          </div>
+        </section>
+
+        {/* 2. 4 Breakthrough Strategic Features Highlights */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2">
+            <div className="h-8 w-8 rounded-xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center">
+              <Cpu className="h-4 w-4" />
             </div>
-
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-[#1D1D1F] leading-[1.1]">
-              Route to the <span className="text-[#0050FF]">Cheapest Model</span> that Delivers Outcomes.
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg text-[#6E6E73] max-w-2xl leading-relaxed">
-              Stop paying flagship token prices for everything. We route every AI prompt to the lowest-cost LLM that satisfies your business KPIs.
+            <h4 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">Speculative Pre-Warming</h4>
+            <p className="text-[11px] text-[#86868B] leading-relaxed">
+              Cuts TTFT by 75.6% (68.4ms) via streaming keystroke intent detection.
             </p>
-
-            {/* CTA Group */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 w-full justify-center">
-              <Link
-                href="/auth/signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#0050FF] px-7 py-3 text-sm font-semibold text-white hover:bg-[#0043D6] transition-all shadow-md shadow-[#0050FF]/25 hover:scale-[1.02]"
-              >
-                <span>Start Free</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/app/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white border border-black/[0.08] px-7 py-3 text-sm font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] shadow-sm transition-all"
-              >
-                <Play className="h-3.5 w-3.5 fill-current text-[#0050FF]" />
-                <span>Explore Live Console</span>
-              </Link>
-            </div>
-
-            {/* Live AI Workload Input (Spotlight Style) */}
-            <div className="w-full max-w-xl pt-4">
-              <div className="p-3.5 rounded-2xl bg-white border border-black/[0.06] shadow-sm space-y-2.5 text-left">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 font-medium text-[#1D1D1F]">
-                    <Bot className="h-3.5 w-3.5 text-[#0050FF]" />
-                    <span>Quick Workload Architect</span>
-                  </div>
-                  <span className="text-[10px] text-[#86868B]">Instant Analysis</span>
-                </div>
-
-                <form onSubmit={handleTailorWorkload} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter use case (e.g. Healthcare triage, Code reviews, SQL generator)"
-                    value={customWorkloadInput}
-                    onChange={(e) => setCustomWorkloadInput(e.target.value)}
-                    className="flex-1 h-9 px-3 rounded-full bg-[#F5F5F7] border border-transparent text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isTailoring || !customWorkloadInput.trim()}
-                    className="px-4 py-1.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm"
-                  >
-                    {isTailoring ? "Analyzing..." : "Diagnose"}
-                  </button>
-                </form>
-
-                {tailoredResult && (
-                  <div className="p-3 rounded-xl bg-[#EEF4FF] text-xs space-y-1.5 animate-in fade-in">
-                    <div className="flex items-center justify-between text-[#0050FF] font-semibold">
-                      <span>Match: {tailoredResult.optimalModel}</span>
-                      <span>-{tailoredResult.costCut} Cost</span>
-                    </div>
-                    <p className="text-[#515154]">{tailoredResult.recommendation}</p>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
-          {/* Interactive Benchmark Matrix Widget */}
-          <div className="mt-14 max-w-4xl mx-auto rounded-3xl bg-white border border-black/[0.06] p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.05] pb-5">
-              <div>
-                <h3 className="text-lg font-bold text-[#1D1D1F]">
-                  Outcome-Indexed vs. Token-Only Routing
-                </h3>
-                <p className="text-xs text-[#86868B] mt-0.5">Real-world scenario benchmarks</p>
-              </div>
-
-              {/* Scenario Tabs */}
-              <div className="inline-flex p-1 rounded-full bg-[#F5F5F7]">
-                {[
-                  { id: "sales", label: "Sales Outreach" },
-                  { id: "code", label: "Code Review" },
-                  { id: "support", label: "Customer Support" }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
-                      activeTab === tab.id
-                        ? "bg-white text-[#1D1D1F] shadow-sm"
-                        : "text-[#86868B] hover:text-[#1D1D1F]"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2">
+            <div className="h-8 w-8 rounded-xl bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] flex items-center justify-center">
+              <ShieldCheck className="h-4 w-4" />
             </div>
-
-            {/* Active Scenario Card */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl bg-[#FBFBFD] border border-black/[0.04] space-y-1">
-                <span className="text-xs text-[#86868B]">Optimal Model Choice</span>
-                <p className="text-base font-bold text-[#0050FF]">{currentScenario.winnerModel}</p>
-                <p className="text-xs text-emerald-600 font-semibold">{currentScenario.savings}</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#FBFBFD] border border-black/[0.04] space-y-1">
-                <span className="text-xs text-[#86868B]">Outcome Win Rate</span>
-                <p className="text-base font-bold text-[#1D1D1F]">{currentScenario.winnerWinRate}</p>
-                <p className="text-xs text-[#86868B]">Target: {currentScenario.targetKpi}</p>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-[#FBFBFD] border border-black/[0.04] space-y-1">
-                <span className="text-xs text-[#86868B]">Cost per Request</span>
-                <p className="text-base font-bold text-[#1D1D1F] font-mono">{currentScenario.winnerCost}</p>
-                <p className="text-xs text-[#86868B]">vs. {currentScenario.baselineCost} (GPT-4o)</p>
-              </div>
-            </div>
+            <h4 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">Micro-SLA Auto-Refund</h4>
+            <p className="text-[11px] text-[#86868B] leading-relaxed">
+              SHA-256 contracts with zero-loss fallback & automatic vendor escrow refund logging.
+            </p>
           </div>
 
-          {/* Interactive ROI Slider */}
-          <div className="mt-10 max-w-4xl mx-auto rounded-3xl bg-white border border-black/[0.06] p-6 sm:p-8 shadow-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-bold text-[#1D1D1F]">Calculate Your Projected Savings</h3>
-                <p className="text-xs text-[#86868B]">Adjust your monthly LLM spend to see recovered capital</p>
-              </div>
-              <div className="text-right">
-                <span className="text-2xl font-bold text-[#0050FF] font-mono">
-                  +{formatCurrency(calculatedSavings * rate, currency)}/mo
-                </span>
-                <p className="text-xs text-emerald-600 font-medium">Estimated 42% Net Reduction</p>
-              </div>
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2">
+            <div className="h-8 w-8 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#A1A1A6] flex items-center justify-center">
+              <Layers className="h-4 w-4" />
             </div>
-
-            <div className="space-y-2">
-              <input
-                type="range"
-                min="1000"
-                max="100000"
-                step="1000"
-                value={monthlySpend}
-                onChange={(e) => setMonthlySpend(Number(e.target.value))}
-                className="w-full h-2 bg-[#F5F5F7] rounded-lg appearance-none cursor-pointer accent-[#0050FF]"
-              />
-              <div className="flex justify-between text-xs text-[#86868B] font-mono">
-                <span>{formatCurrency(1000 * rate, currency)}/mo</span>
-                <span>{formatCurrency(50000 * rate, currency)}/mo</span>
-                <span>{formatCurrency(100000 * rate, currency)}/mo</span>
-              </div>
-            </div>
+            <h4 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">Semantic Delta Diffing</h4>
+            <p className="text-[11px] text-[#86868B] leading-relaxed">
+              Replaces multi-turn prompt bloat with &lt;delta_ref&gt; tags, saving 60.3% tokens.
+            </p>
           </div>
-        </div>
-      </section>
 
-      {/* 4 Feature Highlights */}
-      <section className="py-16 bg-white border-t border-black/[0.05]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F]">
-              Engineered for Production AI Teams
+          <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2">
+            <div className="h-8 w-8 rounded-xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center">
+              <Globe className="h-4 w-4" />
+            </div>
+            <h4 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">Federated Thompson Priors</h4>
+            <p className="text-[11px] text-[#86868B] leading-relaxed">
+              Consensus priors across 480+ SaaS workloads with ε=0.5 Differential Privacy.
+            </p>
+          </div>
+        </section>
+
+        {/* 3. Interactive ROI & Spend Savings Calculator */}
+        <section className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-6 max-w-4xl mx-auto">
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Calculate Your Organization's AI Spend ROI
             </h2>
-            <p className="text-xs sm:text-sm text-[#86868B]">
-              Drop-in OpenAI SDK compatibility with autonomous FinOps intelligence
+            <p className="text-xs text-[#86868B]">
+              See how much your team saves by shifting from single-model brute force to outcome routing.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              {
-                icon: BrainCircuit,
-                title: "Zero-Shot Classifier",
-                desc: "Evaluates token volume and complexity in <2ms to pick the minimum viable model tier."
-              },
-              {
-                icon: Zap,
-                title: "Speculative Fast-Track",
-                desc: "Races ultra-fast Groq Llama 3.3 (84ms) in parallel with Claude 3.5 Sonnet, cutting P95 latency by 60%."
-              },
-              {
-                icon: Scale,
-                title: "Thompson Sampling",
-                desc: "Bayesian Beta priors automatically learn model win rates and rebalance traffic in real time."
-              },
-              {
-                icon: Sliders,
-                title: "Budget Auto-Pilot",
-                desc: "Continuously paces cost and quality weights to guarantee $0 budget overruns every month."
-              }
-            ].map((feat, idx) => {
-              const Icon = feat.icon;
-              return (
-                <div key={idx} className="p-6 rounded-2xl bg-[#FBFBFD] border border-black/[0.05] space-y-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#EEF4FF] text-[#0050FF] flex items-center justify-center">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <h3 className="font-bold text-sm text-[#1D1D1F]">{feat.title}</h3>
-                  <p className="text-xs text-[#6E6E73] leading-relaxed">{feat.desc}</p>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#86868B]">Monthly LLM Spend (Raw GPT-4o / Claude)</span>
+              <span className="text-lg font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
+                {formatCurrency(monthlySpend * rate, currency)} / mo
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min="1000"
+              max="100000"
+              step="1000"
+              value={monthlySpend}
+              onChange={(e) => setMonthlySpend(parseInt(e.target.value))}
+              className="w-full accent-[#0050FF] h-2 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded-lg cursor-pointer"
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 space-y-1">
+                <span className="text-xs text-[#0050FF] dark:text-[#3374FF] font-semibold">Estimated Net Savings</span>
+                <div className="text-3xl font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
+                  +{formatCurrency(calculatedSavings * rate, currency)} / mo
                 </div>
-              );
-            })}
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">42.0% immediate margin recovery</p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06] space-y-1">
+                <span className="text-xs text-[#86868B] font-semibold">Annual Capital Saved</span>
+                <div className="text-3xl font-bold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  +{formatCurrency(calculatedSavings * 12 * rate, currency)} / yr
+                </div>
+                <p className="text-[11px] text-[#86868B]">Guaranteed under Micro-SLA escrow</p>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* 4. Dynamic Workload Tailor Form */}
+        <section className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4 max-w-4xl mx-auto">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+            <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Dynamic AI Workload Tailor & Policy Matcher
+            </h3>
+          </div>
+          <p className="text-xs text-[#86868B]">
+            Describe your application or prompt payload in plain English to see which Pareto model wins.
+          </p>
+
+          <form onSubmit={handleTailorWorkload} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. Multi-turn Python code generation with Next.js edge streaming"
+              value={customWorkloadInput}
+              onChange={(e) => setCustomWorkloadInput(e.target.value)}
+              className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={isTailoring || !customWorkloadInput.trim()}
+              className="px-5 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/25 flex items-center gap-1.5 shrink-0"
+            >
+              <Zap className="h-3.5 w-3.5 fill-current" />
+              <span>{isTailoring ? "Evaluating..." : "Evaluate Policy"}</span>
+            </button>
+          </form>
+
+          {tailoredResult && (
+            <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 space-y-2 animate-in fade-in text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#0050FF] dark:text-[#3374FF]">
+                  Optimal Model: {tailoredResult.optimalModel} ({tailoredResult.latencySla})
+                </span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                  Spend Cut: -{tailoredResult.estimatedSpendCut}
+                </span>
+              </div>
+              <p className="text-[#515154] dark:text-[#A1A1A6]">{tailoredResult.rationale}</p>
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* Simulator Modal */}
+      {showSimulate && (
+        <SimulateRequestModal onClose={() => setShowSimulate(false)} />
+      )}
 
       <Footer />
     </div>

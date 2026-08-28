@@ -1,175 +1,209 @@
 "use client";
 
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import {
   Zap,
+  TrendingDown,
+  ShieldCheck,
+  Cpu,
+  Layers,
+  Globe,
+  Bot,
   Sparkles,
   ArrowRight,
-  BrainCircuit,
-  Scale,
-  Bot,
-  Sliders,
-  Gauge,
-  CheckCircle2
+  Code2,
+  CheckCircle2,
+  Lock,
+  Play
 } from "lucide-react";
 import Link from "next/link";
 
 export default function FeaturesPage() {
-  const aiEngines = [
-    {
-      icon: BrainCircuit,
-      title: "Zero-Shot Complexity Classifier",
-      badge: "Inference Intelligence",
-      description:
-        "Analyzes prompt tokens, syntactic structure, and multi-turn context in <2ms to determine the minimum viable model tier before dispatch.",
-      bulletPoints: [
-        "Instant zero-shot categorization (Code, Sales, Support, Math, Extraction)",
-        "Complexity scoring [0.0 - 1.0] avoids over-provisioning expensive models",
-        "Sub-2ms evaluation with zero noticeable user latency"
+  const [activeArchTab, setActiveArchTab] = useState<"gateway" | "prewarm" | "sla" | "diff" | "federation">("prewarm");
+  const [activeCodeTab, setActiveCodeTab] = useState<"python" | "node" | "curl">("python");
+
+  const archDetails = {
+    prewarm: {
+      title: "Feature 1: Predictive Multi-Agent Speculative Pre-Warming",
+      tagline: "75.6% TTFT Reduction (Sub-70ms First Token)",
+      desc: "Keystroke buffer stream classifier predicts user intent and pre-emptively assigns lightweight SLM tensor contexts across GPU hot-slots while the user is typing.",
+      kpis: [
+        { label: "TTFT Drop", val: "280ms → 68.4ms" },
+        { label: "Speculative Hit Rate", val: "91.1%" },
+        { label: "GPU Slot Efficiency", val: "4 Hot Slots" }
       ]
     },
-    {
-      icon: Scale,
-      title: "Synthetic LLM-as-a-Judge Prior Bootstrapper",
-      badge: "Cold-Start Elimination",
-      description:
-        "When connecting a new model or task, automated LLM judges evaluate golden benchmark datasets to initialize calibrated Beta(α, β) priors instantly.",
-      bulletPoints: [
-        "Eliminates cold-start exploration penalties for newly connected models",
-        "Automated synthetic benchmark evaluation across golden task suites",
-        "Calibrates baseline win-rate priors before routing live production traffic"
+    sla: {
+      title: "Feature 2: Outcome-Bound Micro-SLA Contracts & Auto-Refund Escrow",
+      tagline: "Cryptographic SLA Guarantee with $0 Failover Loss",
+      desc: "Every API call generates an immutable SHA-256 micro-contract. Upstream latency or quality breaches instantly failover to backup models at zero overage cost and log vendor token refund credits.",
+      kpis: [
+        { label: "Contract Compliance", val: "99.2%" },
+        { label: "Escrow Recovery Rate", val: "100% Guaranteed" },
+        { label: "Failover Overhead", val: "<20ms Zero-Loss" }
       ]
     },
-    {
-      icon: Bot,
-      title: "Autonomous Outcome Verifier",
-      badge: "Self-Learning Loop",
-      description:
-        "An async reflection agent checks syntax validity, tone empathy, and user follow-up signals to record positive/negative outcome rewards automatically.",
-      bulletPoints: [
-        "Automatically scores completion quality without requiring manual human tags",
-        "Implicit signal analyzer deduces wins from copy actions and retry loops",
-        "Maintains continuous Bayesian learning in production"
+    diff: {
+      title: "Feature 3: Differential Semantic Delta Compression",
+      tagline: "60.3% Prompt Token Reduction via Pointer Diffing",
+      desc: "Replaces repetitive multi-turn conversation trees and static system prompts with cryptographic `<delta_ref:...>` pointers, transmitting only new semantic deltas.",
+      kpis: [
+        { label: "Tokens Avoided", val: "512,400+ / mo" },
+        { label: "Compression Ratio", val: "60.3%" },
+        { label: "Dollar Savings", val: "+$17.93 / seat" }
       ]
     },
-    {
-      icon: Zap,
-      title: "Speculative Dual-Model Execution",
-      badge: "Latency Reduction",
-      description:
-        "Dispatches queries simultaneously to ultra-fast inference (Groq Llama 3.3 in 84ms) and deep reasoning models (Claude 3.5), cutting P95 latency by 60%.",
-      bulletPoints: [
-        "60% reduction in tail P95 latency for real-time customer applications",
-        "Cancels slower inference when fast model passes quality bar",
-        "Guarantees fast response without risking output quality"
+    federation: {
+      title: "Feature 4: Cross-Tenant Prior Federation (Thompson Sampling)",
+      tagline: "Zero Cold-Start Routing via Differential Privacy (ε=0.5)",
+      desc: "Blends local tenant data with anonymous Beta distribution consensus priors from 480+ enterprise SaaS workloads with rigorous privacy noise injection.",
+      kpis: [
+        { label: "Privacy Guarantees", val: "ε=0.5 DP Certified" },
+        { label: "Participating Tenants", val: "480+ SaaS Apps" },
+        { label: "Cold-Start Jumpstart", val: "Immediate 95%+" }
       ]
     },
-    {
-      icon: Sliders,
-      title: "Natural Language Policy Synthesizer",
-      badge: "Prompt-to-Policy",
-      description:
-        "Declare business targets in plain English: 'Ensure SDR emails achieve >90% reply rates under $0.002'. The synthesizer builds executable routing JSON.",
-      bulletPoints: [
-        "No complex JSON configurations or manual rule authoring required",
-        "Automatically infers task conditions, fallback chains, and SLA limits",
-        "1-click testing and deployment to active production endpoints"
-      ]
-    },
-    {
-      icon: Gauge,
-      title: "Autonomous Budget Auto-Pilot",
-      badge: "FinOps Automation",
-      description:
-        "Monitors daily burn rate vs. monthly budget ceilings to dynamically pace model weights and guarantee $0 budget overruns.",
-      bulletPoints: [
-        "Guarantees zero monthly budget overruns with dynamic weight pacing",
-        "Auto-escalates mission-critical tasks during budget surpluses",
-        "Seamlessly integrates with Stripe and custom enterprise billing"
+    gateway: {
+      title: "Core Gateway: Multi-Model Bayesian Optimization",
+      tagline: "Cheapest Model per Successful Outcome",
+      desc: "Replaces brute-force model selection with dynamic outcome classification, optimizing token spend against customer conversion KPIs.",
+      kpis: [
+        { label: "Net Spend Cut", val: "42.0% Less vs GPT-4o" },
+        { label: "Outcome Win Rate", val: "93.4% Avg" },
+        { label: "Gateway SLA Uptime", val: "99.99%" }
       ]
     }
-  ];
+  };
+
+  const codeSnippets = {
+    python: `# Python SDK Integration\nfrom outcomerouter import OutcomeRouterClient\n\nclient = OutcomeRouterClient(api_key="oir_live_...")\n\nresponse = client.chat.completions.create(\n    task_type="code_generation",\n    target_metric="code_merged",\n    speculative_prewarm=True,\n    messages=[{"role": "user", "content": "Refactor Next.js API route"}]\n)\n\nprint(f"Winner: {response.model} | Saved: {response.saved_pct}% | SLA: {response.sla_hash}")`,
+    node: `// Node.js / TypeScript SDK\nimport { OutcomeRouter } from "@outcome-router/sdk";\n\nconst client = new OutcomeRouter({ apiKey: process.env.OIR_API_KEY });\n\nconst res = await client.completions.create({\n  taskType: "sales_email",\n  targetMetric: "demo_booked",\n  maxLatencyMs: 400,\n  messages: [{ role: "user", content: "Write cold email to VP Eng" }]\n});\n\nconsole.log(res.choices[0].message.content);`,
+    curl: `# cURL / HTTP Drop-in Gateway\ncurl https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -H "X-Target-Metric: code_merged" \\\n  -d '{"messages": [{"role": "user", "content": "Write unit tests"}]}'`
+  };
+
+  const currentArch = archDetails[activeArchTab];
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] flex flex-col selection:bg-[#0050FF] selection:text-white">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]">
       <Navbar />
 
-      <main className="flex-1 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16">
-          {/* Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF4FF] text-[#0050FF] text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Core Architecture</span>
-            </div>
-            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F]">
-              6 Autonomous AI Subsystems
-            </h1>
-            <p className="text-base text-[#6E6E73]">
-              The mathematical algorithms and intelligence engines powering outcome-indexed routing.
-            </p>
+      <main className="flex-1 pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-16">
+        {/* Hero Section */}
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Next-Generation AI Architecture</span>
           </div>
+          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+            4 Strategic Breakthroughs in Outcome-Indexed Routing
+          </h1>
+          <p className="text-sm sm:text-base text-[#86868B]">
+            Engineered to achieve peak inference speed, cryptographic SLA reliability, and up to 60%+ net spend reduction.
+          </p>
+        </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {aiEngines.map((engine, idx) => {
-              const Icon = engine.icon;
+        {/* Interactive Architecture Deep Dive Card */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-6">
+          {/* Tab Selector */}
+          <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.05] dark:border-white/[0.06] pb-4">
+            {[
+              { id: "prewarm", label: "1. Speculative Pre-Warming", icon: Cpu },
+              { id: "sla", label: "2. Micro-SLA Escrow", icon: ShieldCheck },
+              { id: "diff", label: "3. Semantic Delta Diff", icon: Layers },
+              { id: "federation", label: "4. Federated Prior Blend", icon: Globe },
+              { id: "gateway", label: "Core Gateway", icon: Zap }
+            ].map((tab) => {
+              const Icon = tab.icon;
               return (
-                <div
-                  key={idx}
-                  className="p-6 sm:p-7 rounded-3xl bg-white border border-black/[0.06] shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-all"
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveArchTab(tab.id as any)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
+                    activeArchTab === tab.id
+                      ? "bg-[#0050FF] text-white shadow-sm shadow-[#0050FF]/25"
+                      : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F]"
+                  }`}
                 >
-                  <div className="space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="h-9 w-9 rounded-xl bg-[#EEF4FF] text-[#0050FF] flex items-center justify-center">
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <span className="text-[10px] font-semibold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-0.5 rounded-full">
-                        {engine.badge}
-                      </span>
-                    </div>
-
-                    <h3 className="font-bold text-base text-[#1D1D1F]">{engine.title}</h3>
-                    <p className="text-xs text-[#6E6E73] leading-relaxed">{engine.description}</p>
-                  </div>
-
-                  <div className="pt-4 border-t border-[#F5F5F7] space-y-2">
-                    {engine.bulletPoints.map((bp, bIdx) => (
-                      <div key={bIdx} className="flex items-start gap-2 text-xs text-[#515154]">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#0050FF] flex-shrink-0 mt-0.5" />
-                        <span>{bp}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                </button>
               );
             })}
           </div>
 
-          {/* CTA Banner */}
-          <div className="p-8 sm:p-10 rounded-3xl bg-white border border-black/[0.06] shadow-sm text-center space-y-4 max-w-3xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F]">
-              Ready to Cut Your LLM Spend by 40%?
-            </h2>
-            <p className="text-xs sm:text-sm text-[#6E6E73] max-w-xl mx-auto">
-              Drop our 5-line SDK client into your existing OpenAI codebase and start optimizing outcomes immediately.
-            </p>
-            <div className="pt-2 flex justify-center gap-3">
+          {/* Tab Content Display */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+            <div className="lg:col-span-2 space-y-4">
+              <span className="text-xs font-bold font-mono text-[#0050FF] dark:text-[#3374FF] uppercase tracking-wider">
+                {currentArch.tagline}
+              </span>
+              <h2 className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{currentArch.title}</h2>
+              <p className="text-xs sm:text-sm text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+                {currentArch.desc}
+              </p>
+
+              {/* 3 Metric Pills */}
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                {currentArch.kpis.map((kpi, idx) => (
+                  <div key={idx} className="p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.06]">
+                    <p className="text-[10px] text-[#86868B]">{kpi.label}</p>
+                    <p className="text-xs sm:text-sm font-bold font-mono text-[#1D1D1F] dark:text-[#F5F5F7] mt-0.5">{kpi.val}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA action card */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#EEF4FF] to-white dark:from-[#0050FF]/15 dark:to-[#161618] border border-[#0050FF]/20 space-y-4 text-center">
+              <div className="h-12 w-12 rounded-2xl bg-[#0050FF] text-white flex items-center justify-center mx-auto shadow-sm shadow-[#0050FF]/30">
+                <Play className="h-5 w-5 fill-current" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Test in Live Sandbox</h4>
+                <p className="text-xs text-[#86868B]">Run a simulated prompt and observe real-time routing metrics.</p>
+              </div>
               <Link
-                href="/auth/signup"
-                className="px-6 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-sm shadow-[#0050FF]/25 transition-all"
+                href="/app/dashboard"
+                className="block w-full py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs"
               >
-                Get Started Free
-              </Link>
-              <Link
-                href="/docs"
-                className="px-6 py-2.5 rounded-full bg-[#F5F5F7] text-[#1D1D1F] text-xs font-semibold hover:bg-[#EBEBEF] transition-all"
-              >
-                Read Documentation
+                Launch Dashboard
               </Link>
             </div>
           </div>
+        </div>
+
+        {/* Interactive Developer Code Section */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Code2 className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
+              <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+                1-Line Drop-in SDK Integration
+              </h3>
+            </div>
+
+            <div className="inline-flex p-0.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
+              {(["python", "node", "curl"] as const).map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setActiveCodeTab(lang)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                    activeCodeTab === lang
+                      ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                      : "text-[#86868B]"
+                  }`}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <pre className="p-4 rounded-2xl bg-[#0A0A0C] text-[#F5F5F7] font-mono text-xs overflow-x-auto leading-relaxed border border-white/[0.08]">
+            {codeSnippets[activeCodeTab]}
+          </pre>
         </div>
       </main>
 
