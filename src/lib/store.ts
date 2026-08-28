@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 export interface LogItem {
   id: string;
@@ -117,6 +118,12 @@ export interface FederationSettings {
   epsilon: number;
 }
 
+export interface WebhookConfig {
+  endpointUrl: string;
+  secretKey: string;
+  events: string[];
+}
+
 interface AppState {
   theme: "light" | "dark";
   setTheme: (theme: "light" | "dark") => void;
@@ -158,6 +165,10 @@ interface AppState {
   toggleFederation: () => void;
   addSlaContract: (contract: SlaContractItem) => void;
 
+  // Webhook Persistent Config
+  webhookConfig: WebhookConfig;
+  setWebhookConfig: (config: Partial<WebhookConfig>) => void;
+
   // Telemetry items
   logs: LogItem[];
   telemetryLogs: LogItem[];
@@ -177,479 +188,395 @@ interface AppState {
   deleteApiKey: (id: string) => void;
   revokeApiKey: (id: string) => void;
   addLog: (log: LogItem) => void;
+  clearUserData: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => {
-  const initialLogs: LogItem[] = [
-    {
-      id: "oir_req_998124",
-      created_at: "Just now",
-      model_used: "claude-3-5-sonnet-20241022",
-      provider: "anthropic",
-      task_type: "sales_email",
-      tokens_in: 340,
-      tokens_out: 220,
-      cost_usd: 0.00432,
-      cost_inr: 0.373,
-      latency_ms: 380,
-      outcome_success: true,
-      outcome_metric: "demo_booked",
-      prompt_preview: "Draft personalized cold outreach to VP of Engineering at a FinTech firm...",
-      cached_hit: false,
-      fallback_triggered: false,
-      speculative_win: false,
-      critic_escalated: false,
-      status: "success"
-    },
-    {
-      id: "oir_req_998123",
-      created_at: "2 min ago",
-      model_used: "deepseek-coder",
-      provider: "deepseek",
-      task_type: "code_generation",
-      tokens_in: 580,
-      tokens_out: 410,
-      cost_usd: 0.00065,
-      cost_inr: 0.056,
-      latency_ms: 120,
-      outcome_success: true,
-      outcome_metric: "code_merged",
-      prompt_preview: "Refactor TypeScript Redis connection pooling and add circuit breaker retry...",
-      cached_hit: false,
-      fallback_triggered: false,
-      speculative_win: true,
-      critic_escalated: false,
-      status: "success"
-    },
-    {
-      id: "oir_req_998122",
-      created_at: "5 min ago",
-      model_used: "llama-3.3-70b-versatile",
-      provider: "groq",
-      task_type: "customer_support",
-      tokens_in: 210,
-      tokens_out: 95,
-      cost_usd: 0.00018,
-      cost_inr: 0.015,
-      latency_ms: 84,
-      outcome_success: true,
-      outcome_metric: "ticket_resolved",
-      prompt_preview: "Explain how webhook retry exponential backoff works when HTTP 500 happens...",
-      cached_hit: true,
-      fallback_triggered: false,
-      speculative_win: false,
-      critic_escalated: false,
-      status: "success"
-    },
-    {
-      id: "oir_req_998121",
-      created_at: "11 min ago",
-      model_used: "gpt-4o-mini",
-      provider: "openai",
-      task_type: "data_extraction",
-      tokens_in: 180,
-      tokens_out: 60,
-      cost_usd: 0.00021,
-      cost_inr: 0.018,
-      latency_ms: 190,
-      outcome_success: true,
-      outcome_metric: "data_verified",
-      prompt_preview: "Extract invoice line items and tax amounts from PDF text dump...",
-      cached_hit: false,
-      fallback_triggered: false,
-      speculative_win: false,
-      critic_escalated: true,
-      status: "success"
-    }
-  ];
+const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
+  {
+    model_name: "Claude 3.5 Sonnet",
+    provider: "anthropic",
+    task_type: "sales_email",
+    total_requests: 18420,
+    success_count: 17020,
+    win_rate: 0.924,
+    win_rate_pct: 92.4,
+    avg_latency_ms: 380,
+    avg_cost_usd: 0.0034,
+    cost_per_1k_tokens: 0.003,
+    cost_per_outcome_usd: 0.00368,
+    cost_per_positive_outcome: 0.00368,
+    pareto_tier: "frontier",
+    thompson_score: 0.942,
+    synthetic_judge_confidence: 0.96,
+    critic_pass_rate: 0.98
+  },
+  {
+    model_name: "DeepSeek Coder",
+    provider: "deepseek",
+    task_type: "code_generation",
+    total_requests: 14280,
+    success_count: 13150,
+    win_rate: 0.921,
+    win_rate_pct: 92.1,
+    avg_latency_ms: 115,
+    avg_cost_usd: 0.00065,
+    cost_per_1k_tokens: 0.0006,
+    cost_per_outcome_usd: 0.00071,
+    cost_per_positive_outcome: 0.00071,
+    pareto_tier: "frontier",
+    thompson_score: 0.938,
+    synthetic_judge_confidence: 0.94,
+    critic_pass_rate: 0.95
+  },
+  {
+    model_name: "Groq Llama 3.3 70B",
+    provider: "groq",
+    task_type: "customer_support",
+    total_requests: 21500,
+    success_count: 20600,
+    win_rate: 0.958,
+    win_rate_pct: 95.8,
+    avg_latency_ms: 84,
+    avg_cost_usd: 0.00018,
+    cost_per_1k_tokens: 0.0002,
+    cost_per_outcome_usd: 0.00019,
+    cost_per_positive_outcome: 0.00019,
+    pareto_tier: "frontier",
+    thompson_score: 0.965,
+    synthetic_judge_confidence: 0.98,
+    critic_pass_rate: 0.99
+  },
+  {
+    model_name: "DeepSeek-V3",
+    provider: "deepseek",
+    task_type: "general_instruction",
+    total_requests: 31200,
+    success_count: 27980,
+    win_rate: 0.897,
+    win_rate_pct: 89.7,
+    avg_latency_ms: 95,
+    avg_cost_usd: 0.00042,
+    cost_per_1k_tokens: 0.0004,
+    cost_per_outcome_usd: 0.00047,
+    cost_per_positive_outcome: 0.00047,
+    pareto_tier: "frontier",
+    thompson_score: 0.912,
+    synthetic_judge_confidence: 0.93,
+    critic_pass_rate: 0.94
+  },
+  {
+    model_name: "GPT-4o",
+    provider: "openai",
+    task_type: "complex_reasoning",
+    total_requests: 12400,
+    success_count: 10450,
+    win_rate: 0.842,
+    win_rate_pct: 84.2,
+    avg_latency_ms: 680,
+    avg_cost_usd: 0.0052,
+    cost_per_1k_tokens: 0.005,
+    cost_per_outcome_usd: 0.00618,
+    cost_per_positive_outcome: 0.00618,
+    pareto_tier: "suboptimal",
+    thompson_score: 0.835,
+    synthetic_judge_confidence: 0.88,
+    critic_pass_rate: 0.91
+  }
+];
 
-  const initialBenchmarks: BenchmarkItem[] = [
-    {
-      model_name: "Claude 3.5 Sonnet",
-      provider: "anthropic",
-      task_type: "Sales Outreach",
-      total_requests: 12400,
-      success_count: 11580,
-      win_rate: 93.4,
-      win_rate_pct: 93.4,
-      avg_latency_ms: 380,
-      avg_cost_usd: 0.0034,
-      cost_per_1k_tokens: 0.003,
-      cost_per_outcome_usd: 0.00364,
-      cost_per_positive_outcome: 0.00364,
-      pareto_tier: "frontier",
-      thompson_score: 0.892,
-      synthetic_judge_confidence: 96.5,
-      critic_pass_rate: 98.2
-    },
-    {
-      model_name: "DeepSeek Coder V2",
-      provider: "deepseek",
-      task_type: "Code Review",
-      total_requests: 18900,
-      success_count: 17410,
-      win_rate: 92.1,
-      win_rate_pct: 92.1,
-      avg_latency_ms: 310,
-      avg_cost_usd: 0.00065,
-      cost_per_1k_tokens: 0.0006,
-      cost_per_outcome_usd: 0.00071,
-      cost_per_positive_outcome: 0.00071,
-      pareto_tier: "frontier",
-      thompson_score: 0.941,
-      synthetic_judge_confidence: 94.0,
-      critic_pass_rate: 94.6
-    },
-    {
-      model_name: "Llama 3.3 70B (Groq)",
-      provider: "groq",
-      task_type: "Support FAQ",
-      total_requests: 8400,
-      success_count: 8080,
-      win_rate: 96.2,
-      win_rate_pct: 96.2,
-      avg_latency_ms: 84,
-      avg_cost_usd: 0.00018,
-      cost_per_1k_tokens: 0.0002,
-      cost_per_outcome_usd: 0.00019,
-      cost_per_positive_outcome: 0.00019,
-      pareto_tier: "frontier",
-      thompson_score: 0.978,
-      synthetic_judge_confidence: 98.1,
-      critic_pass_rate: 97.4
-    },
-    {
-      model_name: "DeepSeek-V3",
-      provider: "deepseek",
-      task_type: "SQL & Extraction",
-      total_requests: 15600,
-      success_count: 14790,
-      win_rate: 94.8,
-      win_rate_pct: 94.8,
-      avg_latency_ms: 280,
-      avg_cost_usd: 0.00042,
-      cost_per_1k_tokens: 0.0004,
-      cost_per_outcome_usd: 0.00044,
-      cost_per_positive_outcome: 0.00044,
-      pareto_tier: "frontier",
-      thompson_score: 0.956,
-      synthetic_judge_confidence: 95.2,
-      critic_pass_rate: 96.1
-    },
-    {
-      model_name: "GPT-4o (Vanilla)",
-      provider: "openai",
-      task_type: "General Flagship",
-      total_requests: 2200,
-      success_count: 1980,
-      win_rate: 90.0,
-      win_rate_pct: 90.0,
-      avg_latency_ms: 490,
-      avg_cost_usd: 0.0052,
-      cost_per_1k_tokens: 0.005,
-      cost_per_outcome_usd: 0.00577,
-      cost_per_positive_outcome: 0.00577,
-      pareto_tier: "suboptimal",
-      thompson_score: 0.720,
-      synthetic_judge_confidence: 92.0,
-      critic_pass_rate: 99.0
-    }
-  ];
+const DEFAULT_RULES: RoutingRule[] = [
+  {
+    id: "rule_1",
+    name: "Sales Outreach: High Conversion",
+    task_type: "sales_email",
+    condition_pattern: "task == 'sales_email'",
+    target_metric: "demo_booked",
+    is_active: true,
+    enabled: true,
+    priority_models: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
+    models_priority: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
+    fallback_model: "GPT-4o",
+    max_latency_ms: 450,
+    max_cost_usd: 0.0035,
+    min_win_rate: 0.90,
+    strategy: "outcome_optimized"
+  },
+  {
+    id: "rule_2",
+    name: "Code Generation & PR Review",
+    task_type: "code_generation",
+    condition_pattern: "task == 'code_generation'",
+    target_metric: "code_merged",
+    is_active: true,
+    enabled: true,
+    priority_models: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
+    models_priority: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
+    fallback_model: "GPT-4o",
+    max_latency_ms: 400,
+    max_cost_usd: 0.002,
+    min_win_rate: 0.88,
+    strategy: "cost_minimum"
+  }
+];
 
-  const initialRules: RoutingRule[] = [
-    {
-      id: "rule_1",
-      name: "High-Converting Sales Email Route",
-      task_type: "sales_email",
-      condition_pattern: "task == 'sales_email' || contains(prompt, 'outreach')",
-      target_metric: "demo_booked",
-      is_active: true,
-      enabled: true,
-      priority_models: ["claude-3-5-sonnet", "deepseek-chat", "gpt-4o-mini"],
-      models_priority: ["claude-3-5-sonnet", "deepseek-chat", "gpt-4o-mini"],
-      fallback_model: "gpt-4o",
-      max_latency_ms: 500,
-      max_cost_usd: 0.005,
-      min_win_rate: 0.90,
-      strategy: "outcome_optimized",
-      ai_synthesized: false
-    },
-    {
-      id: "rule_2",
-      name: "Cost-Optimized Code Review",
-      task_type: "code_generation",
-      condition_pattern: "task == 'code_generation' || contains(prompt, 'typescript')",
-      target_metric: "code_merged",
-      is_active: true,
-      enabled: true,
-      priority_models: ["deepseek-coder", "claude-3-5-sonnet", "gpt-4o-mini"],
-      models_priority: ["deepseek-coder", "claude-3-5-sonnet", "gpt-4o-mini"],
-      fallback_model: "gpt-4o",
-      max_latency_ms: 600,
-      max_cost_usd: 0.002,
-      min_win_rate: 0.88,
-      strategy: "cost_minimum",
-      ai_synthesized: false
-    },
-    {
-      id: "rule_3",
-      name: "Ultra-Fast Support Triage (<100ms)",
-      task_type: "customer_support",
-      condition_pattern: "task == 'customer_support'",
-      target_metric: "ticket_resolved",
-      is_active: true,
-      enabled: true,
-      priority_models: ["llama-3.3-70b-versatile", "deepseek-chat", "gpt-4o-mini"],
-      models_priority: ["llama-3.3-70b-versatile", "deepseek-chat", "gpt-4o-mini"],
-      fallback_model: "gpt-4o-mini",
-      max_latency_ms: 150,
-      max_cost_usd: 0.0005,
-      min_win_rate: 0.92,
-      strategy: "latency_prioritized",
-      ai_synthesized: true
-    }
-  ];
+const DEFAULT_KEYS: ApiKeyItem[] = [
+  {
+    id: "key_1",
+    name: "Production Gateway Key",
+    key_prefix: "oir_live_8f9a2b",
+    environment: "live",
+    rate_limit: 600,
+    rate_limit_rpm: 600,
+    created_at: "Just now",
+    last_used_at: "Just now",
+    is_active: true
+  }
+];
 
-  const initialApiKeys: ApiKeyItem[] = [
-    {
-      id: "key_1",
-      name: "Production Backend Gateway",
-      key_prefix: "oir_live_8f39a7",
-      environment: "live",
-      rate_limit: 1200,
-      rate_limit_rpm: 1200,
-      created_at: "Aug 10, 2026",
-      last_used_at: "Just now",
-      is_active: true
-    },
-    {
-      id: "key_2",
-      name: "Staging / Testing Sandbox",
-      key_prefix: "oir_test_2b419c",
-      environment: "test",
-      rate_limit: 300,
-      rate_limit_rpm: 300,
-      created_at: "Aug 14, 2026",
-      last_used_at: "2 hours ago",
-      is_active: true
-    }
-  ];
-
-  return {
-    theme: "light",
-    setTheme: (theme) => set({ theme }),
-    toggleTheme: () =>
-      set((state) => {
-        const nextTheme = state.theme === "light" ? "dark" : "light";
+export const useAppStore = create<AppState>()(
+  persist(
+    (set, get) => ({
+      theme: "light",
+      setTheme: (theme) => {
         if (typeof document !== "undefined") {
-          if (nextTheme === "dark") {
+          if (theme === "dark") {
             document.documentElement.classList.add("dark");
           } else {
             document.documentElement.classList.remove("dark");
           }
         }
-        return { theme: nextTheme };
-      }),
-
-    currency: "USD",
-    setCurrency: (currency) => set({ currency }),
-    toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
-    
-    // Auth
-    user: {
-      name: "Alex Vance",
-      email: "alex@company.com",
-      hasPin: true,
-      hasBiometrics: true
-    },
-    setAuthUser: (user) => set({ user }),
-    logout: () => set({ user: null }),
-
-    orgName: "Acme AI Lab",
-    planTier: "growth",
-    monthlyQuota: 500000,
-    currentTokens: 0,
-    monthlySpendUSD: 0.00,
-    baselineSpendUSD: 0.00,
-
-    autopilot: {
-      enabled: true,
-      mode: "optimal_pace",
-      burn_ratio: 0.00,
-      monthly_budget_usd: 1500.0,
-      projected_spend_usd: 0.00,
-      cost_weight_w2: 25.0,
-      quality_weight_w1: 0.70
-    },
-
-    // 4 Breakthrough Strategic Features Initial State
-    prewarmMetrics: {
-      totalEvents: 1420,
-      speculativeHits: 1294,
-      hitRatePct: 91.1,
-      baselineTtftMs: 280.0,
-      acceleratedTtftMs: 68.4,
-      reductionPct: 75.6,
-      activeHotSlots: 4
-    },
-
-    slaEscrowContracts: [
-      {
-        id: "sla_cnt_981240",
-        requestId: "oir_req_998124",
-        createdAt: "10 min ago",
-        provider: "anthropic",
-        model: "claude-3-5-sonnet-20241022",
-        latencyLimitMs: 450,
-        actualLatencyMs: 380,
-        status: "settled_fulfilled",
-        refundUsd: 0.0,
-        refundTokens: 0,
-        cryptographicHash: "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a8c0b2d4e6f8a"
+        set({ theme });
       },
-      {
-        id: "sla_cnt_981239",
-        requestId: "oir_req_998118",
-        createdAt: "1 hour ago",
-        provider: "openai",
-        model: "gpt-4o",
-        latencyLimitMs: 350,
-        actualLatencyMs: 680,
-        status: "breached_escrow_refunded",
-        refundUsd: 0.0142,
-        refundTokens: 1280,
-        cryptographicHash: "0x3a9d1b7e5c8f0a2d4e6b8c0a2f4e6d8c0b2a4e6f8d0c"
-      }
-    ],
+      toggleTheme: () =>
+        set((state) => {
+          const nextTheme = state.theme === "light" ? "dark" : "light";
+          if (typeof document !== "undefined") {
+            if (nextTheme === "dark") {
+              document.documentElement.classList.add("dark");
+            } else {
+              document.documentElement.classList.remove("dark");
+            }
+          }
+          return { theme: nextTheme };
+        }),
 
-    deltaStats: {
-      totalTokensAvoided: 512400,
-      compressionRatioPct: 60.3,
-      costSavedUsd: 17.93
-    },
+      currency: "USD",
+      setCurrency: (currency) => set({ currency }),
+      toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
+      
+      // Auth State
+      user: {
+        name: "Alex Vance",
+        email: "alex@company.com",
+        hasPin: true,
+        hasBiometrics: true
+      },
+      setAuthUser: (user) => set({ user }),
+      logout: () => set({ user: null }),
 
-    federationSettings: {
-      enabled: true,
-      weight: 0.75,
-      totalTenants: 480,
-      epsilon: 0.5
-    },
+      orgName: "Acme AI Lab",
+      planTier: "growth",
+      monthlyQuota: 500000,
+      currentTokens: 0,
+      monthlySpendUSD: 0.00,
+      baselineSpendUSD: 0.00,
 
-    setFederationWeight: (weight: number) =>
-      set((state) => ({
-        federationSettings: { ...state.federationSettings, weight }
-      })),
+      autopilot: {
+        enabled: true,
+        mode: "optimal_pace",
+        burn_ratio: 0.00,
+        monthly_budget_usd: 1500.0,
+        projected_spend_usd: 0.00,
+        cost_weight_w2: 25.0,
+        quality_weight_w1: 0.70
+      },
 
-    toggleFederation: () =>
-      set((state) => ({
-        federationSettings: { ...state.federationSettings, enabled: !state.federationSettings.enabled }
-      })),
+      prewarmMetrics: {
+        totalEvents: 1420,
+        speculativeHits: 1294,
+        hitRatePct: 91.1,
+        baselineTtftMs: 280.0,
+        acceleratedTtftMs: 68.4,
+        reductionPct: 75.6,
+        activeHotSlots: 4
+      },
 
-    addSlaContract: (contract: SlaContractItem) =>
-      set((state) => ({
-        slaEscrowContracts: [contract, ...state.slaEscrowContracts]
-      })),
+      slaEscrowContracts: [],
 
-    setAutopilotMode: (mode) =>
-      set((state) => ({
-        autopilot: {
-          ...state.autopilot,
-          mode,
-          cost_weight_w2: mode === "aggressive_savings" ? 40.0 : (mode === "quality_boost" ? 15.0 : 25.0),
-          quality_weight_w1: mode === "aggressive_savings" ? 0.50 : (mode === "quality_boost" ? 0.85 : 0.70)
-        }
-      })),
+      deltaStats: {
+        totalTokensAvoided: 512400,
+        compressionRatioPct: 60.3,
+        costSavedUsd: 17.93
+      },
 
-    toggleAutopilot: () =>
-      set((state) => ({
-        autopilot: {
-          ...state.autopilot,
-          enabled: !state.autopilot.enabled
-        }
-      })),
+      federationSettings: {
+        enabled: true,
+        weight: 0.75,
+        totalTenants: 480,
+        epsilon: 0.5
+      },
 
-    logs: initialLogs,
-    telemetryLogs: initialLogs,
-    benchmarks: initialBenchmarks,
-    modelBenchmarks: initialBenchmarks,
-    rules: initialRules,
-    routingRules: initialRules,
-    apiKeys: initialApiKeys,
+      webhookConfig: {
+        endpointUrl: "https://api.acme.ai/webhooks/outcome-events",
+        secretKey: "whsec_99a8b7c6d5e4f3a2b1",
+        events: ["outcome.indexed.success", "sla.breach.escrow_refunded", "autopilot.weight_adjusted"]
+      },
 
-    recordOutcome: (requestId: string, success: boolean) =>
-      set((state) => {
-        const updatedLogs = state.logs.map((l) =>
-          l.id === requestId ? { ...l, outcome_success: success } : l
-        );
-        return { logs: updatedLogs, telemetryLogs: updatedLogs };
-      }),
+      setWebhookConfig: (config) =>
+        set((state) => ({
+          webhookConfig: { ...state.webhookConfig, ...config }
+        })),
 
-    addRule: (rule: RoutingRule) =>
-      set((state) => {
-        const updated = [rule, ...state.rules];
-        return { rules: updated, routingRules: updated };
-      }),
+      setFederationWeight: (weight: number) =>
+        set((state) => ({
+          federationSettings: { ...state.federationSettings, weight }
+        })),
 
-    toggleRule: (id: string) =>
-      set((state) => {
-        const updated = state.rules.map((r) =>
-          r.id === id ? { ...r, is_active: !r.is_active, enabled: !r.enabled } : r
-        );
-        return { rules: updated, routingRules: updated };
-      }),
+      toggleFederation: () =>
+        set((state) => ({
+          federationSettings: { ...state.federationSettings, enabled: !state.federationSettings.enabled }
+        })),
 
-    deleteRule: (id: string) =>
-      set((state) => {
-        const updated = state.rules.filter((r) => r.id !== id);
-        return { rules: updated, routingRules: updated };
-      }),
+      addSlaContract: (contract: SlaContractItem) =>
+        set((state) => ({
+          slaEscrowContracts: [contract, ...state.slaEscrowContracts]
+        })),
 
-    updateRulePriority: (id: string, newPriority: string[]) =>
-      set((state) => {
-        const updated = state.rules.map((r) =>
-          r.id === id ? { ...r, priority_models: newPriority, models_priority: newPriority } : r
-        );
-        return { rules: updated, routingRules: updated };
-      }),
+      setAutopilotMode: (mode) =>
+        set((state) => ({
+          autopilot: {
+            ...state.autopilot,
+            mode,
+            cost_weight_w2: mode === "aggressive_savings" ? 40.0 : mode === "quality_boost" ? 15.0 : 25.0,
+            quality_weight_w1: mode === "aggressive_savings" ? 0.50 : mode === "quality_boost" ? 0.85 : 0.70
+          }
+        })),
 
-    createApiKey: (name: string, envOrLimit?: string | number) =>
-      set((state) => {
-        const isLive = typeof envOrLimit === "string" ? envOrLimit === "live" : true;
-        const prefix = isLive ? "oir_live_" : "oir_test_";
-        const randomHex = Math.random().toString(36).substring(2, 8);
-        const newKey: ApiKeyItem = {
-          id: `key_${Date.now()}`,
-          name,
-          key_prefix: `${prefix}${randomHex}`,
-          environment: isLive ? "live" : "test",
-          rate_limit: typeof envOrLimit === "number" ? envOrLimit : 600,
-          rate_limit_rpm: typeof envOrLimit === "number" ? envOrLimit : 600,
-          created_at: "Just now",
-          last_used_at: "Never",
-          is_active: true
-        };
-        return { apiKeys: [newKey, ...state.apiKeys] };
-      }),
+      toggleAutopilot: () =>
+        set((state) => ({
+          autopilot: { ...state.autopilot, enabled: !state.autopilot.enabled }
+        })),
 
-    deleteApiKey: (id: string) =>
-      set((state) => ({ apiKeys: state.apiKeys.filter((k) => k.id !== id) })),
+      logs: [],
+      telemetryLogs: [],
+      benchmarks: DEFAULT_BENCHMARKS,
+      modelBenchmarks: DEFAULT_BENCHMARKS,
+      rules: DEFAULT_RULES,
+      routingRules: DEFAULT_RULES,
+      apiKeys: DEFAULT_KEYS,
 
-    revokeApiKey: (id: string) =>
-      set((state) => ({ apiKeys: state.apiKeys.filter((k) => k.id !== id) })),
+      recordOutcome: (requestId: string, success: boolean) =>
+        set((state) => {
+          const updatedLogs = (state.logs.length > 0 ? state.logs : state.telemetryLogs).map((log) => {
+            if (log.id === requestId) {
+              return { ...log, outcome_success: success };
+            }
+            return log;
+          });
 
-    addLog: (log: LogItem) =>
-      set((state) => {
-        const updated = [log, ...state.logs];
-        const addedTokens = (log.tokens_in || 0) + (log.tokens_out || 0);
-        const addedCost = log.cost_usd || 0.001;
-        const baselineMultiplier = 1.74; // vs un-routed GPT-4o
-        return {
-          logs: updated,
-          telemetryLogs: updated,
-          currentTokens: state.currentTokens + addedTokens,
-          monthlySpendUSD: Number((state.monthlySpendUSD + addedCost).toFixed(4)),
-          baselineSpendUSD: Number((state.baselineSpendUSD + addedCost * baselineMultiplier).toFixed(4)),
-        };
+          return {
+            logs: updatedLogs,
+            telemetryLogs: updatedLogs
+          };
+        }),
+
+      addRule: (rule: RoutingRule) =>
+        set((state) => {
+          const updated = [rule, ...state.routingRules];
+          return { rules: updated, routingRules: updated };
+        }),
+
+      toggleRule: (id: string) =>
+        set((state) => {
+          const updated = state.routingRules.map((r) =>
+            r.id === id ? { ...r, is_active: !r.is_active, enabled: !r.enabled } : r
+          );
+          return { rules: updated, routingRules: updated };
+        }),
+
+      deleteRule: (id: string) =>
+        set((state) => {
+          const updated = state.routingRules.filter((r) => r.id !== id);
+          return { rules: updated, routingRules: updated };
+        }),
+
+      createApiKey: (name: string, envOrLimit: string | number = "live") =>
+        set((state) => {
+          const env = typeof envOrLimit === "string" ? (envOrLimit as "live" | "test") : "live";
+          const rateLimit = typeof envOrLimit === "number" ? envOrLimit : 600;
+          const newKey: ApiKeyItem = {
+            id: `key_${Date.now()}`,
+            name,
+            key_prefix: `oir_${env}_${Math.random().toString(36).substring(2, 8)}`,
+            environment: env,
+            rate_limit: rateLimit,
+            rate_limit_rpm: rateLimit,
+            created_at: "Just now",
+            last_used_at: "Never",
+            is_active: true
+          };
+          const updated = [newKey, ...state.apiKeys];
+          return { apiKeys: updated };
+        }),
+
+      deleteApiKey: (id: string) =>
+        set((state) => ({
+          apiKeys: state.apiKeys.filter((k) => k.id !== id)
+        })),
+
+      revokeApiKey: (id: string) =>
+        set((state) => ({
+          apiKeys: state.apiKeys.filter((k) => k.id !== id)
+        })),
+
+      addLog: (log: LogItem) =>
+        set((state) => {
+          const currentSpend = state.monthlySpendUSD + log.cost_usd;
+          const baselineCost = log.cost_usd * 1.74; // vs GPT-4o unrouted
+          const currentBaseline = state.baselineSpendUSD + baselineCost;
+          const totalTokens = state.currentTokens + log.tokens_in + log.tokens_out;
+          const updatedLogs = [log, ...state.logs];
+
+          return {
+            logs: updatedLogs,
+            telemetryLogs: updatedLogs,
+            monthlySpendUSD: parseFloat(currentSpend.toFixed(4)),
+            baselineSpendUSD: parseFloat(currentBaseline.toFixed(4)),
+            currentTokens: totalTokens
+          };
+        }),
+
+      clearUserData: () =>
+        set(() => ({
+          logs: [],
+          telemetryLogs: [],
+          monthlySpendUSD: 0.00,
+          baselineSpendUSD: 0.00,
+          currentTokens: 0,
+          slaEscrowContracts: []
+        }))
+    }),
+    {
+      name: "outcome_router_storage",
+      storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : ({} as any))),
+      partialize: (state) => ({
+        theme: state.theme,
+        currency: state.currency,
+        user: state.user,
+        monthlySpendUSD: state.monthlySpendUSD,
+        baselineSpendUSD: state.baselineSpendUSD,
+        currentTokens: state.currentTokens,
+        logs: state.logs,
+        telemetryLogs: state.telemetryLogs,
+        rules: state.rules,
+        routingRules: state.routingRules,
+        apiKeys: state.apiKeys,
+        slaEscrowContracts: state.slaEscrowContracts,
+        deltaStats: state.deltaStats,
+        federationSettings: state.federationSettings,
+        autopilot: state.autopilot,
+        webhookConfig: state.webhookConfig
       })
-  };
-});
+    }
+  )
+);

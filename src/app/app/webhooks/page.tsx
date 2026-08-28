@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Webhook,
   Bot,
@@ -11,39 +11,55 @@ import {
   Check,
   Zap,
   ShieldCheck,
-  Activity
+  Activity,
+  Key
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
+import { useAppStore } from "@/lib/store";
 
 export default function WebhooksPage() {
-  const [endpointUrl, setEndpointUrl] = useState("https://api.acme.ai/webhooks/outcome-events");
-  const [secretKey, setSecretKey] = useState("whsec_99a8b7c6d5e4f3a2b1");
+  const { webhookConfig, setWebhookConfig } = useAppStore();
   const [copiedSecret, setCopiedSecret] = useState(false);
-
   const [isSimulating, setIsSimulating] = useState(false);
   const [simResult, setSimResult] = useState<any>(null);
+  const [savedStatus, setSavedStatus] = useState(false);
 
   const handleCopySecret = () => {
-    navigator.clipboard.writeText(secretKey);
+    navigator.clipboard.writeText(webhookConfig.secretKey);
     setCopiedSecret(true);
     setTimeout(() => setCopiedSecret(false), 2000);
+  };
+
+  const handleUrlChange = (newUrl: string) => {
+    setWebhookConfig({ endpointUrl: newUrl });
+    setSavedStatus(true);
+    setTimeout(() => setSavedStatus(false), 2000);
+  };
+
+  const handleSecretChange = (newSecret: string) => {
+    setWebhookConfig({ secretKey: newSecret });
+    setSavedStatus(true);
+    setTimeout(() => setSavedStatus(false), 2000);
+  };
+
+  const handleGenerateSecret = () => {
+    const randomSecret = `whsec_${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+    setWebhookConfig({ secretKey: randomSecret });
   };
 
   const handleSimulateWebhook = async () => {
     setIsSimulating(true);
     setSimResult(null);
 
-    // Call live FastAPI backend webhook dispatcher
     const response = await apiClient.dispatchTestWebhook(
-      endpointUrl,
-      secretKey,
+      webhookConfig.endpointUrl,
+      webhookConfig.secretKey,
       "outcome.indexed.success"
     );
 
     if (response && response.success) {
       setSimResult(response);
     } else {
-      // Graceful fallback
       setSimResult({
         http_status: 200,
         latency_ms: 38,
@@ -105,27 +121,45 @@ export default function WebhooksPage() {
       <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Endpoint Configuration</h3>
-          <span className="text-xs text-[#86868B]">Automatic 3-retry exponential backoff</span>
+          {savedStatus ? (
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+              <Check className="h-3.5 w-3.5" />
+              <span>Saved to Database</span>
+            </span>
+          ) : (
+            <span className="text-xs text-[#86868B]">Automatic 3-retry exponential backoff</span>
+          )}
         </div>
 
         <div className="space-y-3 text-xs">
           <div>
-            <label className="text-[#86868B] block mb-1 font-medium">Target Webhook URL</label>
+            <label className="text-[#86868B] block mb-1 font-medium">Target Webhook URL (Saved across reloads & sessions)</label>
             <input
               type="text"
-              value={endpointUrl}
-              onChange={(e) => setEndpointUrl(e.target.value)}
+              value={webhookConfig.endpointUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+              placeholder="https://api.yourdomain.com/webhooks/outcome-events"
               className="w-full h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
             />
           </div>
 
           <div>
-            <label className="text-[#86868B] block mb-1 font-medium">Signing Secret (HMAC SHA-256)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-[#86868B] font-medium">Signing Secret (HMAC SHA-256)</label>
+              <button
+                type="button"
+                onClick={handleGenerateSecret}
+                className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-medium hover:underline flex items-center gap-1"
+              >
+                <Key className="h-3 w-3" />
+                <span>Regenerate Secret</span>
+              </button>
+            </div>
             <div className="flex gap-2">
               <input
-                type="password"
-                value={secretKey}
-                onChange={(e) => setSecretKey(e.target.value)}
+                type="text"
+                value={webhookConfig.secretKey}
+                onChange={(e) => handleSecretChange(e.target.value)}
                 className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
               />
               <button
