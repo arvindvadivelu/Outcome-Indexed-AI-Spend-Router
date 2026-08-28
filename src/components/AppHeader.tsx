@@ -82,7 +82,7 @@ export function AppHeader() {
 
   const userName = mounted && user?.name ? user.name : "Alex Vance";
   const userEmail = mounted && user?.email ? user.email : "alex@company.com";
-  const activePlan = mounted ? planTier : "enterprise";
+  const activePlan = mounted && planTier ? planTier : "free";
 
   // Derive initials
   const initials = userName

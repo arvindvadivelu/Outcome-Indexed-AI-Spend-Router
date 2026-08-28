@@ -23,7 +23,6 @@ export function Navbar() {
     { href: "/pricing", label: "Pricing" },
     { href: "/case-studies", label: "Case Studies" },
     { href: "/docs", label: "Docs" },
-    { href: "/blog", label: "Blog" },
     { href: "/about", label: "About" },
   ];
 
@@ -38,11 +37,8 @@ export function Navbar() {
               <Zap className="h-5 w-5 text-white stroke-[2.5]" />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] text-base leading-tight tracking-tight flex items-center gap-1.5">
+              <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] text-base leading-tight tracking-tight">
                 OutcomeRouter
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-bold border border-[#0050FF]/20">
-                  v2.0 PRO
-                </span>
               </span>
               <span className="text-[11px] text-[#86868B] font-medium">Outcome-Indexed AI Spend</span>
             </div>
@@ -69,18 +65,6 @@ export function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-3" suppressHydrationWarning>
-          {/* Currency Toggle */}
-          <button
-            onClick={toggleCurrency}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-mono rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-[#E5E5EA] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:border-[#D2D2D7] transition-all"
-            title="Toggle between USD ($) and INR (₹)"
-            suppressHydrationWarning
-          >
-            <span className={activeCurrency === "USD" ? "text-[#0050FF] dark:text-[#3374FF] font-bold" : "text-[#86868B]"}>USD $</span>
-            <span className="text-[#D2D2D7] dark:text-[#3A3A3C]">/</span>
-            <span className={activeCurrency === "INR" ? "text-[#0050FF] dark:text-[#3374FF] font-bold" : "text-[#86868B]"}>INR ₹</span>
-          </button>
-
           <Link
             href="/auth/signin"
             className="hidden sm:inline-flex text-sm font-medium text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] px-3 py-1.5 transition-colors"

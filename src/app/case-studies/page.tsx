@@ -9,11 +9,12 @@ import {
   Sparkles,
   TrendingDown,
   ArrowRight,
-  Bot,
-  Building,
-  Layers,
+  ShieldCheck,
+  Zap,
+  CheckCircle2,
   Cpu,
-  CheckCircle2
+  Layers,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
 
@@ -28,40 +29,7 @@ export default function CaseStudiesPage() {
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
 
-  // Custom AI Case Study Generator state
-  const [industryInput, setIndustryInput] = useState("B2B SaaS DevTools");
-  const [techStackInput, setTechStackInput] = useState("Next.js + Python LangGraph + Postgres");
-  const [spendInput, setSpendInput] = useState(25000);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedCaseStudy, setGeneratedCaseStudy] = useState<any>(null);
-
-  const handleGenerateCaseStudy = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsGenerating(true);
-
-    setTimeout(() => {
-      const savingsPct = 43.8;
-      const savingsUsd = spendInput * (savingsPct / 100);
-      const afterSpend = spendInput - savingsUsd;
-
-      setGeneratedCaseStudy({
-        companyName: `${industryInput.split(" ")[0]} AI Labs`,
-        industry: industryInput,
-        techStack: techStackInput,
-        beforeSpend: spendInput,
-        afterSpend: Math.round(afterSpend),
-        savingsUsd: Math.round(savingsUsd),
-        annualSavings: Math.round(savingsUsd * 12),
-        savingsPct: 43.8,
-        kpiBoost: "+18.4% faster PR merges with zero token degradation",
-        modelDistribution: "DeepSeek Coder (48%) • Claude 3.5 Sonnet (32%) • Groq Llama 3.3 (20%)",
-        executiveQuote: `Outcome Router transformed our ${techStackInput} pipeline within 48 hours. We eliminated $${Math.round(savingsUsd).toLocaleString()}/month in wasted GPT-4o calls while increasing code acceptance rates.`
-      });
-      setIsGenerating(false);
-    }, 600);
-  };
-
-  const existingStudies = [
+  const coreStudies = [
     {
       company: "LeadScale AI",
       industry: "Sales Automation & SDR Outreach",
@@ -70,10 +38,11 @@ export default function CaseStudiesPage() {
       spendAfter: 12600,
       savingsPct: 70,
       kpiImpact: "+14.2% Demo Bookings",
+      modelSymphony: "Claude 3.5 Sonnet (42%) • DeepSeek-V3 (40%) • GPT-4o Mini (18%)",
       description:
-        "LeadScale generates 1.2M cold emails per month. By shifting routine outreach from GPT-4o to DeepSeek-V3 and Claude 3.5 Sonnet, they cut token bills by $29,400/mo while improving reply rates.",
+        "LeadScale generates 1.2M cold outreach emails per month. By dynamically classifying prompt intent and routing routine replies to DeepSeek-V3 while keeping high-stakes executive outreach on Claude 3.5 Sonnet, they cut token bills by $29,400/mo while improving reply rates.",
       quote:
-        "Outcome-Indexed routing paid for itself on day one. We stopped treating all prompt complexities the same.",
+        "Outcome-Indexed routing paid for itself on day one. We stopped treating all prompt complexities as equal.",
       author: "Alex Vance, Head of AI Infrastructure"
     },
     {
@@ -84,10 +53,11 @@ export default function CaseStudiesPage() {
       spendAfter: 29200,
       savingsPct: 57,
       kpiImpact: "94.2% Code Acceptance",
+      modelSymphony: "DeepSeek Coder (58%) • Claude 3.5 Sonnet (32%) • Fallback GPT-4o (10%)",
       description:
-        "Processing thousands of pull requests daily. Dynamic routing switches between DeepSeek Coder and Claude 3.5 Sonnet based on syntax complexity, saving $38,800/mo.",
+        "Processing thousands of GitHub pull requests daily. Dynamic routing switches between DeepSeek Coder and Claude 3.5 Sonnet based on syntax complexity, saving $38,800/mo with sub-250ms latency.",
       quote:
-        "Our P95 latency dropped from 920ms to 240ms with Speculative Dual-Model racing enabled.",
+        "Our P95 latency dropped from 920ms to 240ms with Speculative Keystroke Pre-Warming enabled.",
       author: "Elena Rostova, VP of Engineering"
     },
     {
@@ -98,198 +68,140 @@ export default function CaseStudiesPage() {
       spendAfter: 3600,
       savingsPct: 80,
       kpiImpact: "84ms P95 Latency",
+      modelSymphony: "Groq Llama 3.3 70B (84%) • GPT-4o Fallback (16%)",
       description:
-        "SupportFlow routes triage tickets to Groq-hosted Llama-3.3 70B for near-instant classification and resolves complex tier-2 issues with GPT-4o mini.",
+        "Routing 600K customer support queries per week to Groq Llama 3.3 70B for instant FAQ resolution, with automated fallback to GPT-4o only when confidence dips below 90%.",
       quote:
-        "The fastest support responses in our category, with an 80% reduction in AI operating spend.",
-      author: "Marcus Chen, Founder & CTO"
+        "We achieved sub-100ms response times and reduced our support infrastructure cost by 80%.",
+      author: "Marcus Chen, Chief Architect"
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] flex flex-col selection:bg-[#0050FF] selection:text-white">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
       <Navbar />
 
-      {/* Header */}
-      <section className="py-20 bg-apple-hero text-center border-b border-black/[0.06]">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#EEF4FF] border border-[#0050FF]/20 text-[#0050FF] text-xs font-semibold shadow-apple-sm">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Real-World ROI Case Studies & Custom AI Generator</span>
-          </div>
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-[#1D1D1F] tracking-tight">
-            How Top Teams Save <span className="text-[#0050FF]">$10K–$50K/Month</span>
-          </h1>
-          <p className="text-base sm:text-lg text-[#6E6E73] max-w-2xl mx-auto">
-            Discover verified customer case studies, or generate an instant AI simulation tailored to your specific engineering stack.
-          </p>
-        </div>
-      </section>
+      <main className="flex-1 pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-16">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-14 shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] text-center space-y-6" suppressHydrationWarning>
+          <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-br from-[#0050FF]/20 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
-      {/* 1. Custom AI Enterprise Case Study Generator */}
-      <section className="py-12 bg-white border-b border-[#E5E5EA]">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="p-8 rounded-3xl bg-[#FBFBFD] border border-[#0050FF]/25 shadow-apple-md space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E5EA] pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-2xl bg-[#EEF4FF] text-[#0050FF]">
-                  <Bot className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-base text-[#1D1D1F]">AI Custom Case Study Synthesizer</h3>
-                  <p className="text-xs text-[#86868B]">Enter your stack and monthly spend to simulate your customized ROI transition</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-mono font-bold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-1 rounded-full border border-[#0050FF]/20">
-                100% AI Synthesized
+          <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF]" />
+              <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                Enterprise Production Case Studies
               </span>
             </div>
 
-            <form onSubmit={handleGenerateCaseStudy} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="text-xs font-semibold text-[#1D1D1F] block mb-1.5">Your Industry Domain:</label>
-                <input
-                  type="text"
-                  value={industryInput}
-                  onChange={(e) => setIndustryInput(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-2xl bg-white border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
-                />
-              </div>
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight">
+              Real Teams. Real Outcomes. <br />
+              <span className="bg-gradient-to-r from-[#0050FF] via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+                40% to 80% AI Spend Recovered.
+              </span>
+            </h1>
 
-              <div>
-                <label className="text-xs font-semibold text-[#1D1D1F] block mb-1.5">Tech & LLM Pipeline Stack:</label>
-                <input
-                  type="text"
-                  value={techStackInput}
-                  onChange={(e) => setTechStackInput(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-2xl bg-white border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-[#1D1D1F] block mb-1.5">Monthly LLM Spend (USD):</label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={spendInput}
-                    onChange={(e) => setSpendInput(Number(e.target.value))}
-                    className="w-full h-11 px-3.5 rounded-2xl bg-white border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isGenerating}
-                    className="px-5 h-11 rounded-2xl bg-[#0050FF] text-white font-bold text-xs hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex-shrink-0"
-                  >
-                    {isGenerating ? "Synthesizing..." : "Generate"}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {generatedCaseStudy && (
-              <div className="p-6 rounded-2xl bg-white border border-[#0050FF]/30 space-y-4 animate-in fade-in shadow-apple-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E5E5EA] pb-3 gap-2">
-                  <div>
-                    <h4 className="font-bold text-sm text-[#1D1D1F]">{generatedCaseStudy.companyName}</h4>
-                    <p className="text-xs text-[#86868B]">Stack: {generatedCaseStudy.techStack}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#0050FF]">
-                    <TrendingDown className="h-4 w-4" />
-                    <span>-{generatedCaseStudy.savingsPct}% Spend Reduction</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs font-mono">
-                  <div className="p-3 rounded-xl bg-[#F5F5F7]">
-                    <span className="text-[10px] text-[#86868B] block">Before Spend</span>
-                    <span className="font-bold text-red-500">{formatCurrency(generatedCaseStudy.beforeSpend * rate, currency)}/mo</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-[#F5F5F7]">
-                    <span className="text-[10px] text-[#86868B] block">Optimized Spend</span>
-                    <span className="font-bold text-[#1D1D1F]">{formatCurrency(generatedCaseStudy.afterSpend * rate, currency)}/mo</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-[#EEF4FF]">
-                    <span className="text-[10px] text-[#0050FF] block">Monthly Net Retained</span>
-                    <span className="font-bold text-[#0050FF]">+{formatCurrency(generatedCaseStudy.savingsUsd * rate, currency)}</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-[#EEF4FF]">
-                    <span className="text-[10px] text-[#0050FF] block">Annual Net Retained</span>
-                    <span className="font-bold text-[#0050FF]">+{formatCurrency(generatedCaseStudy.annualSavings * rate, currency)}</span>
-                  </div>
-                </div>
-
-                <p className="text-xs italic text-[#515154] bg-[#F5F5F7] p-3.5 rounded-xl border border-[#E5E5EA]">
-                  "{generatedCaseStudy.executiveQuote}"
-                </p>
-                <div className="flex items-center justify-between text-[11px] font-mono text-[#86868B]">
-                  <span>AI Traffic Distribution: <strong className="text-[#1D1D1F]">{generatedCaseStudy.modelDistribution}</strong></span>
-                  <span className="text-[#0050FF] font-bold">{generatedCaseStudy.kpiBoost}</span>
-                </div>
-              </div>
-            )}
+            <p className="text-sm sm:text-base text-[#86868B] max-w-2xl mx-auto leading-relaxed">
+              Explore how production engineering teams shifted from single-model brute force to outcome-indexed routing without sacrificing accuracy or SLA compliance.
+            </p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* 2. Featured Verified Case Studies */}
-      <section className="py-20 bg-[#F5F5F7]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-8">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F]">
-            Verified Customer Case Studies
-          </h2>
+        {/* 3 Core Production Studies */}
+        <section className="space-y-8" suppressHydrationWarning>
+          <div className="grid grid-cols-1 gap-8">
+            {coreStudies.map((study, idx) => {
+              const beforeSpend = study.spendBefore * rate;
+              const afterSpend = study.spendAfter * rate;
+              const savedAmount = beforeSpend - afterSpend;
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {existingStudies.map((study, index) => (
-              <div
-                key={index}
-                className="p-8 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm flex flex-col justify-between space-y-6 hover:shadow-apple-md transition-all"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="h-12 w-12 rounded-2xl bg-[#EEF4FF] text-[#0050FF] flex items-center justify-center font-bold text-lg">
-                      {study.logo}
+              return (
+                <div
+                  key={idx}
+                  className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6 hover:border-black/[0.12] dark:hover:border-white/[0.15] transition-all"
+                  suppressHydrationWarning
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#0050FF] to-indigo-600 text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-[#0050FF]/25">
+                        {study.logo}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                          {study.company}
+                        </h3>
+                        <p className="text-xs text-[#86868B]">{study.industry}</p>
+                      </div>
                     </div>
-                    <span className="text-xs font-mono font-bold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-1 rounded-full border border-[#0050FF]/20">
-                      -{study.savingsPct}% Spend
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="px-4 py-2 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 border border-[#0050FF]/25">
+                        <span className="text-[11px] text-[#86868B] block">Net Savings</span>
+                        <span className="font-mono font-extrabold text-sm text-[#0050FF] dark:text-[#3374FF]">
+                          +{formatCurrency(savedAmount, activeCurrency)}/mo (-{study.savingsPct}%)
+                        </span>
+                      </div>
+                      <div className="px-4 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/25">
+                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block">KPI Impact</span>
+                        <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                          {study.kpiImpact}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+                    {study.description}
+                  </p>
+
+                  <div className="p-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between text-xs">
+                    <span className="text-[#86868B] font-medium">Model Symphony:</span>
+                    <span className="font-mono font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {study.modelSymphony}
                     </span>
                   </div>
 
-                  <div>
-                    <h3 className="text-xl font-bold text-[#1D1D1F]">{study.company}</h3>
-                    <p className="text-xs font-mono text-[#86868B]">{study.industry}</p>
+                  {/* Executive Quote */}
+                  <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1A1A1D] border-l-4 border-[#0050FF] text-xs space-y-1">
+                    <p className="italic text-[#1D1D1F] dark:text-[#F5F5F7] leading-relaxed">
+                      &ldquo;{study.quote}&rdquo;
+                    </p>
+                    <p className="text-[11px] text-[#86868B] font-semibold pt-1">
+                      — {study.author}
+                    </p>
                   </div>
-
-                  <p className="text-xs text-[#515154] leading-relaxed">{study.description}</p>
                 </div>
-
-                <div className="space-y-3 pt-4 border-t border-[#E5E5EA]">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-[#86868B]">Monthly Spend:</span>
-                    <div className="space-x-1.5">
-                      <span className="line-through text-red-500">
-                        {formatCurrency(study.spendBefore * rate, currency)}
-                      </span>
-                      <span className="text-[#0050FF] font-bold">
-                        {formatCurrency(study.spendAfter * rate, currency)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-[#86868B]">Outcome KPI:</span>
-                    <span className="text-[#0050FF] font-bold">{study.kpiImpact}</span>
-                  </div>
-
-                  <p className="text-xs italic text-[#6E6E73] pt-2 border-t border-[#E5E5EA]">
-                    "{study.quote}"
-                  </p>
-                  <p className="text-[10px] text-[#86868B] font-mono">— {study.author}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* CTA Footer Card */}
+        <section className="rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-8 sm:p-14 text-white shadow-[0_20px_50px_rgba(0,80,255,0.35)] text-center space-y-6 relative overflow-hidden" suppressHydrationWarning>
+          <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Achieve the Same Results in Your Stack
+            </h2>
+            <p className="text-sm text-white/80 leading-relaxed">
+              Start optimizing with the 1-line SDK wrapper. Drop in your LangChain, LlamaIndex, or OpenAI endpoint and instantly start saving.
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/app/dashboard"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md"
+              >
+                Launch Console Free
+              </Link>
+              <Link
+                href="/pricing"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition-all border border-white/20"
+              >
+                View Plans & Pricing
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </div>

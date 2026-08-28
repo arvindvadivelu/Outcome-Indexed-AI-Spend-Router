@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { detectUserRegionCurrency } from "@/lib/utils";
 
 export interface LogItem {
   id: string;
@@ -161,10 +162,11 @@ interface AppState {
   updateUserProfile: (name: string, email: string) => void;
   logout: () => void;
   
-  // Organization
+  // Organization & Subscription Plans
   orgName: string;
   setOrgName: (name: string) => void;
-  planTier: string;
+  planTier: "free" | "starter" | "growth" | "enterprise" | string;
+  setPlanTier: (tier: "free" | "starter" | "growth" | "enterprise") => void;
   monthlyQuota: number;
   currentTokens: number;
   monthlySpendUSD: number;
@@ -414,8 +416,19 @@ export const useAppStore = create<AppState>()(
 
       orgName: "Acme AI Lab",
       setOrgName: (orgName: string) => set({ orgName }),
-      planTier: "growth",
-      monthlyQuota: 500000,
+      planTier: "free",
+      setPlanTier: (tier) =>
+        set((state) => {
+          let quota = 10000;
+          if (tier === "starter") quota = 100000;
+          else if (tier === "growth") quota = 500000;
+          else if (tier === "enterprise") quota = 2000000;
+          return {
+            planTier: tier,
+            monthlyQuota: quota
+          };
+        }),
+      monthlyQuota: 10000,
       currentTokens: 0,
       monthlySpendUSD: 0.00,
       baselineSpendUSD: 0.00,

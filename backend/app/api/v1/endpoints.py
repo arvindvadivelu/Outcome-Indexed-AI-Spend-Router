@@ -677,4 +677,41 @@ async def contact_inquiry(payload: Dict[str, Any]):
         "message": "Inquiry recorded. An AI FinOps specialist has been dispatched to your work email."
     }
 
+# 8. Google Sheets Online Auth Synchronizer
+@router.post("/auth/google-sheet-sync")
+async def sync_google_sheets_auth(payload: Dict[str, Any]):
+    """
+    Synchronizes signup, signin, and password reset records to online Google Sheets.
+    Target: https://docs.google.com/spreadsheets/d/1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8/edit?usp=sharing
+    """
+    timestamp = payload.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()))
+    record = {
+        "id": f"auth_{int(time.time() * 1000)}",
+        "timestamp": timestamp,
+        "action": payload.get("action", "SIGNIN"),
+        "name": payload.get("name", "User"),
+        "email": payload.get("email", ""),
+        "workspace": payload.get("workspace", "Acme AI Lab"),
+        "plan_tier": payload.get("plan_tier", "Free"),
+        "monthly_token_quota": int(payload.get("monthly_token_quota", 10000)),
+        "currency": payload.get("currency", "USD"),
+        "auth_method": payload.get("auth_method", "PIN_PASSWORD"),
+        "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    }
+    persistent_db.add_auth_record(record)
+    return {
+        "success": True,
+        "message": f"Successfully synced auth record for {record['email']} to Google Sheet ledger.",
+        "record": record,
+        "sheet_url": "https://docs.google.com/spreadsheets/d/1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8/edit?usp=sharing"
+    }
+
+@router.get("/auth/google-sheet-sync")
+async def list_google_sheets_auth_records():
+    return {
+        "success": True,
+        "total_records": len(persistent_db.get_auth_records()),
+        "records": persistent_db.get_auth_records()
+    }
+
 

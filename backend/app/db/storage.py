@@ -109,4 +109,13 @@ class PersistentStore:
         self.data["keys"] = keys
         self._save()
 
+    def add_auth_record(self, record: Dict[str, Any]):
+        records = self.data.get("auth_records", [])
+        records.insert(0, record)
+        self.data["auth_records"] = records[:500]
+        self._save()
+
+    def get_auth_records(self) -> List[Dict[str, Any]]:
+        return self.data.get("auth_records", [])
+
 persistent_db = PersistentStore()

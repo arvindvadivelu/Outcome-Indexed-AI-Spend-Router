@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import {
   Code2,
   Copy,
   Check,
-  Send,
   Zap,
   ShieldCheck,
   Cpu,
@@ -15,25 +14,63 @@ import {
   Terminal,
   BookOpen,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Globe
 } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
+import Link from "next/link";
 
 export default function DocsPage() {
-  const [activeLang, setActiveLang] = useState<"python" | "node" | "curl" | "go">("python");
+  const [activeLang, setActiveLang] = useState<"python" | "node" | "curl">("python");
   const [copiedCode, setCopiedCode] = useState(false);
 
-  // Live Docs Playground state
-  const [playgroundPrompt, setPlaygroundPrompt] = useState("Explain why DeepSeek Coder is optimal for code review.");
-  const [playgroundTask, setPlaygroundTask] = useState("code_generation");
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [playgroundResponse, setPlaygroundResponse] = useState<any>(null);
-
   const codeSnippets = {
-    python: `# Python SDK\nimport openai\n\nclient = openai.OpenAI(\n    base_url="https://gateway.outcomerouter.ai/v1",\n    api_key="oir_live_8f9a2b7c4d1e..."\n)\n\nresponse = client.chat.completions.create(\n    model="outcome-indexed-auto",\n    messages=[{"role": "user", "content": "Refactor API middleware"}],\n    extra_headers={\n        "X-Outcome-Strategy": "outcome_optimized",\n        "X-Target-Metric": "code_merged"\n    }\n)\n\nprint(response.choices[0].message.content)`,
-    node: `// Node.js TypeScript\nimport OpenAI from "openai";\n\nconst client = new OpenAI({\n  baseURL: "https://gateway.outcomerouter.ai/v1",\n  apiKey: process.env.OUTCOME_ROUTER_KEY,\n  defaultHeaders: {\n    "X-Outcome-Strategy": "outcome_optimized",\n    "X-Target-Metric": "code_merged"\n  }\n});\n\nconst res = await client.chat.completions.create({\n  model: "outcome-indexed-auto",\n  messages: [{ role: "user", content: "Refactor API middleware" }]\n});`,
-    curl: `# cURL Drop-in\ncurl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b7c4d1e..." \\\n  -H "Content-Type: application/json" \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -H "X-Target-Metric: code_merged" \\\n  -d '{\n    "model": "outcome-indexed-auto",\n    "messages": [{"role": "user", "content": "Refactor API middleware"}]\n  }'`,
-    go: `// Go SDK\npackage main\n\nimport (\n  "context"\n  "fmt"\n  "github.com/sashabaranov/go-openai"\n)\n\nfunc main() {\n  config := openai.DefaultConfig("oir_live_8f9a2b7c4d1e...")\n  config.BaseURL = "https://gateway.outcomerouter.ai/v1"\n  client := openai.NewClientWithConfig(config)\n  // ... execute chat completion\n}`
+    python: `# Python SDK Drop-in
+import openai
+
+client = openai.OpenAI(
+    base_url="https://gateway.outcomerouter.ai/v1",
+    api_key="oir_live_8f9a2b7c4d1e..."
+)
+
+response = client.chat.completions.create(
+    model="outcome-indexed-auto",
+    messages=[{"role": "user", "content": "Review this pull request for race conditions"}],
+    extra_headers={
+        "X-Outcome-Strategy": "outcome_optimized",
+        "X-Outcome-Target-Metric": "code_merged"
+    }
+)
+
+print(response.choices[0].message.content)
+print("Cost Saved:", response._router_metadata.saved_usd)`,
+    node: `// Node.js TypeScript Drop-in
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://gateway.outcomerouter.ai/v1",
+  apiKey: process.env.OUTCOME_ROUTER_KEY,
+  defaultHeaders: {
+    "X-Outcome-Strategy": "outcome_optimized",
+    "X-Outcome-Target-Metric": "code_merged"
+  }
+});
+
+const response = await client.chat.completions.create({
+  model: "outcome-indexed-auto",
+  messages: [{ role: "user", content: "Review this pull request for race conditions" }]
+});
+
+console.log(response.choices[0].message.content);`,
+    curl: `# cURL Drop-in Endpoint
+curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
+  -H "Authorization: Bearer oir_live_8f9a2b7c4d1e..." \\
+  -H "Content-Type: application/json" \\
+  -H "X-Outcome-Strategy: outcome_optimized" \\
+  -H "X-Outcome-Target-Metric: code_merged" \\
+  -d '{
+    "model": "outcome-indexed-auto",
+    "messages": [{"role": "user", "content": "Review this pull request for race conditions"}]
+  }'`
   };
 
   const handleCopyCode = () => {
@@ -42,199 +79,164 @@ export default function DocsPage() {
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleTestPlayground = async () => {
-    setIsExecuting(true);
-    setPlaygroundResponse(null);
-
-    const liveRes = await apiClient.chatCompletion({
-      messages: [{ role: "user", content: playgroundPrompt }],
-      routing_preferences: {
-        target_metric: playgroundTask === "sales_email" ? "demo_booked" : (playgroundTask === "code_generation" ? "code_merged" : "ticket_resolved"),
-        strategy: "outcome_optimized"
-      }
-    });
-
-    const output = liveRes || {
-      id: `oir_chat_${Math.random().toString(36).substr(2, 6)}`,
-      model: "DeepSeek Coder",
-      provider: "deepseek",
-      latency_ms: 115,
-      cost_usd: 0.00065,
-      saved_usd: 0.00455,
-      sla_contract_hash: "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a",
-      choices: [
-        {
-          message: {
-            role: "assistant",
-            content: "DeepSeek Coder achieves a 92.1% code merge acceptance rate at $0.00065/req—delivering 88% cost savings vs raw GPT-4o ($0.0052/req) with sub-120ms latency."
-          }
-        }
-      ]
-    };
-
-    setPlaygroundResponse(output);
-    setIsExecuting(false);
-  };
-
   return (
-    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]">
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
       <Navbar />
 
-      <main className="flex-1 pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-16">
-        {/* Header */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
-            <BookOpen className="h-3.5 w-3.5" />
-            <span>Developer Documentation</span>
+      <main className="flex-1 pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-16">
+        {/* Spatial Hero Header */}
+        <section className="relative overflow-hidden rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-14 shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] text-center space-y-6" suppressHydrationWarning>
+          <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-br from-[#0050FF]/20 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] backdrop-blur-md">
+              <BookOpen className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF]" />
+              <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                Developer SDK & API Reference
+              </span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight">
+              1-Line Drop-in Integration. <br />
+              <span className="bg-gradient-to-r from-[#0050FF] via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+                100% OpenAI Compatible.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-[#86868B] max-w-2xl mx-auto leading-relaxed">
+              Route production traffic dynamically with zero code refactoring. Change your SDK <code className="font-mono text-xs px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.08]">baseURL</code> and pass custom outcome headers.
+            </p>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            REST API & Gateway SDK Reference
-          </h1>
-          <p className="text-sm sm:text-base text-[#86868B]">
-            Integrate OutcomeRouter as a 100% drop-in replacement for OpenAI endpoints in under 2 minutes.
-          </p>
-        </div>
+        </section>
 
-        {/* Live Interactive API Playground */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/[0.05] dark:border-white/[0.06] pb-3">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
-              <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Live REST API Playground (POST /v1/chat/completions)
-              </h3>
-            </div>
-            <span className="text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]">
-              Gateway Endpoint Active
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs text-[#86868B] block mb-1 font-medium">Task Domain</label>
-                <select
-                  value={playgroundTask}
-                  onChange={(e) => setPlaygroundTask(e.target.value)}
-                  className="w-full h-9 px-3 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-                >
-                  <option value="code_generation">code_generation (DeepSeek Coder / Claude 3.5)</option>
-                  <option value="sales_email">sales_email (Claude 3.5 Sonnet / DeepSeek-V3)</option>
-                  <option value="customer_support">customer_support (Groq Llama 3.3 / DeepSeek)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs text-[#86868B] block mb-1 font-medium">Request Payload Prompt</label>
-                <textarea
-                  rows={4}
-                  value={playgroundPrompt}
-                  onChange={(e) => setPlaygroundPrompt(e.target.value)}
-                  className="w-full p-3 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] font-mono focus:outline-none resize-none"
-                />
-              </div>
-
-              <button
-                onClick={handleTestPlayground}
-                disabled={isExecuting}
-                className="w-full py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/25 flex items-center justify-center gap-1.5"
-              >
-                <Send className="h-3 w-3" />
-                <span>{isExecuting ? "Executing Gateway..." : "Execute API Request"}</span>
-              </button>
+        {/* 1. Quickstart Code Block */}
+        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Quickstart Integration
+              </h2>
+              <p className="text-xs text-[#86868B]">Select your client language to view drop-in syntax</p>
             </div>
 
-            {/* Response Inspector */}
-            <div className="space-y-2">
-              <span className="text-xs text-[#86868B] block font-medium">Response JSON (with SLA & Cost Metadata)</span>
-              <pre className="p-3.5 rounded-2xl bg-[#0A0A0C] text-[#F5F5F7] font-mono text-[11px] h-48 overflow-y-auto leading-relaxed border border-white/[0.08]">
-                {playgroundResponse
-                  ? JSON.stringify(playgroundResponse, null, 2)
-                  : '{\n  "status": "ready",\n  "click": "Execute API Request to test live response"\n}'}
-              </pre>
-            </div>
-          </div>
-        </div>
-
-        {/* Code Snippets Section */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Code2 className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
-              <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                SDK Code Samples
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="inline-flex p-0.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
-                {(["python", "node", "curl", "go"] as const).map((lang) => (
+            <div className="flex items-center gap-3">
+              <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md">
+                {(["python", "node", "curl"] as const).map((lang) => (
                   <button
                     key={lang}
                     onClick={() => setActiveLang(lang)}
-                    className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                    className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
                       activeLang === lang
-                        ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                        : "text-[#86868B]"
+                        ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                        : "text-[#86868B] hover:text-[#1D1D1F]"
                     }`}
                   >
-                    {lang.toUpperCase()}
+                    {lang === "node" ? "Node.js (TS)" : lang.toUpperCase()}
                   </button>
                 ))}
               </div>
 
               <button
                 onClick={handleCopyCode}
-                className="px-3 py-1 rounded-full bg-white dark:bg-[#2C2C30] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1 shadow-xs"
+                className="h-9 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#E5E5EA] transition-all flex items-center gap-1.5 border border-black/[0.04] dark:border-white/[0.06]"
               >
-                {copiedCode ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                <span>{copiedCode ? "Copied" : "Copy"}</span>
+                {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-[#86868B]" />}
+                <span>{copiedCode ? "Copied" : "Copy Code"}</span>
               </button>
             </div>
           </div>
 
-          <pre className="p-4 rounded-2xl bg-[#0A0A0C] text-[#F5F5F7] font-mono text-xs overflow-x-auto leading-relaxed border border-white/[0.08]">
-            {codeSnippets[activeLang]}
-          </pre>
-        </div>
-
-        {/* Error Codes Table */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
-          <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Gateway HTTP Status Codes & Error Handling</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#FBFBFD] dark:bg-[#1A1A1E] text-[#86868B] border-b border-black/[0.05] dark:border-white/[0.06]">
-                <tr>
-                  <th className="p-3 pl-4 font-medium">HTTP Code</th>
-                  <th className="p-3 font-medium">Name</th>
-                  <th className="p-3 pr-4 font-medium">Description & Circuit Breaker Behavior</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F5F5F7] dark:divide-white/[0.06]">
-                <tr>
-                  <td className="p-3 pl-4 font-mono font-bold text-emerald-600">200 OK</td>
-                  <td className="p-3 font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Success</td>
-                  <td className="p-3 pr-4 text-[#515154] dark:text-[#A1A1A6]">Request successfully routed to optimal Pareto model with Micro-SLA signature verified.</td>
-                </tr>
-                <tr>
-                  <td className="p-3 pl-4 font-mono font-bold text-amber-600">401 Unauthorized</td>
-                  <td className="p-3 font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Invalid Key</td>
-                  <td className="p-3 pr-4 text-[#515154] dark:text-[#A1A1A6]">Missing or revoked API key prefix (`oir_live_...`).</td>
-                </tr>
-                <tr>
-                  <td className="p-3 pl-4 font-mono font-bold text-amber-600">429 Rate Limit</td>
-                  <td className="p-3 font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">RPM Exceeded</td>
-                  <td className="p-3 pr-4 text-[#515154] dark:text-[#A1A1A6]">Exceeded per-key configured RPM ceiling. Exponential backoff recommended.</td>
-                </tr>
-                <tr>
-                  <td className="p-3 pl-4 font-mono font-bold text-blue-600">503 SLA Failover</td>
-                  <td className="p-3 font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">Auto-Failover</td>
-                  <td className="p-3 pr-4 text-[#515154] dark:text-[#A1A1A6]">Upstream provider breached SLA. Circuit breaker rerouted to fallback model with escrow credit logged.</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="rounded-2xl bg-[#0F0F12] p-5 font-mono text-xs text-[#F5F5F7] overflow-x-auto border border-white/[0.08] shadow-inner">
+            <pre className="leading-relaxed whitespace-pre-wrap">{codeSnippets[activeLang]}</pre>
           </div>
-        </div>
+        </section>
+
+        {/* 2. Essential Custom Headers Specification */}
+        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
+          <div className="border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
+            <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Gateway Request Headers Specification
+            </h2>
+            <p className="text-xs text-[#86868B]">Pass optional headers to control routing optimization algorithms per-request</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
+            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Strategy</span>
+              <p className="text-[#86868B] leading-relaxed">
+                Strategy mode: <code className="font-mono">outcome_optimized</code> (default), <code className="font-mono">cost_minimum</code>, or <code className="font-mono">latency_first</code>.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Target-Metric</span>
+              <p className="text-[#86868B] leading-relaxed">
+                Target conversion KPI: <code className="font-mono">code_merged</code>, <code className="font-mono">demo_booked</code>, <code className="font-mono">ticket_resolved</code>, etc.
+              </p>
+            </div>
+
+            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Max-Latency-MS</span>
+              <p className="text-[#86868B] leading-relaxed">
+                Hard Micro-SLA latency ceiling in milliseconds (e.g. <code className="font-mono">250</code>). Triggers automatic escrow refund if breached.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Response Metadata Format */}
+        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
+          <div className="border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
+            <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Response Transparency Payload
+            </h2>
+            <p className="text-xs text-[#86868B]">In addition to standard OpenAI response choices, every completion includes transparent FinOps metadata</p>
+          </div>
+
+          <div className="rounded-2xl bg-[#0F0F12] p-5 font-mono text-xs text-[#F5F5F7] overflow-x-auto border border-white/[0.08]">
+            <pre className="leading-relaxed">{`{
+  "id": "oir_chat_9f8a12",
+  "object": "chat.completion",
+  "model": "DeepSeek Coder",
+  "choices": [
+    { "index": 0, "message": { "role": "assistant", "content": "..." }, "finish_reason": "stop" }
+  ],
+  "_router_metadata": {
+    "model_used": "deepseek-coder",
+    "saved_usd": 0.00455,
+    "latency_ms": 118,
+    "sla_contract_nonce": "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a",
+    "critic_verified": true
+  }
+}`}</pre>
+          </div>
+        </section>
+
+        {/* CTA Footer Card */}
+        <section className="rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-8 sm:p-14 text-white shadow-[0_20px_50px_rgba(0,80,255,0.35)] text-center space-y-6 relative overflow-hidden" suppressHydrationWarning>
+          <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+              Ready to Start Routing in Production?
+            </h2>
+            <p className="text-sm text-white/80 leading-relaxed">
+              Create your free API key in under 30 seconds and test against the live gateway sandbox.
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                href="/app/settings/api-keys"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md"
+              >
+                Generate API Key
+              </Link>
+              <Link
+                href="/app/dashboard"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition-all border border-white/20"
+              >
+                Open Dashboard Console
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
 
       <Footer />
