@@ -13,6 +13,7 @@ import {
   Building,
   Coins
 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -38,8 +39,15 @@ export default function ContactPage() {
     }, 500);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await apiClient.sendContactInquiry({
+      name,
+      email,
+      company: "Enterprise Customer",
+      spend,
+      message: message || "Requested custom FinOps architecture audit."
+    });
     setSubmitted(true);
   };
 

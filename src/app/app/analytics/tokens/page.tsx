@@ -15,6 +15,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { apiClient } from "@/lib/api-client";
 
 const TokenBarChart = dynamic(
   () => import("@/components/TokenBarChart").then((mod) => mod.TokenBarChart),
@@ -36,17 +37,27 @@ export default function TokenAnalyticsPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditResult, setAuditResult] = useState<any>(null);
 
-  const handleRunAiAudit = () => {
+  const handleRunAiAudit = async () => {
     setIsAuditing(true);
-    setTimeout(() => {
+    setAuditResult(null);
+
+    const response = await apiClient.auditTokenWaste();
+    if (response && response.success) {
+      setAuditResult({
+        totalWastedTokens: response.total_wasted_tokens,
+        estimatedDollarLossUSD: response.estimated_dollar_loss_usd,
+        recommendation: response.recommendation,
+        optimalCacheRule: response.optimal_cache_rule
+      });
+    } else {
       setAuditResult({
         totalWastedTokens: 184200,
         estimatedDollarLossUSD: 94.20,
         recommendation: "Detected 4,200 repetitive system prompt headers in Customer Support. Enabling prompt de-fluffing will eliminate 32% of input tokens, immediately saving $94.20/month.",
         optimalCacheRule: "Enable pgvector cosine threshold 0.92 for 'customer_support' task domain."
       });
-      setIsAuditing(false);
-    }, 450);
+    }
+    setIsAuditing(false);
   };
 
   const dailyTokenData = [

@@ -16,6 +16,7 @@ import {
   Layers
 } from "lucide-react";
 import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
+import { apiClient } from "@/lib/api-client";
 
 const SAMPLE_PROMPTS = [
   {
@@ -50,102 +51,93 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     setResult(null);
     setFeedbackGiven(null);
 
-    setTimeout(() => {
-      const isCode = selectedTask === "code_generation" || promptText.includes("TypeScript");
-      const isSupport = selectedTask === "customer_support";
+    // Call live pre-warming API
+    await apiClient.predictPrewarm(promptText);
 
-      let model = "Claude 3.5 Sonnet";
-      let provider = "anthropic";
-      let cost = 0.0034;
-      let latency = 140;
-      let winRate = 92.4;
-
-      if (isCode) {
-        model = "DeepSeek Coder";
-        provider = "deepseek";
-        cost = 0.00065;
-        latency = 115;
-        winRate = 92.1;
-      } else if (isSupport) {
-        model = "Groq Llama 3.3";
-        provider = "groq";
-        cost = 0.00018;
-        latency = 84;
-        winRate = 95.8;
-      } else if (strategy === "cost_minimum") {
-        model = "DeepSeek-V3";
-        provider = "deepseek";
-        cost = 0.00042;
-        latency = 95;
-        winRate = 89.7;
+    // Call live chat completions gateway
+    const liveRes = await apiClient.chatCompletion({
+      messages: [{ role: "user", content: promptText }],
+      routing_preferences: {
+        strategy,
+        target_metric: selectedTask === "sales_email" ? "demo_booked" : (selectedTask === "code_generation" ? "code_merged" : "ticket_resolved"),
+        speculative_mode: true
       }
+    });
 
-      const baselineCost = 0.0052;
-      const savedAmount = Math.max(0, baselineCost - cost);
-      const savedPct = Math.round((savedAmount / baselineCost) * 100);
-      const reqId = `oir_sim_${Math.random().toString(36).substr(2, 6)}`;
-      const contractHash = `0x${Math.random().toString(36).substr(2, 12)}${Math.random().toString(36).substr(2, 12)}`;
+    const isCode = selectedTask === "code_generation" || promptText.includes("TypeScript");
+    const isSupport = selectedTask === "customer_support";
 
-      const simResult = {
-        requestId: reqId,
-        selectedModel: model,
-        provider,
-        taskType: selectedTask,
-        winRate,
-        costUSD: cost,
-        costINR: cost * 86.5,
-        savedUSD: savedAmount,
-        savedINR: savedAmount * 86.5,
-        savedPct,
-        latencyMs: latency,
-        prewarmedTtftMs: 68.4,
-        deltaCompressionSavedPct: 58.2,
-        slaContractHash: contractHash,
-        responseContent: isCode
-          ? `// Stream Handler Refactored (Pre-warmed in 68ms)\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
-          : `Subject: Cut AI token spend by 40% with Outcome-Indexed Routing\n\nHi Alex,\n\nI noticed your team is scaling LLM features. OutcomeRouter dynamically routes requests to Claude 3.5, DeepSeek, and Groq based on conversion KPIs—saving teams $12K/month while closing +14% more pipeline.\n\nOpen to a quick 10-minute demo this Thursday?\n\nBest,\nArjun`
-      };
+    let model = liveRes?._router_metadata?.model_used || "Claude 3.5 Sonnet";
+    let provider = liveRes?._router_metadata?.provider || "anthropic";
+    let cost = liveRes?._router_metadata?.cost_usd || (isCode ? 0.00065 : (isSupport ? 0.00018 : 0.0034));
+    let latency = liveRes?._router_metadata?.latency_ms || (isCode ? 115 : (isSupport ? 84 : 140));
+    let winRate = isCode ? 92.1 : (isSupport ? 95.8 : 92.4);
 
-      setResult(simResult);
-      setIsLoading(false);
+    const baselineCost = 0.0052;
+    const savedAmount = Math.max(0, baselineCost - cost);
+    const savedPct = Math.round((savedAmount / baselineCost) * 100);
+    const reqId = liveRes?.id || `oir_sim_${Math.random().toString(36).substr(2, 6)}`;
+    const contractHash = `0x${Math.random().toString(36).substr(2, 12)}${Math.random().toString(36).substr(2, 12)}`;
 
-      const logEntry: LogItem = {
-        id: reqId,
-        created_at: "Just now",
-        model_used: model,
-        provider,
-        task_type: selectedTask,
-        tokens_in: 320,
-        tokens_out: 180,
-        cost_usd: cost,
-        cost_inr: cost * 86.5,
-        latency_ms: latency,
-        outcome_success: true,
-        outcome_metric: selectedTask === "sales_email" ? "demo_booked" : (isCode ? "code_merged" : "ticket_resolved"),
-        prompt_preview: promptText.slice(0, 80) + "...",
-        cached_hit: false,
-        fallback_triggered: false,
-        speculative_win: true,
-        critic_escalated: false,
-        status: "success"
-      };
-      addLog(logEntry);
+    const simResult = {
+      requestId: reqId,
+      selectedModel: model,
+      provider,
+      taskType: selectedTask,
+      winRate,
+      costUSD: cost,
+      costINR: cost * 86.5,
+      savedUSD: savedAmount,
+      savedINR: savedAmount * 86.5,
+      savedPct,
+      latencyMs: latency,
+      prewarmedTtftMs: 68.4,
+      deltaCompressionSavedPct: 58.2,
+      slaContractHash: contractHash,
+      responseContent: liveRes?.choices?.[0]?.message?.content || (isCode
+        ? `// Stream Handler Refactored (Pre-warmed in 68ms)\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
+        : `Subject: Cut AI token spend by 40% with Outcome-Indexed Routing\n\nHi Alex,\n\nI noticed your team is scaling LLM features. OutcomeRouter dynamically routes requests to Claude 3.5, DeepSeek, and Groq based on conversion KPIs—saving teams $12K/month while closing +14% more pipeline.\n\nOpen to a quick 10-minute demo this Thursday?\n\nBest,\nArjun`)
+    };
 
-      const slaContract: SlaContractItem = {
-        id: `sla_cnt_${Date.now() % 1000000}`,
-        requestId: reqId,
-        createdAt: "Just now",
-        provider,
-        model,
-        latencyLimitMs: 400,
-        actualLatencyMs: latency,
-        status: "settled_fulfilled",
-        refundUsd: 0.0,
-        refundTokens: 0,
-        cryptographicHash: contractHash
-      };
-      addSlaContract(slaContract);
-    }, 450);
+    setResult(simResult);
+    setIsLoading(false);
+
+    const logEntry: LogItem = {
+      id: reqId,
+      created_at: "Just now",
+      model_used: model,
+      provider,
+      task_type: selectedTask,
+      tokens_in: 320,
+      tokens_out: 180,
+      cost_usd: cost,
+      cost_inr: cost * 86.5,
+      latency_ms: latency,
+      outcome_success: true,
+      outcome_metric: selectedTask === "sales_email" ? "demo_booked" : (isCode ? "code_merged" : "ticket_resolved"),
+      prompt_preview: promptText.slice(0, 80) + "...",
+      cached_hit: false,
+      fallback_triggered: false,
+      speculative_win: true,
+      critic_escalated: false,
+      status: "success"
+    };
+    addLog(logEntry);
+
+    const slaContract: SlaContractItem = {
+      id: `sla_cnt_${Date.now() % 1000000}`,
+      requestId: reqId,
+      createdAt: "Just now",
+      provider,
+      model,
+      latencyLimitMs: 400,
+      actualLatencyMs: latency,
+      status: "settled_fulfilled",
+      refundUsd: 0.0,
+      refundTokens: 0,
+      cryptographicHash: contractHash
+    };
+    addSlaContract(slaContract);
   };
 
   const handleFeedback = (success: boolean) => {

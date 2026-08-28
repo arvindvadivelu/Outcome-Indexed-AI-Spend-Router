@@ -14,6 +14,7 @@ import {
   RotateCcw,
   ArrowDownRight
 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function BillingPage() {
   const { currency, monthlySpendUSD, baselineSpendUSD, planTier, currentTokens, monthlyQuota, slaEscrowContracts } = useAppStore();
@@ -23,16 +24,25 @@ export default function BillingPage() {
   const [isForecasting, setIsForecasting] = useState(false);
   const [forecastResult, setForecastResult] = useState<any>(null);
 
-  const handleForecast = () => {
+  const handleForecast = async () => {
     setIsForecasting(true);
-    setTimeout(() => {
+    setForecastResult(null);
+
+    const response = await apiClient.forecastBill(monthlySpendUSD || 842.50, 1500.0);
+    if (response && response.success) {
+      setForecastResult({
+        projectedInvoiceUSD: response.projected_invoice_usd,
+        projectedSavingsUSD: response.projected_savings_usd,
+        recommendation: response.recommendation
+      });
+    } else {
       setForecastResult({
         projectedInvoiceUSD: 972.10,
         projectedSavingsUSD: 642.50,
         recommendation: "Pacing is 3% below your monthly budget ceiling of $1,500. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $180 without touching conversion rates."
       });
-      setIsForecasting(false);
-    }, 450);
+    }
+    setIsForecasting(false);
   };
 
   const quotaPct = Math.min(100, Math.round((currentTokens / monthlyQuota) * 100));

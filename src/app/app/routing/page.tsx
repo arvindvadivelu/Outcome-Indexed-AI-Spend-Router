@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Activity
 } from "lucide-react";
+import { apiClient } from "@/lib/api-client";
 
 export default function RoutingRulesPage() {
   const {
@@ -37,12 +38,36 @@ export default function RoutingRulesPage() {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [synthesizedSuccess, setSynthesizedSuccess] = useState(false);
 
-  const handleSynthesize = (e: React.FormEvent) => {
+  const handleSynthesize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
 
     setIsSynthesizing(true);
-    setTimeout(() => {
+
+    const response = await apiClient.synthesizeRule(aiPrompt);
+
+    if (response && response.success && response.rule) {
+      const synthesized = response.rule;
+      const newRule: RoutingRule = {
+        id: synthesized.id || `rule_${Date.now()}`,
+        name: synthesized.name || aiPrompt.slice(0, 40),
+        task_type: synthesized.task_type || "general_instruction",
+        condition_pattern: synthesized.condition_pattern || `task == 'general'`,
+        target_metric: synthesized.target_metric || "user_satisfaction",
+        is_active: true,
+        enabled: true,
+        priority_models: synthesized.priority_models || ["Claude 3.5 Sonnet", "DeepSeek-V3"],
+        models_priority: synthesized.models_priority || ["Claude 3.5 Sonnet", "DeepSeek-V3"],
+        fallback_model: synthesized.fallback_model || "GPT-4o",
+        max_latency_ms: synthesized.max_latency_ms || 450,
+        max_cost_usd: synthesized.max_cost_usd || 0.0035,
+        min_win_rate: synthesized.min_win_rate || 0.90,
+        strategy: synthesized.strategy || "outcome_optimized",
+        ai_synthesized: true
+      };
+      addRule(newRule);
+    } else {
+      // Fallback
       const lower = aiPrompt.toLowerCase();
       let task = "general_instruction";
       let metric = "user_satisfaction";
@@ -82,13 +107,13 @@ export default function RoutingRulesPage() {
         strategy,
         ai_synthesized: true
       };
-
       addRule(newRule);
-      setIsSynthesizing(false);
-      setSynthesizedSuccess(true);
-      setAiPrompt("");
-      setTimeout(() => setSynthesizedSuccess(false), 3000);
-    }, 450);
+    }
+
+    setIsSynthesizing(false);
+    setSynthesizedSuccess(true);
+    setAiPrompt("");
+    setTimeout(() => setSynthesizedSuccess(false), 3000);
   };
 
   return (
