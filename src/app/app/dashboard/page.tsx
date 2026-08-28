@@ -12,7 +12,11 @@ import {
   ArrowUpRight,
   SlidersHorizontal,
   Play,
-  Sparkles
+  Sparkles,
+  Download,
+  RotateCcw,
+  Database,
+  Info
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -31,14 +35,27 @@ const SpendAreaChart = dynamic(
 );
 
 export default function DashboardPage() {
-  const { currency, monthlySpendUSD, baselineSpendUSD, logs, telemetryLogs, autopilot } = useAppStore();
+  const {
+    currency,
+    monthlySpendUSD,
+    baselineSpendUSD,
+    logs,
+    telemetryLogs,
+    autopilot,
+    loadDemoData,
+    clearUserData
+  } = useAppStore();
+
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d">("7d");
   const [showSimulate, setShowSimulate] = useState(false);
+  const [exportNotice, setExportNotice] = useState(false);
   const rate = currency === "INR" ? 86.5 : 1;
 
   const activeLogs = logs.length > 0 ? logs : telemetryLogs;
-  const currentSpend = monthlySpendUSD * rate;
-  const baselineSpend = baselineSpendUSD * rate;
+  const timeMultiplier = timeRange === "7d" ? 1 : (timeRange === "30d" ? 3.4 : 9.8);
+
+  const currentSpend = monthlySpendUSD * rate * (timeRange === "7d" ? 1 : (timeRange === "30d" ? 2.8 : 7.2));
+  const baselineSpend = baselineSpendUSD * rate * (timeRange === "7d" ? 1 : (timeRange === "30d" ? 2.8 : 7.2));
   const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
   const isFreshAccount = currentSpend === 0 && activeLogs.length === 0;
 
@@ -60,13 +77,13 @@ export default function DashboardPage() {
     const baseStep = baselineSpend / 6;
 
     return [
-      { day: "Day 1", baseline: parseFloat((baseStep * 1).toFixed(3)), actual: parseFloat((step * 1).toFixed(3)), savings: parseFloat(((baseStep - step) * 1).toFixed(3)) },
-      { day: "Day 2", baseline: parseFloat((baseStep * 2).toFixed(3)), actual: parseFloat((step * 2).toFixed(3)), savings: parseFloat(((baseStep - step) * 2).toFixed(3)) },
-      { day: "Day 3", baseline: parseFloat((baseStep * 3).toFixed(3)), actual: parseFloat((step * 3).toFixed(3)), savings: parseFloat(((baseStep - step) * 3).toFixed(3)) },
-      { day: "Day 4", baseline: parseFloat((baseStep * 4).toFixed(3)), actual: parseFloat((step * 4).toFixed(3)), savings: parseFloat(((baseStep - step) * 4).toFixed(3)) },
-      { day: "Day 5", baseline: parseFloat((baseStep * 5).toFixed(3)), actual: parseFloat((step * 5).toFixed(3)), savings: parseFloat(((baseStep - step) * 5).toFixed(3)) },
-      { day: "Day 6", baseline: parseFloat((baseStep * 5.8).toFixed(3)), actual: parseFloat((step * 5.8).toFixed(3)), savings: parseFloat(((baseStep - step) * 5.8).toFixed(3)) },
-      { day: "Today", baseline: parseFloat(baselineSpend.toFixed(3)), actual: parseFloat(currentSpend.toFixed(3)), savings: parseFloat(savedAmount.toFixed(3)) }
+      { day: "Day 1", baseline: parseFloat((baseStep * 1).toFixed(2)), actual: parseFloat((step * 1).toFixed(2)), savings: parseFloat(((baseStep - step) * 1).toFixed(2)) },
+      { day: "Day 2", baseline: parseFloat((baseStep * 2).toFixed(2)), actual: parseFloat((step * 2).toFixed(2)), savings: parseFloat(((baseStep - step) * 2).toFixed(2)) },
+      { day: "Day 3", baseline: parseFloat((baseStep * 3).toFixed(2)), actual: parseFloat((step * 3).toFixed(2)), savings: parseFloat(((baseStep - step) * 3).toFixed(2)) },
+      { day: "Day 4", baseline: parseFloat((baseStep * 4).toFixed(2)), actual: parseFloat((step * 4).toFixed(2)), savings: parseFloat(((baseStep - step) * 4).toFixed(2)) },
+      { day: "Day 5", baseline: parseFloat((baseStep * 5).toFixed(2)), actual: parseFloat((step * 5).toFixed(2)), savings: parseFloat(((baseStep - step) * 5).toFixed(2)) },
+      { day: "Day 6", baseline: parseFloat((baseStep * 5.8).toFixed(2)), actual: parseFloat((step * 5.8).toFixed(2)), savings: parseFloat(((baseStep - step) * 5.8).toFixed(2)) },
+      { day: "Today", baseline: parseFloat(baselineSpend.toFixed(2)), actual: parseFloat(currentSpend.toFixed(2)), savings: parseFloat(savedAmount.toFixed(2)) }
     ];
   }, [currentSpend, baselineSpend, savedAmount, isFreshAccount]);
 
@@ -74,10 +91,10 @@ export default function DashboardPage() {
   const modelShareData = useMemo(() => {
     if (activeLogs.length === 0) {
       return [
-        { name: "DeepSeek (V3 & Coder)", share: 0, cost: "$0.0006/req", savings: "88%" },
-        { name: "Claude 3.5 Sonnet", share: 0, cost: "$0.0034/req", savings: "35%" },
-        { name: "Groq Llama 3.3", share: 0, cost: "$0.00018/req", savings: "96%" },
-        { name: "GPT-4o (Fallback)", share: 0, cost: "$0.0052/req", savings: "0%" }
+        { name: "DeepSeek (V3 & Coder)", share: 0, cost: "$0.0006/req", savings: "88%", ratePerMillion: "$0.27 / 1M tokens" },
+        { name: "Claude 3.5 Sonnet", share: 0, cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M tokens" },
+        { name: "Groq Llama 3.3", share: 0, cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.10 / 1M tokens" },
+        { name: "GPT-4o (Fallback)", share: 0, cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M tokens" }
       ];
     }
 
@@ -92,36 +109,81 @@ export default function DashboardPage() {
 
     const total = Math.max(1, activeLogs.length);
     return [
-      { name: "DeepSeek (V3 & Coder)", share: Math.round((counts.deepseek / total) * 100), cost: "$0.0006/req", savings: "88%" },
-      { name: "Claude 3.5 Sonnet", share: Math.round((counts.anthropic / total) * 100), cost: "$0.0034/req", savings: "35%" },
-      { name: "Groq Llama 3.3", share: Math.round((counts.groq / total) * 100), cost: "$0.00018/req", savings: "96%" },
-      { name: "GPT-4o (Fallback)", share: Math.round((counts.openai / total) * 100), cost: "$0.0052/req", savings: "0%" }
+      { name: "DeepSeek (V3 & Coder)", share: Math.round((counts.deepseek / total) * 100), cost: "$0.0006/req", savings: "88%", ratePerMillion: "$0.27 / 1M tokens" },
+      { name: "Claude 3.5 Sonnet", share: Math.round((counts.anthropic / total) * 100), cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M tokens" },
+      { name: "Groq Llama 3.3", share: Math.round((counts.groq / total) * 100), cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.10 / 1M tokens" },
+      { name: "GPT-4o (Fallback)", share: Math.round((counts.openai / total) * 100), cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M tokens" }
     ];
   }, [activeLogs]);
 
   // Outcome win rates calculated from logs
-  const outcomeWinRates = useMemo(() => {
-    return [
-      { task: "Sales Email Outreach", winRate: 93.4, model: "Claude 3.5 Sonnet", metric: "Demo Booked" },
-      { task: "Code Review & PRs", winRate: 92.1, model: "DeepSeek Coder", metric: "Code Merged" },
-      { task: "Customer Support FAQ", winRate: 96.2, model: "Groq Llama 3.3", metric: "Ticket Resolved" }
-    ];
-  }, []);
+  const outcomeWinRates = [
+    { task: "Sales Email Outreach", winRate: 93.4, model: "Claude 3.5 Sonnet", metric: "Demo Booked" },
+    { task: "Code Review & PRs", winRate: 92.1, model: "DeepSeek Coder", metric: "Code Merged" },
+    { task: "Customer Support FAQ", winRate: 96.2, model: "Groq Llama 3.3", metric: "Ticket Resolved" }
+  ];
+
+  const handleExportCsv = () => {
+    setExportNotice(true);
+    const headers = "Request ID,Model,Provider,Tokens In,Tokens Out,Cost USD,Latency MS,Outcome\n";
+    const rows = activeLogs.map(l => `${l.id},${l.model_used},${l.provider},${l.tokens_in},${l.tokens_out},${l.cost_usd},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"}`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `outcome_router_spend_telemetry_${Date.now()}.csv`;
+    a.click();
+    setTimeout(() => setExportNotice(false), 3000);
+  };
 
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header & Status */}
+      {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Spend Overview
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Spend Overview
+            </h1>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] font-semibold">
+              Live Gateway Active
+            </span>
+          </div>
           <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Real-time outcome optimization and budget pacing
+            Real-time Bayesian outcome optimization and budget pacing
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Demo Data / Zero State Sandbox Switcher */}
+          <div className="inline-flex p-0.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
+            <button
+              onClick={loadDemoData}
+              title="Load demo data for inspection"
+              className="px-2.5 py-1 text-[11px] font-semibold rounded-full hover:text-[#0050FF] text-[#515154] dark:text-[#8E8E93] transition-all flex items-center gap-1"
+            >
+              <Database className="h-3 w-3" />
+              <span>Sandbox Demo</span>
+            </button>
+            <button
+              onClick={clearUserData}
+              title="Reset to clean $0.00 state"
+              className="px-2.5 py-1 text-[11px] font-semibold rounded-full hover:text-red-600 text-[#86868B] transition-all flex items-center gap-1"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Clean State</span>
+            </button>
+          </div>
+
+          {/* Export CSV */}
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F] shadow-xs transition-all"
+          >
+            <Download className="h-3.5 w-3.5 text-[#0050FF]" />
+            <span>Export CSV</span>
+          </button>
+
           {/* Segmented Time Range */}
           <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
             {(["7d", "30d", "90d"] as const).map((r) => (
@@ -138,14 +200,6 @@ export default function DashboardPage() {
               </button>
             ))}
           </div>
-
-          <Link
-            href="/app/routing"
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F] shadow-xs transition-all"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5 text-[#0050FF]" />
-            <span>Auto-Pilot: <strong className="text-[#1D1D1F] dark:text-[#F5F5F7] capitalize">{autopilot.mode}</strong></span>
-          </Link>
         </div>
       </div>
 
@@ -161,7 +215,7 @@ export default function DashboardPage() {
                 Ready for Live Inference & Routing
               </h3>
               <p className="text-xs text-[#86868B]">
-                Your account is active. Run a prompt simulation or connect your API key to view real-time spend analytics.
+                Your account is active. Click <strong>Simulate Request</strong> or <strong>Sandbox Demo</strong> above to test live routing analytics.
               </p>
             </div>
           </div>
@@ -209,7 +263,7 @@ export default function DashboardPage() {
               {formatCurrency(currentSpend, currency)}
             </div>
             <div className="text-xs text-[#86868B] mt-1">
-              Ceiling: {formatCurrency(1500 * rate, currency)}/mo
+              Ceiling: {formatCurrency(autopilot.monthly_budget_usd * rate, currency)}/mo
             </div>
           </div>
         </div>
@@ -232,11 +286,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Card 4: Avg Gateway Latency */}
+        {/* Card 4: Avg Gateway Latency & SLA Gauge */}
         <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2">
           <div className="flex items-center justify-between text-xs text-[#86868B]">
             <span className="font-medium">Gateway P95 Latency</span>
-            <div className="h-7 w-7 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center justify-center">
+            <div className="h-7 w-7 rounded-xl bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] flex items-center justify-center">
               <Clock className="h-3.5 w-3.5" />
             </div>
           </div>
@@ -244,8 +298,9 @@ export default function DashboardPage() {
             <div className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
               {isFreshAccount ? "0ms" : "140ms"}
             </div>
-            <div className="text-xs text-[#86868B] mt-1">
-              {isFreshAccount ? "No gateway traffic yet" : "Sub-150ms P95 SLA maintained"}
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span>Sub-150ms SLA Compliant (Optimal)</span>
             </div>
           </div>
         </div>
@@ -256,7 +311,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-black/[0.05] dark:border-white/[0.06]">
           <div>
             <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-sm">
-              Spend Pacing: OutcomeRouter vs. Raw GPT-4o
+              Spend Pacing: OutcomeRouter vs. Raw GPT-4o ({timeRange === "7d" ? "Past 7 Days" : timeRange === "30d" ? "Past 30 Days" : "Past Quarter"})
             </h3>
             <p className="text-xs text-[#86868B]">
               Actual spend (blue) vs. unoptimized single-model baseline (gray)
@@ -290,9 +345,12 @@ export default function DashboardPage() {
             {modelShareData.map((item, idx) => (
               <div key={idx} className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{item.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">{item.name}</span>
+                    <span className="text-[10px] text-[#86868B] font-mono">({item.ratePerMillion})</span>
+                  </div>
                   <div className="flex items-center gap-2 font-mono">
-                    <span className="text-emerald-600 dark:text-emerald-400">-{item.savings}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">-{item.savings}</span>
                     <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{item.share}%</span>
                   </div>
                 </div>

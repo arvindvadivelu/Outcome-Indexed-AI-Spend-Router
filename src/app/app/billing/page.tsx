@@ -12,23 +12,40 @@ import {
   Receipt,
   ShieldCheck,
   RotateCcw,
-  ArrowDownRight
+  ArrowDownRight,
+  Download,
+  Sliders,
+  Check,
+  X
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 
 export default function BillingPage() {
-  const { currency, monthlySpendUSD, baselineSpendUSD, planTier, currentTokens, monthlyQuota, slaEscrowContracts } = useAppStore();
+  const {
+    currency,
+    monthlySpendUSD,
+    baselineSpendUSD,
+    planTier,
+    currentTokens,
+    monthlyQuota,
+    slaEscrowContracts,
+    autopilot,
+    setMonthlyBudget
+  } = useAppStore();
+
   const rate = currency === "INR" ? 86.5 : 1;
 
   // AI Invoice Forecaster state
   const [isForecasting, setIsForecasting] = useState(false);
   const [forecastResult, setForecastResult] = useState<any>(null);
+  const [disputeExported, setDisputeExported] = useState(false);
+  const [showPlanMatrix, setShowPlanMatrix] = useState(false);
 
   const handleForecast = async () => {
     setIsForecasting(true);
     setForecastResult(null);
 
-    const response = await apiClient.forecastBill(monthlySpendUSD || 842.50, 1500.0);
+    const response = await apiClient.forecastBill(monthlySpendUSD || 842.50, autopilot.monthly_budget_usd);
     if (response && response.success) {
       setForecastResult({
         projectedInvoiceUSD: response.projected_invoice_usd,
@@ -39,10 +56,23 @@ export default function BillingPage() {
       setForecastResult({
         projectedInvoiceUSD: 972.10,
         projectedSavingsUSD: 642.50,
-        recommendation: "Pacing is 3% below your monthly budget ceiling of $1,500. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $180 without touching conversion rates."
+        recommendation: "Pacing is 3% below your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $180 without touching conversion rates."
       });
     }
     setIsForecasting(false);
+  };
+
+  const handleExportDisputeFile = () => {
+    setDisputeExported(true);
+    const headers = "Contract ID,Request ID,Provider,Model,Target SLA MS,Actual Latency MS,Refund USD,Refund Tokens,Cryptographic Hash\n";
+    const rows = slaEscrowContracts.map(c => `${c.id},${c.requestId},${c.provider},${c.model},${c.latencyLimitMs},${c.actualLatencyMs},${c.refundUsd},${c.refundTokens},${c.cryptographicHash}`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sla_escrow_vendor_dispute_audit_${Date.now()}.csv`;
+    a.click();
+    setTimeout(() => setDisputeExported(false), 3000);
   };
 
   const quotaPct = Math.min(100, Math.round((currentTokens / monthlyQuota) * 100));
@@ -63,14 +93,23 @@ export default function BillingPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleForecast}
-          disabled={isForecasting}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/20"
-        >
-          <Bot className="h-3.5 w-3.5" />
-          <span>{isForecasting ? "Forecasting..." : "Forecast Monthly Bill"}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPlanMatrix(true)}
+            className="px-4 py-2 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#F5F5F7] hover:text-[#1D1D1F] shadow-xs transition-all"
+          >
+            Plan Comparison
+          </button>
+
+          <button
+            onClick={handleForecast}
+            disabled={isForecasting}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/20"
+          >
+            <Bot className="h-3.5 w-3.5" />
+            <span>{isForecasting ? "Forecasting..." : "Forecast Monthly Bill"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Forecast panel */}
@@ -113,6 +152,28 @@ export default function BillingPage() {
         </div>
       </div>
 
+      {/* Interactive Budget Ceiling Slider */}
+      <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Monthly Spend Budget Ceiling</h3>
+            <p className="text-xs text-[#86868B]">Auto-pilot will throttle high-cost flagships if spend approaches ceiling</p>
+          </div>
+          <span className="text-sm font-bold font-mono text-[#0050FF] dark:text-[#3374FF]">
+            {formatCurrency(autopilot.monthly_budget_usd * rate, currency)} / month
+          </span>
+        </div>
+        <input
+          type="range"
+          min="500"
+          max="10000"
+          step="250"
+          value={autopilot.monthly_budget_usd}
+          onChange={(e) => setMonthlyBudget(parseFloat(e.target.value))}
+          className="w-full accent-[#0050FF] h-2 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded-lg cursor-pointer"
+        />
+      </div>
+
       {/* Feature 2: SLA Escrow Recovery Ledger Card */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-[#EEF4FF] via-white to-white dark:from-[#0050FF]/15 dark:via-[#161618] dark:to-[#161618] border border-[#0050FF]/20 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -130,9 +191,15 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <span className="text-xs font-mono font-bold text-[#0050FF] dark:text-[#3374FF] bg-white dark:bg-[#1F1F23] px-3 py-1 rounded-full border border-black/[0.06] dark:border-white/[0.08] self-start sm:self-auto">
-            100% Zero-Loss Guarantee
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportDisputeFile}
+              className="px-3 py-1 text-xs font-semibold rounded-full bg-white dark:bg-[#1F1F23] border border-black/[0.06] dark:border-white/[0.08] text-[#0050FF] dark:text-[#3374FF] flex items-center gap-1 transition-all"
+            >
+              {disputeExported ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Download className="h-3.5 w-3.5" />}
+              <span>{disputeExported ? "Dispute Exported!" : "Export Vendor Dispute CSV"}</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
@@ -173,6 +240,40 @@ export default function BillingPage() {
           ></div>
         </div>
       </div>
+
+      {/* Plan Matrix Modal */}
+      {showPlanMatrix && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-2xl rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-black/[0.05] dark:border-white/[0.06]">
+              <h3 className="font-semibold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">Plan Tier Comparison</h3>
+              <button onClick={() => setShowPlanMatrix(false)} className="text-[#86868B] hover:text-[#1D1D1F]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-xs">
+              <div className="p-4 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] space-y-2">
+                <h4 className="font-bold text-sm">Starter ($29/mo)</h4>
+                <p className="text-[#86868B]">100K tokens/mo</p>
+                <p className="text-[#86868B]">Semantic Caching</p>
+                <p className="text-[#86868B]">Standard SLA</p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 border border-[#0050FF]/30 space-y-2">
+                <h4 className="font-bold text-sm text-[#0050FF]">Growth ($99/mo)</h4>
+                <p className="text-[#86868B]">500K tokens/mo</p>
+                <p className="text-[#86868B]">Micro-SLA Escrow</p>
+                <p className="text-[#86868B]">Speculative Pre-Warm</p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] space-y-2">
+                <h4 className="font-bold text-sm">Enterprise (Custom)</h4>
+                <p className="text-[#86868B]">Unlimited tokens</p>
+                <p className="text-[#86868B]">Dedicated VPC Cache</p>
+                <p className="text-[#86868B]">Custom DP Prior Blend</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

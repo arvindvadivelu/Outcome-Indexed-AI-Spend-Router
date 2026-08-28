@@ -13,7 +13,10 @@ import {
   Bot,
   ShieldCheck,
   Cpu,
-  Layers
+  Layers,
+  Sliders,
+  DollarSign,
+  ArrowRight
 } from "lucide-react";
 import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
 import { apiClient } from "@/lib/api-client";
@@ -41,25 +44,29 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
   const [selectedTask, setSelectedTask] = useState("sales_email");
   const [promptText, setPromptText] = useState(SAMPLE_PROMPTS[0].prompt);
   const [strategy, setStrategy] = useState("outcome_optimized");
+  const [maxLatencyLimit, setMaxLatencyLimit] = useState(400);
+  const [temperature, setTemperature] = useState(0.7);
 
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<"preset" | "advanced">("preset");
 
   const handleSimulate = async () => {
     setIsLoading(true);
     setResult(null);
     setFeedbackGiven(null);
 
-    // Call live pre-warming API
+    // 1. Call live pre-warming API
     await apiClient.predictPrewarm(promptText);
 
-    // Call live chat completions gateway
+    // 2. Call live chat completions gateway
     const liveRes = await apiClient.chatCompletion({
       messages: [{ role: "user", content: promptText }],
       routing_preferences: {
         strategy,
         target_metric: selectedTask === "sales_email" ? "demo_booked" : (selectedTask === "code_generation" ? "code_merged" : "ticket_resolved"),
+        max_latency_ms: maxLatencyLimit,
         speculative_mode: true
       }
     });
@@ -67,8 +74,8 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     const isCode = selectedTask === "code_generation" || promptText.includes("TypeScript");
     const isSupport = selectedTask === "customer_support";
 
-    let model = liveRes?._router_metadata?.model_used || "Claude 3.5 Sonnet";
-    let provider = liveRes?._router_metadata?.provider || "anthropic";
+    let model = liveRes?._router_metadata?.model_used || (isCode ? "DeepSeek Coder" : (isSupport ? "Groq Llama 3.3" : "Claude 3.5 Sonnet"));
+    let provider = liveRes?._router_metadata?.provider || (isCode ? "deepseek" : (isSupport ? "groq" : "anthropic"));
     let cost = liveRes?._router_metadata?.cost_usd || (isCode ? 0.00065 : (isSupport ? 0.00018 : 0.0034));
     let latency = liveRes?._router_metadata?.latency_ms || (isCode ? 115 : (isSupport ? 84 : 140));
     let winRate = isCode ? 92.1 : (isSupport ? 95.8 : 92.4);
@@ -78,6 +85,13 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     const savedPct = Math.round((savedAmount / baselineCost) * 100);
     const reqId = liveRes?.id || `oir_sim_${Math.random().toString(36).substr(2, 6)}`;
     const contractHash = `0x${Math.random().toString(36).substr(2, 12)}${Math.random().toString(36).substr(2, 12)}`;
+    const estimatedValue = selectedTask === "sales_email" ? 450.0 : (isCode ? 280.0 : 65.0);
+
+    const candidateRanking = [
+      { name: model, provider, score: 0.942, status: "Selected (Winner)" },
+      { name: "DeepSeek-V3", provider: "deepseek", score: 0.895, status: "Candidate #2" },
+      { name: "GPT-4o", provider: "openai", score: 0.820, status: "Suboptimal Cost" }
+    ];
 
     const simResult = {
       requestId: reqId,
@@ -94,6 +108,8 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
       prewarmedTtftMs: 68.4,
       deltaCompressionSavedPct: 58.2,
       slaContractHash: contractHash,
+      estimatedBusinessValueUSD: estimatedValue,
+      candidateRanking,
       responseContent: liveRes?.choices?.[0]?.message?.content || (isCode
         ? `// Stream Handler Refactored (Pre-warmed in 68ms)\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
         : `Subject: Cut AI token spend by 40% with Outcome-Indexed Routing\n\nHi Alex,\n\nI noticed your team is scaling LLM features. OutcomeRouter dynamically routes requests to Claude 3.5, DeepSeek, and Groq based on conversion KPIs—saving teams $12K/month while closing +14% more pipeline.\n\nOpen to a quick 10-minute demo this Thursday?\n\nBest,\nArjun`)
@@ -130,7 +146,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
       createdAt: "Just now",
       provider,
       model,
-      latencyLimitMs: 400,
+      latencyLimitMs: maxLatencyLimit,
       actualLatencyMs: latency,
       status: "settled_fulfilled",
       refundUsd: 0.0,
@@ -158,50 +174,111 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h3 className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] text-base">Test Prompt Routing</h3>
-              <p className="text-xs text-[#86868B]">Bayesian routing with Speculative Pre-Warming & Micro-SLA</p>
+              <p className="text-xs text-[#86868B]">Bayesian Thompson Routing with Micro-SLA & Value Indexing</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="h-8 w-8 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            <div className="inline-flex p-0.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23]">
+              <button
+                onClick={() => setActiveTab("preset")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-full transition-all ${
+                  activeTab === "preset"
+                    ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    : "text-[#86868B]"
+                }`}
+              >
+                Presets
+              </button>
+              <button
+                onClick={() => setActiveTab("advanced")}
+                className={`px-2.5 py-1 text-[11px] font-semibold rounded-full transition-all ${
+                  activeTab === "advanced"
+                    ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                    : "text-[#86868B]"
+                }`}
+              >
+                Parameters
+              </button>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="h-8 w-8 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
         <div className="py-4 space-y-4 overflow-y-auto flex-1 pr-0.5">
-          {/* Quick Presets */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[#86868B]">Sample Scenarios</label>
-            <div className="flex flex-wrap gap-2">
-              {SAMPLE_PROMPTS.map((p, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setSelectedTask(p.task);
-                    setPromptText(p.prompt);
-                  }}
-                  className={`text-xs px-3.5 py-1.5 rounded-full transition-all ${
-                    promptText === p.prompt
-                      ? "bg-[#0050FF] text-white font-medium shadow-sm shadow-[#0050FF]/25"
-                      : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
+          {activeTab === "preset" ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[#86868B]">Sample Business Scenarios</label>
+              <div className="flex flex-wrap gap-2">
+                {SAMPLE_PROMPTS.map((p, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setSelectedTask(p.task);
+                      setPromptText(p.prompt);
+                    }}
+                    className={`text-xs px-3.5 py-1.5 rounded-full transition-all ${
+                      promptText === p.prompt
+                        ? "bg-[#0050FF] text-white font-medium shadow-sm shadow-[#0050FF]/25"
+                        : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#8E8E93] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs">
+              <div className="space-y-1">
+                <div className="flex justify-between text-[#86868B]">
+                  <span>Latency SLA Cap</span>
+                  <span className="font-mono font-bold text-[#0050FF]">{maxLatencyLimit}ms</span>
+                </div>
+                <input
+                  type="range"
+                  min="100"
+                  max="800"
+                  step="50"
+                  value={maxLatencyLimit}
+                  onChange={(e) => setMaxLatencyLimit(parseInt(e.target.value))}
+                  className="w-full accent-[#0050FF] h-1.5"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex justify-between text-[#86868B]">
+                  <span>Temperature</span>
+                  <span className="font-mono font-bold text-[#0050FF]">{temperature}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="1.0"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  className="w-full accent-[#0050FF] h-1.5"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Prompt Payload */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-[#86868B]">Prompt Text</label>
+            <label className="text-xs font-medium text-[#86868B]">Prompt Payload</label>
             <textarea
               value={promptText}
               onChange={(e) => setPromptText(e.target.value)}
               rows={3}
-              placeholder="Enter your prompt here..."
+              placeholder="Enter your custom multi-turn or single prompt here..."
               className="w-full rounded-2xl bg-[#F5F5F7] dark:bg-[#1F1F23] border border-transparent dark:border-white/[0.08] p-3.5 text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:bg-white dark:focus:bg-[#161618] focus:border-[#0050FF]/30 transition-all resize-none"
             />
           </div>
@@ -215,12 +292,12 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Evaluating optimal model & pre-warming context...
+                Evaluating Pareto weights & pre-warming GPU slots...
               </span>
             ) : (
               <>
                 <Play className="h-3.5 w-3.5 fill-current" />
-                <span>Simulate AI Route</span>
+                <span>Simulate AI Route (Live Gateway)</span>
               </>
             )}
           </button>
@@ -235,9 +312,14 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
                     {result.selectedModel}
                   </span>
                 </div>
-                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                  -{result.savedPct}% vs GPT-4o
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    -{result.savedPct}% vs GPT-4o
+                  </span>
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                    +${result.estimatedBusinessValueUSD} KPI Value
+                  </span>
+                </div>
               </div>
 
               {/* 4 Metric Pills */}
@@ -282,7 +364,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
 
               {/* Response Preview */}
               <div className="space-y-1">
-                <p className="text-[10px] font-medium text-[#86868B] uppercase">Output</p>
+                <p className="text-[10px] font-medium text-[#86868B] uppercase">Output (Sub-50ms Stream)</p>
                 <div className="p-3 rounded-xl bg-white dark:bg-[#202024] border border-black/[0.04] dark:border-white/[0.06] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-pre-wrap font-mono leading-relaxed">
                   {result.responseContent}
                 </div>
@@ -290,7 +372,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
 
               {/* Outcome Feedback */}
               <div className="pt-1 flex items-center justify-between">
-                <span className="text-xs text-[#86868B]">Was this outcome successful?</span>
+                <span className="text-xs text-[#86868B]">Did this output achieve business outcome?</span>
                 {feedbackGiven === null ? (
                   <div className="flex items-center gap-2">
                     <button
@@ -311,7 +393,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
                 ) : (
                   <div className="flex items-center gap-1 text-xs text-[#0050FF] dark:text-[#3374FF] font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Prior Recorded & SLA Settled</span>
+                    <span>Thompson Weights & SLA Updated ✓</span>
                   </div>
                 )}
               </div>

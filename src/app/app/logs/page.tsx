@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, LogItem } from "@/lib/store";
+import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
 import { formatCurrency } from "@/lib/utils";
 import {
   Search,
@@ -14,27 +14,42 @@ import {
   X,
   ShieldCheck,
   Cpu,
-  Layers
+  Layers,
+  Download,
+  Copy,
+  Check,
+  Code2,
+  ThumbsUp,
+  ThumbsDown
 } from "lucide-react";
 
 export default function LogsPage() {
-  const { telemetryLogs, currency, slaEscrowContracts } = useAppStore();
+  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome } = useAppStore();
   const rate = currency === "INR" ? 86.5 : 1;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTaskFilter, setSelectedTaskFilter] = useState("all");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
   const [selectedLog, setSelectedLog] = useState<LogItem | null>(null);
+  const [selectedContract, setSelectedContract] = useState<SlaContractItem | null>(null);
 
   const [aiExplaining, setAiExplaining] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [copiedCurl, setCopiedCurl] = useState(false);
 
-  const filteredLogs = telemetryLogs.filter((log) => {
+  const activeLogs = logs.length > 0 ? logs : telemetryLogs;
+
+  const filteredLogs = activeLogs.filter((log) => {
     const matchesSearch =
       log.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.model_used.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.prompt_preview.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTask = selectedTaskFilter === "all" || log.task_type === selectedTaskFilter;
-    return matchesSearch && matchesTask;
+    const matchesStatus =
+      selectedStatusFilter === "all" ||
+      (selectedStatusFilter === "wins" && log.outcome_success === true) ||
+      (selectedStatusFilter === "losses" && log.outcome_success === false);
+    return matchesSearch && matchesTask && matchesStatus;
   });
 
   const handleExplainWithAI = (log: LogItem) => {
@@ -44,7 +59,7 @@ export default function LogsPage() {
 
     setTimeout(() => {
       const contract = slaEscrowContracts.find((c) => c.requestId === log.id) || {
-        cryptographicHash: "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a",
+        cryptographicHash: "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a8c0b",
         status: "settled_fulfilled",
         latencyLimitMs: 400
       };
@@ -53,23 +68,51 @@ export default function LogsPage() {
         `• Complexity Assessment: Assessed as ${log.task_type === "code_generation" ? "High Complexity" : "Standard"}.\n` +
         `• Model Selection: Routed to ${log.model_used} based on prior 92.4% win rate.\n` +
         `• Speculative Pre-Warming: Saved ~70% TTFT via active background SLM tensor allocation.\n` +
-        `• Micro-SLA Contract: ${contract.cryptographicHash.slice(0, 16)}... (Status: ${contract.status === "settled_fulfilled" ? "Settled & Fulfilled ✓" : "Breach Escrow Refunded"}).\n` +
+        `• Micro-SLA Contract: ${contract.cryptographicHash.slice(0, 18)}... (Status: ${contract.status === "settled_fulfilled" ? "Settled & Fulfilled ✓" : "Breach Escrow Refunded"}).\n` +
         `• Net Spend Savings: Saved ${currency === "INR" ? `₹${(0.0052 * rate - log.cost_inr).toFixed(3)}` : `$${(0.0052 - log.cost_usd).toFixed(4)}`} per request compared to default GPT-4o.`
       );
       setAiExplaining(false);
     }, 450);
   };
 
+  const handleCopyCurl = (log: LogItem) => {
+    const snippet = `curl https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview}"}]}'`;
+    navigator.clipboard.writeText(snippet);
+    setCopiedCurl(true);
+    setTimeout(() => setCopiedCurl(false), 2000);
+  };
+
+  const handleExportCsv = () => {
+    const headers = "Request ID,Model,Provider,Tokens In,Tokens Out,Cost USD,Latency MS,Outcome,Prompt\n";
+    const rows = filteredLogs.map(l => `${l.id},${l.model_used},${l.provider},${l.tokens_in},${l.tokens_out},${l.cost_usd},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${l.prompt_preview.replace(/"/g, '""')}"`).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `telemetry_audit_${Date.now()}.csv`;
+    a.click();
+  };
+
   return (
     <div className="space-y-7 max-w-7xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-          Audit & Telemetry Logs
-        </h1>
-        <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-          Inspect real-time routing decisions, Micro-SLA contracts, and outcome feedback
-        </p>
+      {/* Header & Export */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+            Audit & Telemetry Logs
+          </h1>
+          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
+            Inspect real-time routing decisions, Micro-SLA contracts, and outcome feedback
+          </p>
+        </div>
+
+        <button
+          onClick={handleExportCsv}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white dark:bg-[#161618] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#F5F5F7] hover:text-[#1D1D1F] shadow-xs transition-all self-start sm:self-auto"
+        >
+          <Download className="h-3.5 w-3.5 text-[#0050FF]" />
+          <span>Export Logs CSV</span>
+        </button>
       </div>
 
       {/* AI Log Explanation Drawer / Modal */}
@@ -82,12 +125,21 @@ export default function LogsPage() {
                 Decision & SLA Trace: <span className="font-mono text-[#0050FF] dark:text-[#3374FF]">{selectedLog.id}</span>
               </h3>
             </div>
-            <button
-              onClick={() => setSelectedLog(null)}
-              className="h-6 w-6 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleCopyCurl(selectedLog)}
+                className="text-[11px] px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] flex items-center gap-1 transition-all"
+              >
+                {copiedCurl ? <Check className="h-3 w-3 text-emerald-600" /> : <Code2 className="h-3 w-3" />}
+                <span>{copiedCurl ? "Copied cURL" : "Copy cURL Replay"}</span>
+              </button>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="h-6 w-6 rounded-full text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#1F1F23] flex items-center justify-center transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
           {aiExplaining ? (
@@ -116,7 +168,7 @@ export default function LogsPage() {
           />
         </div>
 
-        {/* Task Filter Segmented Control */}
+        {/* Task Filter */}
         <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] self-start sm:self-auto">
           {[
             { id: "all", label: "All Tasks" },
@@ -129,6 +181,27 @@ export default function LogsPage() {
               onClick={() => setSelectedTaskFilter(tab.id)}
               className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
                 selectedTaskFilter === tab.id
+                  ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
+                  : "text-[#86868B] hover:text-[#1D1D1F]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Status Filter */}
+        <div className="inline-flex p-1 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] self-start sm:self-auto">
+          {[
+            { id: "all", label: "All Status" },
+            { id: "wins", label: "Wins (93%)" },
+            { id: "losses", label: "Losses" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSelectedStatusFilter(tab.id)}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                selectedStatusFilter === tab.id
                   ? "bg-white dark:bg-[#2C2C30] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                   : "text-[#86868B] hover:text-[#1D1D1F]"
               }`}
@@ -150,7 +223,7 @@ export default function LogsPage() {
                 <th className="p-4 font-medium text-right">Cost</th>
                 <th className="p-4 font-medium text-center">Latency</th>
                 <th className="p-4 font-medium text-center">Micro-SLA Contract</th>
-                <th className="p-4 font-medium text-center">Outcome</th>
+                <th className="p-4 font-medium text-center">Outcome Win</th>
                 <th className="p-4 pr-6 font-medium text-right">Action</th>
               </tr>
             </thead>
@@ -158,7 +231,7 @@ export default function LogsPage() {
               {filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-xs text-[#86868B]">
-                    No request logs found. Click <strong>Simulate Request</strong> in the header to evaluate live models.
+                    No request logs found. Click <strong>Simulate Request</strong> or <strong>Sandbox Demo</strong> in Spend Overview to evaluate live models.
                   </td>
                 </tr>
               ) : (
@@ -189,21 +262,34 @@ export default function LogsPage() {
                     <td className="p-4 text-center">
                       <span className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995] font-medium">
                         <ShieldCheck className="h-3 w-3" />
-                        <span>SLA Settled</span>
+                        <span>SLA Bound</span>
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      {log.outcome_success ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-[#E6F4EA] dark:bg-[#1E3A2F] px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="h-3 w-3" />
-                          <span>Win</span>
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#86868B] bg-[#F5F5F7] dark:bg-[#1F1F23] px-2 py-0.5 rounded-full">
-                          <Clock className="h-3 w-3" />
-                          <span>Pending</span>
-                        </span>
-                      )}
+                      <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => recordOutcome(log.id, true)}
+                          className={`p-1 rounded-md transition-all ${
+                            log.outcome_success === true
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold"
+                              : "text-[#86868B] hover:text-[#0050FF]"
+                          }`}
+                          title="Mark Win"
+                        >
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => recordOutcome(log.id, false)}
+                          className={`p-1 rounded-md transition-all ${
+                            log.outcome_success === false
+                              ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold"
+                              : "text-[#86868B] hover:text-red-600"
+                          }`}
+                          title="Mark Loss"
+                        >
+                          <ThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                     <td className="p-4 pr-6 text-right">
                       <button

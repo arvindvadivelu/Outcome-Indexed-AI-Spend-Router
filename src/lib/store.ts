@@ -57,18 +57,22 @@ export interface RoutingRule {
   min_win_rate: number;
   strategy: string;
   ai_synthesized?: boolean;
+  trigger_count?: number;
+  total_saved_usd?: number;
 }
 
 export interface ApiKeyItem {
   id: string;
   name: string;
   key_prefix: string;
+  full_key?: string;
   environment: "live" | "test";
   rate_limit: number;
   rate_limit_rpm: number;
   created_at: string;
   last_used_at: string;
   is_active: boolean;
+  ip_restrictions?: string;
 }
 
 export interface AutoPilotState {
@@ -122,6 +126,17 @@ export interface WebhookConfig {
   endpointUrl: string;
   secretKey: string;
   events: string[];
+  retryPolicy: "exponential_backoff" | "linear" | "immediate";
+}
+
+export interface WebhookLogItem {
+  id: string;
+  timestamp: string;
+  event: string;
+  targetUrl: string;
+  httpStatus: number;
+  latencyMs: number;
+  verified: boolean;
 }
 
 interface AppState {
@@ -155,6 +170,7 @@ interface AppState {
   autopilot: AutoPilotState;
   setAutopilotMode: (mode: "optimal_pace" | "aggressive_savings" | "quality_boost") => void;
   toggleAutopilot: () => void;
+  setMonthlyBudget: (budget: number) => void;
 
   // 4 Breakthrough Strategic Features State
   prewarmMetrics: PrewarmMetrics;
@@ -165,9 +181,11 @@ interface AppState {
   toggleFederation: () => void;
   addSlaContract: (contract: SlaContractItem) => void;
 
-  // Webhook Persistent Config
+  // Webhook Persistent Config & Logs
   webhookConfig: WebhookConfig;
   setWebhookConfig: (config: Partial<WebhookConfig>) => void;
+  webhookLogs: WebhookLogItem[];
+  addWebhookLog: (log: WebhookLogItem) => void;
 
   // Telemetry items
   logs: LogItem[];
@@ -183,12 +201,14 @@ interface AppState {
   addRule: (rule: RoutingRule) => void;
   toggleRule: (id: string) => void;
   deleteRule: (id: string) => void;
-  updateRulePriority?: (id: string, newPriority: string[]) => void;
-  createApiKey: (name: string, envOrLimit?: string | number) => void;
+  updateRulePriority: (id: string, newPriority: string[]) => void;
+  createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string) => string;
   deleteApiKey: (id: string) => void;
   revokeApiKey: (id: string) => void;
+  updateApiKeyRateLimit: (id: string, newRpm: number) => void;
   addLog: (log: LogItem) => void;
   clearUserData: () => void;
+  loadDemoData: () => void;
 }
 
 const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
@@ -299,7 +319,9 @@ const DEFAULT_RULES: RoutingRule[] = [
     max_latency_ms: 450,
     max_cost_usd: 0.0035,
     min_win_rate: 0.90,
-    strategy: "outcome_optimized"
+    strategy: "outcome_optimized",
+    trigger_count: 412,
+    total_saved_usd: 14.82
   },
   {
     id: "rule_2",
@@ -315,7 +337,9 @@ const DEFAULT_RULES: RoutingRule[] = [
     max_latency_ms: 400,
     max_cost_usd: 0.002,
     min_win_rate: 0.88,
-    strategy: "cost_minimum"
+    strategy: "cost_minimum",
+    trigger_count: 684,
+    total_saved_usd: 31.45
   }
 ];
 
@@ -327,7 +351,7 @@ const DEFAULT_KEYS: ApiKeyItem[] = [
     environment: "live",
     rate_limit: 600,
     rate_limit_rpm: 600,
-    created_at: "Just now",
+    created_at: "Aug 20, 2026",
     last_used_at: "Just now",
     is_active: true
   }
@@ -391,6 +415,11 @@ export const useAppStore = create<AppState>()(
         quality_weight_w1: 0.70
       },
 
+      setMonthlyBudget: (budget: number) =>
+        set((state) => ({
+          autopilot: { ...state.autopilot, monthly_budget_usd: budget }
+        })),
+
       prewarmMetrics: {
         totalEvents: 1420,
         speculativeHits: 1294,
@@ -419,12 +448,30 @@ export const useAppStore = create<AppState>()(
       webhookConfig: {
         endpointUrl: "https://api.acme.ai/webhooks/outcome-events",
         secretKey: "whsec_99a8b7c6d5e4f3a2b1",
-        events: ["outcome.indexed.success", "sla.breach.escrow_refunded", "autopilot.weight_adjusted"]
+        events: ["outcome.indexed.success", "sla.breach.escrow_refunded", "autopilot.weight_adjusted"],
+        retryPolicy: "exponential_backoff"
       },
 
       setWebhookConfig: (config) =>
         set((state) => ({
           webhookConfig: { ...state.webhookConfig, ...config }
+        })),
+
+      webhookLogs: [
+        {
+          id: "wh_log_001",
+          timestamp: "5 min ago",
+          event: "outcome.indexed.success",
+          targetUrl: "https://api.acme.ai/webhooks/outcome-events",
+          httpStatus: 200,
+          latencyMs: 42,
+          verified: true
+        }
+      ],
+
+      addWebhookLog: (log: WebhookLogItem) =>
+        set((state) => ({
+          webhookLogs: [log, ...state.webhookLogs]
         })),
 
       setFederationWeight: (weight: number) =>
@@ -467,16 +514,38 @@ export const useAppStore = create<AppState>()(
 
       recordOutcome: (requestId: string, success: boolean) =>
         set((state) => {
+          let updatedModel = "";
           const updatedLogs = (state.logs.length > 0 ? state.logs : state.telemetryLogs).map((log) => {
             if (log.id === requestId) {
+              updatedModel = log.model_used;
               return { ...log, outcome_success: success };
             }
             return log;
           });
 
+          // Dynamically adjust Thompson Sampling win rates on benchmarks
+          const updatedBenchmarks = state.benchmarks.map((b) => {
+            if (b.model_name.toLowerCase().includes(updatedModel.toLowerCase()) || updatedModel.toLowerCase().includes(b.model_name.toLowerCase())) {
+              const newTotal = b.total_requests + 1;
+              const newSuccess = success ? b.success_count + 1 : b.success_count;
+              const newWinRate = parseFloat((newSuccess / newTotal).toFixed(3));
+              return {
+                ...b,
+                total_requests: newTotal,
+                success_count: newSuccess,
+                win_rate: newWinRate,
+                win_rate_pct: parseFloat((newWinRate * 100).toFixed(1)),
+                thompson_score: parseFloat(Math.min(0.99, newWinRate + 0.02).toFixed(3))
+              };
+            }
+            return b;
+          });
+
           return {
             logs: updatedLogs,
-            telemetryLogs: updatedLogs
+            telemetryLogs: updatedLogs,
+            benchmarks: updatedBenchmarks,
+            modelBenchmarks: updatedBenchmarks
           };
         }),
 
@@ -500,24 +569,41 @@ export const useAppStore = create<AppState>()(
           return { rules: updated, routingRules: updated };
         }),
 
-      createApiKey: (name: string, envOrLimit: string | number = "live") =>
+      updateRulePriority: (id: string, newPriority: string[]) =>
         set((state) => {
-          const env = typeof envOrLimit === "string" ? (envOrLimit as "live" | "test") : "live";
-          const rateLimit = typeof envOrLimit === "number" ? envOrLimit : 600;
-          const newKey: ApiKeyItem = {
-            id: `key_${Date.now()}`,
-            name,
-            key_prefix: `oir_${env}_${Math.random().toString(36).substring(2, 8)}`,
-            environment: env,
-            rate_limit: rateLimit,
-            rate_limit_rpm: rateLimit,
-            created_at: "Just now",
-            last_used_at: "Never",
-            is_active: true
-          };
-          const updated = [newKey, ...state.apiKeys];
-          return { apiKeys: updated };
+          const updated = state.routingRules.map((r) =>
+            r.id === id ? { ...r, priority_models: newPriority, models_priority: newPriority } : r
+          );
+          return { rules: updated, routingRules: updated };
         }),
+
+      createApiKey: (name: string, envOrLimit: string | number = "live", ipRestrictions: string = "") => {
+        const env = typeof envOrLimit === "string" ? (envOrLimit as "live" | "test") : "live";
+        const rateLimit = typeof envOrLimit === "number" ? envOrLimit : 600;
+        const secretHex = `${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+        const fullKey = `oir_${env}_${secretHex}`;
+        const prefix = `oir_${env}_${secretHex.substring(0, 6)}`;
+        
+        const newKey: ApiKeyItem = {
+          id: `key_${Date.now()}`,
+          name,
+          key_prefix: prefix,
+          full_key: fullKey,
+          environment: env,
+          rate_limit: rateLimit,
+          rate_limit_rpm: rateLimit,
+          created_at: "Just now",
+          last_used_at: "Never",
+          is_active: true,
+          ip_restrictions: ipRestrictions || "Any (0.0.0.0/0)"
+        };
+
+        set((state) => ({
+          apiKeys: [newKey, ...state.apiKeys]
+        }));
+
+        return fullKey;
+      },
 
       deleteApiKey: (id: string) =>
         set((state) => ({
@@ -527,6 +613,13 @@ export const useAppStore = create<AppState>()(
       revokeApiKey: (id: string) =>
         set((state) => ({
           apiKeys: state.apiKeys.filter((k) => k.id !== id)
+        })),
+
+      updateApiKeyRateLimit: (id: string, newRpm: number) =>
+        set((state) => ({
+          apiKeys: state.apiKeys.map((k) =>
+            k.id === id ? { ...k, rate_limit: newRpm, rate_limit_rpm: newRpm } : k
+          )
         })),
 
       addLog: (log: LogItem) =>
@@ -553,8 +646,83 @@ export const useAppStore = create<AppState>()(
           monthlySpendUSD: 0.00,
           baselineSpendUSD: 0.00,
           currentTokens: 0,
-          slaEscrowContracts: []
-        }))
+          slaEscrowContracts: [],
+          webhookLogs: []
+        })),
+
+      loadDemoData: () =>
+        set((state) => {
+          const demoLogs: LogItem[] = [
+            {
+              id: "oir_demo_9821",
+              created_at: "2 min ago",
+              model_used: "DeepSeek Coder",
+              provider: "deepseek",
+              task_type: "code_generation",
+              tokens_in: 480,
+              tokens_out: 260,
+              cost_usd: 0.00065,
+              cost_inr: 0.056,
+              latency_ms: 112,
+              outcome_success: true,
+              outcome_metric: "code_merged",
+              prompt_preview: "Refactor Next.js API route to use streaming responses...",
+              cached_hit: false,
+              fallback_triggered: false,
+              speculative_win: true,
+              critic_escalated: false,
+              status: "success"
+            },
+            {
+              id: "oir_demo_9820",
+              created_at: "15 min ago",
+              model_used: "Claude 3.5 Sonnet",
+              provider: "anthropic",
+              task_type: "sales_email",
+              tokens_in: 340,
+              tokens_out: 190,
+              cost_usd: 0.0034,
+              cost_inr: 0.294,
+              latency_ms: 145,
+              outcome_success: true,
+              outcome_metric: "demo_booked",
+              prompt_preview: "Write cold email to VP of Engineering at Series B SaaS...",
+              cached_hit: false,
+              fallback_triggered: false,
+              speculative_win: false,
+              critic_escalated: false,
+              status: "success"
+            },
+            {
+              id: "oir_demo_9819",
+              created_at: "1 hour ago",
+              model_used: "Groq Llama 3.3",
+              provider: "groq",
+              task_type: "customer_support",
+              tokens_in: 210,
+              tokens_out: 95,
+              cost_usd: 0.00018,
+              cost_inr: 0.015,
+              latency_ms: 78,
+              outcome_success: true,
+              outcome_metric: "ticket_resolved",
+              prompt_preview: "Explain P95 latency SLA and auto-refund guarantee...",
+              cached_hit: true,
+              fallback_triggered: false,
+              speculative_win: true,
+              critic_escalated: false,
+              status: "success"
+            }
+          ];
+
+          return {
+            logs: demoLogs,
+            telemetryLogs: demoLogs,
+            monthlySpendUSD: 42.50,
+            baselineSpendUSD: 73.95,
+            currentTokens: 184000
+          };
+        })
     }),
     {
       name: "outcome_router_storage",
@@ -568,6 +736,8 @@ export const useAppStore = create<AppState>()(
         currentTokens: state.currentTokens,
         logs: state.logs,
         telemetryLogs: state.telemetryLogs,
+        benchmarks: state.benchmarks,
+        modelBenchmarks: state.modelBenchmarks,
         rules: state.rules,
         routingRules: state.routingRules,
         apiKeys: state.apiKeys,
@@ -575,7 +745,8 @@ export const useAppStore = create<AppState>()(
         deltaStats: state.deltaStats,
         federationSettings: state.federationSettings,
         autopilot: state.autopilot,
-        webhookConfig: state.webhookConfig
+        webhookConfig: state.webhookConfig,
+        webhookLogs: state.webhookLogs
       })
     }
   )

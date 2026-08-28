@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   Cpu,
   FileCode,
-  ArrowRight
+  ArrowRight,
+  Sliders,
+  Check
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { apiClient } from "@/lib/api-client";
@@ -30,12 +32,19 @@ const TokenBarChart = dynamic(
 );
 
 export default function TokenAnalyticsPage() {
-  const { currentTokens, monthlyQuota, currency, deltaStats } = useAppStore();
+  const { currentTokens, monthlyQuota, currency, deltaStats, addRule } = useAppStore();
   const rate = currency === "INR" ? 86.5 : 1;
 
   // AI Token Anomaly Analyzer state
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditResult, setAuditResult] = useState<any>(null);
+  const [cacheApplied, setCacheApplied] = useState(false);
+
+  // Live Prompt Diff Tester State
+  const [customDiffPrompt, setCustomDiffPrompt] = useState(
+    "You are an expert full-stack TypeScript engineer specializing in Next.js 14, React 18, Tailwind CSS, and shadcn/ui. Return clean, accessible, production-ready code with no placeholders.\n\nTask: Refactor the auth middleware to check Redis JWT tokens."
+  );
+  const [cosineThreshold, setCosineThreshold] = useState(0.92);
 
   const handleRunAiAudit = async () => {
     setIsAuditing(true);
@@ -53,11 +62,33 @@ export default function TokenAnalyticsPage() {
       setAuditResult({
         totalWastedTokens: 184200,
         estimatedDollarLossUSD: 94.20,
-        recommendation: "Detected 4,200 repetitive system prompt headers in Customer Support. Enabling prompt de-fluffing will eliminate 32% of input tokens, immediately saving $94.20/month.",
+        recommendation: "Detected 4,200 repetitive system prompt headers in Customer Support. Enabling prompt de-fluffing will eliminate 32% of input tokens, saving $94.20/month.",
         optimalCacheRule: "Enable pgvector cosine threshold 0.92 for 'customer_support' task domain."
       });
     }
     setIsAuditing(false);
+  };
+
+  const handleApplyCacheRule = () => {
+    addRule({
+      id: `rule_cache_${Date.now()}`,
+      name: "Auto-Synthesized Semantic Cache (pgvector >0.92)",
+      task_type: "customer_support",
+      condition_pattern: "cosine_similarity > 0.92",
+      target_metric: "cache_hit_ratio",
+      is_active: true,
+      enabled: true,
+      priority_models: ["Groq Llama 3.3", "DeepSeek-V3"],
+      models_priority: ["Groq Llama 3.3", "DeepSeek-V3"],
+      fallback_model: "GPT-4o Mini",
+      max_latency_ms: 60,
+      max_cost_usd: 0.0001,
+      min_win_rate: 0.95,
+      strategy: "cost_minimum",
+      ai_synthesized: true
+    });
+    setCacheApplied(true);
+    setTimeout(() => setCacheApplied(false), 3000);
   };
 
   const dailyTokenData = [
@@ -79,7 +110,7 @@ export default function TokenAnalyticsPage() {
             Token Analytics & Semantic Delta
           </h1>
           <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
-            Monitor prompt compression, token diffing, and cache hit rates
+            Monitor prompt compression, token diffing, and pgvector cosine caching
           </p>
         </div>
 
@@ -95,25 +126,34 @@ export default function TokenAnalyticsPage() {
 
       {/* AI Token Waste Diagnostic Panel */}
       {auditResult && (
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-2.5 animate-in fade-in">
+        <div className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-3 animate-in fade-in">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">
               <Sparkles className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
               <span>AI Token Optimization Diagnostic</span>
             </div>
             <span className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-2.5 py-0.5 rounded-full">
-              Fix Ready
+              Optimization Available
             </span>
           </div>
           <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{auditResult.recommendation}</p>
-          <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs text-[#0050FF] dark:text-[#3374FF] font-medium flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>Recommended: {auditResult.optimalCacheRule}</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23]">
+            <div className="text-xs text-[#0050FF] dark:text-[#3374FF] font-medium flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+              <span>{auditResult.optimalCacheRule}</span>
+            </div>
+            <button
+              onClick={handleApplyCacheRule}
+              className="px-4 py-1.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all flex items-center gap-1 shrink-0"
+            >
+              {cacheApplied ? <Check className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
+              <span>{cacheApplied ? "Rule Deployed!" : "Deploy Cache Rule"}</span>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Feature 3: Differential Semantic Delta Compression Inspector */}
+      {/* Interactive Feature 3: Differential Semantic Delta Compression Inspector */}
       <div className="p-6 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -122,7 +162,7 @@ export default function TokenAnalyticsPage() {
             </div>
             <div>
               <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Differential Semantic Delta Compression
+                Live Semantic Delta Compression & Diff Visualizer
               </h3>
               <p className="text-xs text-[#86868B]">
                 Replaces repetitive multi-turn prompt nodes with cryptographic pointers
@@ -138,17 +178,40 @@ export default function TokenAnalyticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
           <div className="p-4 rounded-xl bg-[#FBFBFD] dark:bg-[#1F1F23] border border-black/[0.06] dark:border-white/[0.08] space-y-2">
             <span className="text-[11px] font-semibold text-[#86868B] uppercase">Raw Full Context (1,240 tokens)</span>
-            <div className="font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6] bg-white dark:bg-[#161618] p-3 rounded-lg border border-black/[0.04] dark:border-white/[0.06] overflow-x-auto leading-relaxed">
+            <div className="font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6] bg-white dark:bg-[#161618] p-3 rounded-lg border border-black/[0.04] dark:border-white/[0.06] overflow-x-auto leading-relaxed h-28">
               <span className="text-red-500 line-through">You are an expert full-stack TypeScript engineer specializing in Next.js 14, React 18, Tailwind CSS... [420 words repeated]</span>
+              <p className="text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">Task: Refactor the auth middleware to check Redis JWT tokens.</p>
             </div>
           </div>
 
           <div className="p-4 rounded-xl bg-[#FBFBFD] dark:bg-[#1F1F23] border border-black/[0.06] dark:border-white/[0.08] space-y-2">
-            <span className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] uppercase">Semantic Delta Ref (480 tokens)</span>
-            <div className="font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF] bg-white dark:bg-[#161618] p-3 rounded-lg border border-black/[0.04] dark:border-white/[0.06] overflow-x-auto leading-relaxed">
-              <span>&lt;delta_ref:node_sys_react_expert:8f9a2b&gt;</span><br />
-              <span>User prompt delta: Refactor API route with streaming...</span>
+            <span className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] uppercase">Semantic Delta Pointer (480 tokens)</span>
+            <div className="font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF] bg-white dark:bg-[#161618] p-3 rounded-lg border border-black/[0.04] dark:border-white/[0.06] overflow-x-auto leading-relaxed h-28">
+              <span className="bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-1 py-0.5 rounded">&lt;delta_ref:node_sys_react_expert:8f9a2b&gt;</span>
+              <p className="text-[#1D1D1F] dark:text-[#F5F5F7] mt-2">Task: Refactor the auth middleware to check Redis JWT tokens.</p>
             </div>
+          </div>
+        </div>
+
+        {/* Cosine Sensitivity Slider */}
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#F5F5F7] dark:bg-[#1F1F23]">
+          <div className="space-y-0.5">
+            <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">pgvector Semantic Cache Sensitivity</span>
+            <p className="text-[11px] text-[#86868B]">Cosine distance threshold for instant zero-token cache resolution</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min="0.80"
+              max="0.99"
+              step="0.01"
+              value={cosineThreshold}
+              onChange={(e) => setCosineThreshold(parseFloat(e.target.value))}
+              className="accent-[#0050FF] w-36 h-1.5 cursor-pointer"
+            />
+            <span className="text-xs font-mono font-bold text-[#0050FF] dark:text-[#3374FF] w-12 text-right">
+              {cosineThreshold.toFixed(2)}
+            </span>
           </div>
         </div>
       </div>
@@ -176,7 +239,7 @@ export default function TokenAnalyticsPage() {
           <div className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
             34.2%
           </div>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Cosine threshold &gt;0.92</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Cosine threshold &gt;{cosineThreshold.toFixed(2)}</p>
         </div>
       </div>
 
