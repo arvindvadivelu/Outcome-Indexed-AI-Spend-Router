@@ -23,7 +23,10 @@ import {
   ToggleLeft,
   ToggleRight,
   SlidersHorizontal,
-  DollarSign
+  DollarSign,
+  CreditCard,
+  Flame,
+  CheckCircle2
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -46,6 +49,10 @@ export default function DashboardPage() {
     currency,
     monthlySpendUSD,
     baselineSpendUSD,
+    currentTokens,
+    monthlyQuota,
+    planTier,
+    orgName,
     logs,
     telemetryLogs,
     autopilot,
@@ -88,6 +95,10 @@ export default function DashboardPage() {
   const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
   const savingsPct = baselineSpend > 0 ? ((savedAmount / baselineSpend) * 100).toFixed(1) : "42.8";
   const isFreshAccount = currentSpend === 0 && activeLogs.length === 0;
+
+  // Token quota calculations
+  const effectiveQuota = monthlyQuota || 10000;
+  const tokenUsagePercent = Math.min(100, Math.max(0, (currentTokens / effectiveQuota) * 100));
 
   // Dynamic spend trend data depending on selected timeRange & mode
   const spendTrendData = useMemo(() => {
@@ -134,7 +145,7 @@ export default function DashboardPage() {
     });
   }, [currentSpend, baselineSpend, savedAmount, isFreshAccount, timeRange]);
 
-  // Model traffic allocation with Apple vibrant accents
+  // Model traffic allocation
   const modelShareData = useMemo(() => {
     if (activeLogs.length === 0) {
       return [
@@ -229,21 +240,53 @@ export default function DashboardPage() {
   const budgetCap = customBudget * rate;
   const burnPercent = Math.min(100, Math.max(0, (currentSpend / Math.max(1, budgetCap)) * 100));
 
+  const planDisplayName = planTier ? (planTier.charAt(0).toUpperCase() + planTier.slice(1)) : "Free";
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
-      {/* 1. Spatial Command Header with Sandbox / Live Mode Toggle */}
+      {/* 1. Spatial Command Header with Plan Quota & Mode Controls */}
       <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6" suppressHydrationWarning>
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Outcome-Indexed AI Spend Router
-            </h1>
-            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Autonomous multi-model intelligence gateway dynamically prioritizing marginal outcome conversion over raw model scale.
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Outcome-Indexed AI Spend Router
+              </h1>
+              
+              {/* Active Plan Tier & Quota Capsule */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 border border-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold shadow-xs">
+                <CreditCard className="h-3.5 w-3.5" />
+                <span>{planDisplayName} Tier</span>
+                <span className="text-[#86868B] dark:text-[#86868B]">•</span>
+                <span className="font-mono">{formatNumber(effectiveQuota)} Tokens/mo</span>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Autonomous multi-model intelligence gateway for <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{orgName || "Acme AI Lab"}</span>, dynamically prioritizing marginal outcome conversion over raw model scale.
             </p>
+
+            {/* Token Quota Ingestion Progress Indicator */}
+            <div className="flex items-center gap-3 pt-1 max-w-md">
+              <div className="flex-1 bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-[#0050FF] h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(100, Math.max(4, tokenUsagePercent))}%` }}
+                />
+              </div>
+              <div className="text-[11px] font-mono text-[#86868B] shrink-0">
+                {formatNumber(currentTokens)} / {formatNumber(effectiveQuota)} tokens ({tokenUsagePercent.toFixed(1)}%)
+              </div>
+              <Link
+                href="/app/billing"
+                className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] hover:underline shrink-0"
+              >
+                Upgrade
+              </Link>
+            </div>
           </div>
 
           {/* Action & Mode Control Bar */}
@@ -547,7 +590,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. Model Symphony Allocation Stage */}
+      {/* 4. Multi-Model Traffic Allocation Stage */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
         <div className="flex items-center justify-between">
           <div>

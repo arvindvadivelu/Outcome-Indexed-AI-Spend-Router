@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
 import { apiClient } from "@/lib/api-client";
+import { formatNumber } from "@/lib/utils";
+import Link from "next/link";
 
 const SAMPLE_PROMPTS = [
   {
@@ -40,7 +42,20 @@ const SAMPLE_PROMPTS = [
 ];
 
 export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
-  const { currency, addLog, recordOutcome, addSlaContract, deltaStats, prewarmMetrics } = useAppStore();
+  const {
+    currency,
+    addLog,
+    recordOutcome,
+    addSlaContract,
+    deltaStats,
+    prewarmMetrics,
+    currentTokens,
+    monthlyQuota,
+    planTier,
+    consumeTokens,
+    cycleStartDate
+  } = useAppStore();
+
   const [selectedTask, setSelectedTask] = useState("sales_email");
   const [promptText, setPromptText] = useState(SAMPLE_PROMPTS[0].prompt);
   const [strategy, setStrategy] = useState("outcome_optimized");
@@ -51,11 +66,24 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<any>(null);
   const [feedbackGiven, setFeedbackGiven] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<"preset" | "advanced">("preset");
+  const [quotaBlocked, setQuotaBlocked] = useState(false);
+
+  const isQuotaExceeded = currentTokens >= monthlyQuota;
 
   const handleSimulate = async () => {
+    // 0. Quota check: Stop execution if limit reached
+    if (isQuotaExceeded) {
+      setQuotaBlocked(true);
+      return;
+    }
+
     setIsLoading(true);
     setResult(null);
     setFeedbackGiven(null);
+    setQuotaBlocked(false);
+
+    // Consume 500 tokens for this request
+    consumeTokens(500);
 
     // 1. Call live pre-warming API
     await apiClient.predictPrewarm(promptText);
@@ -283,17 +311,46 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
+          {/* Quota Exceeded Block Banner */}
+          {(isQuotaExceeded || quotaBlocked) && (
+            <div className="p-3.5 rounded-2xl bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 text-xs space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-red-600 dark:text-red-400">
+                  ⛔ Monthly Token Quota Reached ({formatNumber(currentTokens)} / {formatNumber(monthlyQuota)})
+                </span>
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">
+                  Execution Stopped
+                </span>
+              </div>
+              <p className="text-[11px] text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+                Your monthly ingestion allowance is 100% full. All gateway execution is paused. Please upgrade your subscription tier on the Billing page or wait for the automatic 30-day reset cycle.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/app/billing"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-[11px] font-semibold transition-all"
+                >
+                  <span>Upgrade Plan on Billing</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Run Action */}
           <button
             onClick={handleSimulate}
-            disabled={isLoading || !promptText.trim()}
-            className="w-full py-3 rounded-full bg-[#0050FF] text-white font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[#0043D6] transition-all disabled:opacity-50 shadow-sm shadow-[#0050FF]/25"
+            disabled={isLoading || !promptText.trim() || isQuotaExceeded}
+            className="w-full py-3 rounded-full bg-[#0050FF] text-white font-semibold text-xs flex items-center justify-center gap-2 hover:bg-[#0043D6] transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-[#0050FF]/25"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 Evaluating Pareto weights & pre-warming GPU slots...
               </span>
+            ) : isQuotaExceeded ? (
+              <span>Execution Halted (Monthly Quota Exceeded)</span>
             ) : (
               <>
                 <Play className="h-3.5 w-3.5 fill-current" />

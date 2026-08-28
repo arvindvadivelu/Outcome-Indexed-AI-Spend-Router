@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { QuotaAlertNotification } from "@/components/QuotaAlertNotification";
 
 export default function AppLayout({
   children,
@@ -15,6 +16,7 @@ export default function AppLayout({
           <div className="mx-auto max-w-7xl" suppressHydrationWarning>{children}</div>
         </main>
       </div>
+      <QuotaAlertNotification />
     </div>
   );
 }

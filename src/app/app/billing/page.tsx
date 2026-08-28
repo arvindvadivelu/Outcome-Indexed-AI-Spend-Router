@@ -36,6 +36,9 @@ export default function BillingPage() {
     setPlanTier,
     currentTokens,
     monthlyQuota,
+    cycleStartDate,
+    resetTokenQuota,
+    fillQuotaToLimit,
     slaEscrowContracts,
     autopilot,
     orgName,
@@ -50,6 +53,20 @@ export default function BillingPage() {
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
 
+  // Calculate 30-day reset cycle date
+  const startTimestamp = cycleStartDate ? new Date(cycleStartDate).getTime() : Date.now();
+  const resetTimestamp = startTimestamp + 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const msRemaining = Math.max(0, resetTimestamp - now);
+  const daysRemaining = Math.max(1, Math.ceil(msRemaining / (1000 * 60 * 60 * 24)));
+  const resetDateString = new Date(resetTimestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+
+  const isQuotaExceeded = currentTokens >= monthlyQuota;
+
   // AI Invoice Forecaster state
   const [isForecasting, setIsForecasting] = useState(false);
   const [forecastResult, setForecastResult] = useState<any>(null);
@@ -61,21 +78,33 @@ export default function BillingPage() {
     setIsForecasting(true);
     setForecastResult(null);
 
-    const response = await apiClient.forecastBill(monthlySpendUSD || 842.50, autopilot.monthly_budget_usd);
-    if (response && response.success) {
-      setForecastResult({
-        projectedInvoiceUSD: response.projected_invoice_usd,
-        projectedSavingsUSD: response.projected_savings_usd,
-        recommendation: response.recommendation
+    try {
+      const res = await fetch("/api/billing/forecast", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          monthly_spend: monthlySpendUSD || 842.50,
+          monthly_budget: autopilot.monthly_budget_usd || 1200.00
+        })
       });
-    } else {
+      const data = await res.json();
+      if (data.success) {
+        setForecastResult({
+          projectedInvoiceUSD: data.projected_invoice_usd,
+          projectedSavingsUSD: data.projected_savings_usd,
+          recommendation: data.recommendation
+        });
+      }
+    } catch (e) {
+      console.warn("Forecast fallback:", e);
       setForecastResult({
         projectedInvoiceUSD: 972.10,
         projectedSavingsUSD: 642.50,
         recommendation: "Pacing is 3% below your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $180 without touching conversion rates."
       });
+    } finally {
+      setIsForecasting(false);
     }
-    setIsForecasting(false);
   };
 
   const handleExportDisputeFile = () => {
@@ -304,26 +333,77 @@ export default function BillingPage() {
       )}
 
       {/* 3. Monthly Token Quota & Pacing Card */}
-      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+      <div className={`rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border ${isQuotaExceeded ? "border-red-500/40 shadow-[0_8px_30px_rgba(239,68,68,0.15)]" : "border-black/[0.06] dark:border-white/[0.08]"} p-6 sm:p-8 shadow-sm space-y-5`} suppressHydrationWarning>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-              Monthly Ingestion Quota & Pacing
-            </h3>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                Monthly Ingestion Quota & Pacing
+              </h3>
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                isQuotaExceeded
+                  ? "bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300"
+                  : "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
+              }`}>
+                {isQuotaExceeded ? "QUOTA EXCEEDED (EXECUTION STOPPED)" : "ACTIVE PACING"}
+              </span>
+            </div>
             <p className="text-xs text-[#86868B]">
               Real-time token utilization against your subscribed tier limit ({formatNumber(monthlyQuota)} tokens)
             </p>
           </div>
-          <span className="text-xs font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">
-            {formatNumber(currentTokens)} / {formatNumber(monthlyQuota)} Tokens ({quotaPct}%)
-          </span>
+
+          <div className="flex items-center gap-3">
+            <span className={`text-xs font-mono font-bold ${isQuotaExceeded ? "text-red-600 dark:text-red-400" : "text-[#0050FF] dark:text-[#3374FF]"}`}>
+              {formatNumber(currentTokens)} / {formatNumber(monthlyQuota)} Tokens ({quotaPct}%)
+            </span>
+          </div>
         </div>
 
         <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-2.5 rounded-full overflow-hidden">
           <div
-            className="bg-[#0050FF] h-full rounded-full transition-all duration-700"
-            style={{ width: `${Math.max(2, quotaPct)}%` }}
+            className={`h-full rounded-full transition-all duration-700 ${
+              isQuotaExceeded ? "bg-red-600" : (quotaPct > 80 ? "bg-amber-500" : "bg-[#0050FF]")
+            }`}
+            style={{ width: `${Math.min(100, Math.max(2, quotaPct))}%` }}
           />
+        </div>
+
+        {/* 30-Day Cycle Reset Indicator & Quick Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs text-[#515154] dark:text-[#A1A1A6] border-t border-black/[0.04] dark:border-white/[0.06]">
+          <div className="flex items-center gap-2">
+            <span className="text-[#86868B]">Next 30-Day Automatic Reset:</span>
+            <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
+              {resetDateString} (in {daysRemaining} days)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!isQuotaExceeded ? (
+              <button
+                onClick={fillQuotaToLimit}
+                className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-[11px] transition-all"
+                title="Simulate 100% full quota to test execution block"
+              >
+                Test Fill Quota (100%)
+              </button>
+            ) : (
+              <button
+                onClick={resetTokenQuota}
+                className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 font-semibold text-[11px] transition-all"
+                title="Reset token quota to 0 for demo"
+              >
+                Reset Cycle Tokens (0%)
+              </button>
+            )}
+
+            <button
+              onClick={() => setShowPlanMatrix(true)}
+              className="px-4 py-1 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white font-semibold text-[11px] transition-all shadow-xs"
+            >
+              Upgrade Plan
+            </button>
+          </div>
         </div>
       </div>
 

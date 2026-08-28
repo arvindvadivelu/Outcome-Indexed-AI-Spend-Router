@@ -14,7 +14,10 @@ import {
   UserCheck,
   Sparkles,
   Zap,
-  ChevronRight
+  ChevronRight,
+  ShieldAlert,
+  Sliders,
+  Send
 } from "lucide-react";
 
 export default function TeamPage() {
@@ -32,30 +35,54 @@ export default function TeamPage() {
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Engineer");
-  const [inviteNotice, setInviteNotice] = useState(false);
+  const [inviteQuota, setInviteQuota] = useState("100,000 / mo");
+  const [isInviting, setIsInviting] = useState(false);
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
 
   const [isAuditing, setIsAuditing] = useState(false);
   const [rbacResult, setRbacResult] = useState<any>(null);
 
-  const handleInvite = (e: React.FormEvent) => {
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
 
-    setMembers((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        name: inviteEmail.split("@")[0],
-        email: inviteEmail,
-        role: inviteRole,
-        tokenQuota: inviteRole === "Admin" ? "200,000 / mo" : "50,000 / mo",
-        mfaActive: true,
-        lastActive: "Invited"
+    setIsInviting(true);
+    setInviteNotice(null);
+
+    try {
+      const res = await fetch("/api/team/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: inviteEmail.trim(),
+          role: inviteRole,
+          tokenQuota: inviteQuota
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setMembers((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            name: inviteEmail.split("@")[0],
+            email: inviteEmail.trim(),
+            role: inviteRole,
+            tokenQuota: inviteQuota,
+            mfaActive: true,
+            lastActive: "Invited"
+          }
+        ]);
+        setInviteEmail("");
+        setInviteNotice(`Invitation link dispatched to ${inviteEmail}!`);
+        setTimeout(() => setInviteNotice(null), 3000);
       }
-    ]);
-    setInviteEmail("");
-    setInviteNotice(true);
-    setTimeout(() => setInviteNotice(false), 3000);
+    } catch (err) {
+      console.warn("Invite fallback:", err);
+    } finally {
+      setIsInviting(false);
+    }
   };
 
   const handleRoleChange = (id: number, newRole: string) => {
@@ -64,32 +91,58 @@ export default function TeamPage() {
     );
   };
 
+  const handleQuotaChange = (id: number, newQuota: string) => {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, tokenQuota: newQuota } : m))
+    );
+  };
+
   const handleRemoveMember = (id: number) => {
     setMembers((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const handleAuditRBAC = () => {
+  const handleAuditRBAC = async () => {
     setIsAuditing(true);
-    setTimeout(() => {
-      setRbacResult({
-        recommendation: "Least-Privilege Security Check: 3 of 4 team members have active MFA Passkeys. Zero permission leaks detected across API key generation scopes."
+    setRbacResult(null);
+
+    try {
+      const res = await fetch("/api/team/audit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ members })
       });
+      const data = await res.json();
+      if (data.success) {
+        setRbacResult(data);
+      }
+    } catch (err) {
+      console.warn("RBAC audit fallback:", err);
+    } finally {
       setIsAuditing(false);
-    }, 450);
+    }
   };
+
+  const mfaEnrolledCount = members.filter((m) => m.mfaActive).length;
+  const mfaPct = Math.round((mfaEnrolledCount / Math.max(1, members.length)) * 100);
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
       {/* 1. Spatial Hero Header */}
       <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Team Members & Role-Based Access Control
-            </h1>
-            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Team Members & RBAC Access Control
+              </h1>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
+                {members.length} Active Seats
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
               Manage organization workspace seats, enforce MFA security policies, and allocate per-developer monthly token quotas.
             </p>
           </div>
@@ -97,9 +150,9 @@ export default function TeamPage() {
           <button
             onClick={handleAuditRBAC}
             disabled={isAuditing}
-            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
           >
-            <ShieldCheck className="h-3.5 w-3.5" />
+            <ShieldCheck className={`h-3.5 w-3.5 ${isAuditing ? "animate-spin" : ""}`} />
             <span>{isAuditing ? "Auditing RBAC..." : "Audit RBAC Scopes"}</span>
           </button>
         </div>
@@ -119,8 +172,8 @@ export default function TeamPage() {
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">MFA Passkey Enforce</span>
           <div className="my-4">
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">75% Enrolled</div>
-            <div className="text-xs text-[#86868B] mt-1">FIDO2 / WebAuthn Active</div>
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{mfaPct}% Enrolled</div>
+            <div className="text-xs text-[#86868B] mt-1">{mfaEnrolledCount} of {members.length} FIDO2 Active</div>
           </div>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Zero password vulnerabilities</span>
         </div>
@@ -146,15 +199,35 @@ export default function TeamPage() {
 
       {/* RBAC Result Drawer */}
       {rbacResult && (
-        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-2 animate-in fade-in" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-4 animate-in fade-in" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              <span>RBAC Security Audit Report</span>
+              <span>RBAC Security Audit: {rbacResult.complianceGrade}</span>
             </h3>
             <button onClick={() => setRbacResult(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
           </div>
           <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{rbacResult.recommendation}</p>
+
+          {rbacResult.findings && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {rbacResult.findings.map((f: any, i: number) => (
+                <div key={i} className="p-3 rounded-2xl bg-white/80 dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1">
+                  <div className="flex justify-between items-center text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <span>{f.criterion}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      f.status === "PASS"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                        : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                    }`}>
+                      {f.status}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#86868B]">{f.detail}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -165,19 +238,21 @@ export default function TeamPage() {
             Invite Team Member to Organization
           </h3>
           <p className="text-xs text-[#86868B]">
-            Invited users will receive an email link to join with pre-assigned RBAC scopes
+            Invited users will receive an email link to join with pre-assigned RBAC scopes and token budgets
           </p>
         </div>
 
-        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="email"
-            placeholder="colleague@company.com"
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            className="flex-1 h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none"
-            required
-          />
+        <form onSubmit={handleInvite} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="sm:col-span-2">
+            <input
+              type="email"
+              placeholder="colleague@company.com"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className="w-full h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none"
+              required
+            />
+          </div>
 
           <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
             {["Engineer", "FinOps", "Admin"].map((r) => (
@@ -185,7 +260,7 @@ export default function TeamPage() {
                 type="button"
                 key={r}
                 onClick={() => setInviteRole(r)}
-                className={`px-4 py-2 text-xs font-semibold rounded-full transition-all ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all ${
                   inviteRole === r
                     ? "bg-[#0050FF] text-white shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -198,17 +273,17 @@ export default function TeamPage() {
 
           <button
             type="submit"
-            disabled={!inviteEmail.trim()}
-            className="px-7 h-11 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0"
+            disabled={!inviteEmail.trim() || isInviting}
+            className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0"
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span>Send Invitation</span>
+            <Send className="h-3.5 w-3.5" />
+            <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
           </button>
         </form>
 
         {inviteNotice && (
           <span className="text-xs text-emerald-600 font-semibold animate-in fade-in block">
-            ✓ Invitation email sent successfully!
+            ✓ {inviteNotice}
           </span>
         )}
       </div>
@@ -219,8 +294,8 @@ export default function TeamPage() {
           Active Members ({members.length})
         </h3>
 
-        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
-          <table className="w-full text-left text-xs">
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
                 <th className="py-3.5 px-5 font-semibold">Member</th>
@@ -253,8 +328,18 @@ export default function TeamPage() {
                     </select>
                   </td>
 
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
-                    {m.tokenQuota}
+                  <td className="py-3.5 px-4">
+                    <select
+                      value={m.tokenQuota}
+                      onChange={(e) => handleQuotaChange(m.id, e.target.value)}
+                      disabled={m.role === "Owner"}
+                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#515154] dark:text-[#A1A1A6] focus:outline-none disabled:opacity-60"
+                    >
+                      <option value="50,000 / mo">50,000 / mo</option>
+                      <option value="100,000 / mo">100,000 / mo</option>
+                      <option value="200,000 / mo">200,000 / mo</option>
+                      <option value="Unlimited">Unlimited</option>
+                    </select>
                   </td>
 
                   <td className="py-3.5 px-4 text-center">

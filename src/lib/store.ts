@@ -169,6 +169,10 @@ interface AppState {
   setPlanTier: (tier: "free" | "starter" | "growth" | "enterprise") => void;
   monthlyQuota: number;
   currentTokens: number;
+  cycleStartDate: string;
+  consumeTokens: (amount: number) => boolean;
+  resetTokenQuota: () => void;
+  fillQuotaToLimit: () => void;
   monthlySpendUSD: number;
   baselineSpendUSD: number;
 
@@ -430,6 +434,29 @@ export const useAppStore = create<AppState>()(
         }),
       monthlyQuota: 10000,
       currentTokens: 0,
+      cycleStartDate: new Date().toISOString(),
+
+      consumeTokens: (amount: number) => {
+        const state = get();
+        if (state.currentTokens >= state.monthlyQuota) {
+          return false; // Execution halted due to quota limit
+        }
+        const newTotal = state.currentTokens + amount;
+        set({ currentTokens: newTotal });
+        return true;
+      },
+
+      resetTokenQuota: () =>
+        set({
+          currentTokens: 0,
+          cycleStartDate: new Date().toISOString()
+        }),
+
+      fillQuotaToLimit: () =>
+        set((state) => ({
+          currentTokens: state.monthlyQuota
+        })),
+
       monthlySpendUSD: 0.00,
       baselineSpendUSD: 0.00,
 
@@ -794,9 +821,12 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         currency: state.currency,
         user: state.user,
-        monthlySpendUSD: state.monthlySpendUSD,
-        baselineSpendUSD: state.baselineSpendUSD,
+        orgName: state.orgName,
+        planTier: state.planTier,
+        monthlyQuota: state.monthlyQuota,
         currentTokens: state.currentTokens,
+        cycleStartDate: state.cycleStartDate,
+        monthlySpendUSD: state.monthlySpendUSD,
         logs: state.logs,
         telemetryLogs: state.telemetryLogs,
         benchmarks: state.benchmarks,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -22,11 +22,14 @@ import {
   Flame,
   Layers,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  Scale,
+  DollarSign
 } from "lucide-react";
+import Link from "next/link";
 
 export default function BenchmarksPage() {
-  const { benchmarks, currency, federationSettings, setFederationWeight, addRule, recordOutcome } = useAppStore();
+  const { benchmarks, currency, federationSettings, addRule } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,6 +40,10 @@ export default function BenchmarksPage() {
   const [isRunningBatch, setIsRunningBatch] = useState(false);
   const [batchResults, setBatchResults] = useState<any[] | null>(null);
 
+  // Head-to-Head Comparison State
+  const [compareModelA, setCompareModelA] = useState<string>("DeepSeek-V3");
+  const [compareModelB, setCompareModelB] = useState<string>("GPT-4o");
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -44,28 +51,33 @@ export default function BenchmarksPage() {
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
 
-  const filteredBenchmarks = benchmarks
-    .filter((b) => {
-      const matchesTask = selectedTask === "all" || b.task_type.toLowerCase().includes(selectedTask);
-      const matchesSearch =
-        b.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        b.provider.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesTask && matchesSearch;
-    })
-    .sort((a, b) => {
-      if (sortBy === "win_rate") return b.win_rate - a.win_rate;
-      if (sortBy === "cost") return a.avg_cost_usd - b.avg_cost_usd;
-      if (sortBy === "latency") return a.avg_latency_ms - b.avg_latency_ms;
-      if (sortBy === "thompson") return b.thompson_score - a.thompson_score;
-      return 0;
-    });
+  const filteredBenchmarks = useMemo(() => {
+    return benchmarks
+      .filter((b) => {
+        const matchesTask = selectedTask === "all" || b.task_type.toLowerCase().includes(selectedTask);
+        const matchesSearch =
+          b.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          b.provider.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesTask && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (sortBy === "win_rate") return b.win_rate - a.win_rate;
+        if (sortBy === "cost") return a.avg_cost_usd - b.avg_cost_usd;
+        if (sortBy === "latency") return a.avg_latency_ms - b.avg_latency_ms;
+        if (sortBy === "thompson") return b.thompson_score - a.thompson_score;
+        return 0;
+      });
+  }, [benchmarks, selectedTask, searchQuery, sortBy]);
+
+  const modelAData = benchmarks.find((b) => b.model_name.toLowerCase().includes(compareModelA.toLowerCase())) || benchmarks[0];
+  const modelBData = benchmarks.find((b) => b.model_name.toLowerCase().includes(compareModelB.toLowerCase())) || benchmarks[benchmarks.length - 1];
 
   const handleSetPrimary = (b: any) => {
     addRule({
       id: `rule_bench_${Date.now()}`,
-      name: `${b.model_name} Dedicated Policy (${b.task_type})`,
+      name: `${b.model_name} Primary Policy (${b.task_type})`,
       task_type: b.task_type,
-      condition_pattern: `task == '${b.task_type}'`,
+      condition_pattern: `task == '${b.task_type}' && latency <= ${b.avg_latency_ms + 100}ms`,
       target_metric: "outcome_success",
       is_active: true,
       enabled: true,
@@ -76,18 +88,20 @@ export default function BenchmarksPage() {
       max_cost_usd: b.avg_cost_usd * 1.5,
       min_win_rate: b.win_rate,
       strategy: "outcome_optimized",
-      ai_synthesized: true
+      ai_synthesized: true,
+      trigger_count: 0,
+      total_saved_usd: 0.0
     });
     setDeployedModel(b.model_name);
     setTimeout(() => setDeployedModel(null), 3000);
   };
 
   const handleExportCSV = () => {
-    const headers = "Model,Provider,Task,WinRate,AvgLatencyMs,CostUSD,ThompsonScore,ParetoTier\n";
+    const headers = "Model,Provider,Task,WinRate,AvgLatencyMs,CostUSD,CostINR,ThompsonScore,ParetoTier\n";
     const rows = filteredBenchmarks
       .map(
         (b) =>
-          `"${b.model_name}","${b.provider}","${b.task_type}",${(b.win_rate * 100).toFixed(1)}%,${b.avg_latency_ms},${b.avg_cost_usd},${b.thompson_score},"${b.pareto_tier}"`
+          `"${b.model_name}","${b.provider}","${b.task_type}",${(b.win_rate * 100).toFixed(1)}%,${b.avg_latency_ms},${b.avg_cost_usd},${(b.avg_cost_usd * 86.5).toFixed(4)},${b.thompson_score},"${b.pareto_tier}"`
       )
       .join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
@@ -98,22 +112,25 @@ export default function BenchmarksPage() {
     link.click();
   };
 
-  const handleRunSyntheticBatch = () => {
+  const handleRunSyntheticBatch = async () => {
     setIsRunningBatch(true);
     setBatchResults(null);
 
-    setTimeout(() => {
-      const results = [
-        { model: "DeepSeek-V3", tokens: 1240, costUsd: 0.00042, latencyMs: 64, outcomePass: true, criticScore: 0.96 },
-        { model: "Groq Llama 3.3", tokens: 980, costUsd: 0.00018, latencyMs: 48, outcomePass: true, criticScore: 0.94 },
-        { model: "Claude 3.5 Sonnet", tokens: 1450, costUsd: 0.0034, latencyMs: 140, outcomePass: true, criticScore: 0.98 },
-        { model: "DeepSeek Coder", tokens: 1100, costUsd: 0.00065, latencyMs: 115, outcomePass: true, criticScore: 0.95 },
-        { model: "GPT-4o (Control)", tokens: 1350, costUsd: 0.0052, latencyMs: 380, outcomePass: true, criticScore: 0.97 }
-      ];
-
-      setBatchResults(results);
+    try {
+      const res = await fetch("/api/benchmarks/eval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ task_type: selectedTask })
+      });
+      const data = await res.json();
+      if (data.success && data.results) {
+        setBatchResults(data.results);
+      }
+    } catch (err) {
+      console.warn("Batch eval error:", err);
+    } finally {
       setIsRunningBatch(false);
-    }, 750);
+    }
   };
 
   return (
@@ -121,14 +138,20 @@ export default function BenchmarksPage() {
       {/* 1. Spatial Hero Header */}
       <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-purple-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Empirical Outcome Benchmarks & Leaderboard
-            </h1>
-            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Empirical quality-to-cost conversion rates across 480+ enterprise workloads updated dynamically via Dirichlet priors.
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Empirical Outcome Benchmarks & Leaderboard
+              </h1>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
+                {benchmarks.length} Audited Frontier Models
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Empirical quality-to-cost conversion rates across 480+ enterprise workloads updated dynamically via Dirichlet Bayesian consensus priors.
             </p>
           </div>
 
@@ -136,10 +159,10 @@ export default function BenchmarksPage() {
             <button
               onClick={handleRunSyntheticBatch}
               disabled={isRunningBatch}
-              className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] transition-all flex items-center gap-2"
+              className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              <Play className="h-3.5 w-3.5 fill-current" />
-              <span>{isRunningBatch ? "Evaluating Batch..." : "Run Synthetic Eval (5 Models)"}</span>
+              <Play className={`h-3.5 w-3.5 fill-current ${isRunningBatch ? "animate-spin" : ""}`} />
+              <span>{isRunningBatch ? "Evaluating Models..." : "Run Live Synthetic Eval"}</span>
             </button>
 
             <button
@@ -159,7 +182,7 @@ export default function BenchmarksPage() {
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Pareto Frontier Top Pick</span>
           <div className="my-4">
             <div className="text-3xl font-extrabold font-mono">DeepSeek-V3</div>
-            <div className="text-xs text-white/70 mt-1">94.8% Win Rate · $0.27 / 1M Tokens</div>
+            <div className="text-xs text-white/70 mt-1">94.8% Win Rate · {formatCurrency(0.27 * rate, activeCurrency)} / 1M Tokens</div>
           </div>
           <span className="text-[11px] text-white/80">Cuts 88% cost vs baseline with zero quality drop</span>
         </div>
@@ -168,7 +191,7 @@ export default function BenchmarksPage() {
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Ultra-Low Latency Leader</span>
           <div className="my-4">
             <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">Groq Llama 3.3</div>
-            <div className="text-xs text-[#86868B] mt-1">48ms TTFT · $0.18 / 1M Tokens</div>
+            <div className="text-xs text-[#86868B] mt-1">48ms TTFT · {formatCurrency(0.18 * rate, activeCurrency)} / 1M Tokens</div>
           </div>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">96.0% First-Contact Resolution</span>
         </div>
@@ -179,7 +202,7 @@ export default function BenchmarksPage() {
             <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">480+ Workloads</div>
             <div className="text-xs text-[#86868B] mt-1">ε=0.5 Differential Privacy Consensus</div>
           </div>
-          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Auto-updates every 15 minutes</span>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Dynamic Thompson update active</span>
         </div>
       </div>
 
@@ -198,15 +221,103 @@ export default function BenchmarksPage() {
             {batchResults.map((r, i) => (
               <div key={i} className="p-4 rounded-2xl bg-white/90 dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1.5 shadow-2xs">
                 <div className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{r.model}</div>
-                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">{r.latencyMs}ms · ${(r.costUsd).toFixed(5)}</div>
-                <div className="text-[10px] text-[#86868B]">Critic Score: {(r.criticScore * 100).toFixed(0)}% Pass</div>
+                <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                  {r.latencyMs}ms · {formatCurrency(r.costUsd * rate, activeCurrency)}
+                </div>
+                <div className="text-[10px] text-[#86868B]">Critic Pass: {(r.criticScore * 100).toFixed(0)}% · {r.status}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 4. Filter & Search Controls */}
+      {/* 4. Head-to-Head Pareto Model Comparator */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Scale className="h-4 w-4 text-[#0050FF]" />
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Head-to-Head Pareto Model Comparator
+            </h3>
+          </div>
+          <span className="text-xs text-[#86868B]">Real-time efficiency delta</span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+          {/* Model A */}
+          <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+            <label className="text-[11px] text-[#86868B] font-semibold">Candidate Model A</label>
+            <select
+              value={compareModelA}
+              onChange={(e) => setCompareModelA(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-white dark:bg-[#252528] border border-black/[0.06] dark:border-white/[0.08] text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+            >
+              {benchmarks.map((b) => (
+                <option key={b.model_name} value={b.model_name}>{b.model_name} ({b.provider})</option>
+              ))}
+            </select>
+            <div className="text-xs space-y-1 pt-1 font-mono">
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Win Rate:</span>
+                <span className="font-bold text-[#0050FF]">{((modelAData?.win_rate || 0.94) * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Cost / 1M:</span>
+                <span className="font-bold">{formatCurrency((modelAData?.avg_cost_usd || 0.00042) * 1000 * rate, activeCurrency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Avg TTFT:</span>
+                <span className="font-bold">{modelAData?.avg_latency_ms || 64}ms</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Delta Pill */}
+          <div className="p-5 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 text-center space-y-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#0050FF] dark:text-[#3374FF]">
+              Arbitration Delta
+            </span>
+            <div className="text-2xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+              {modelAData && modelBData ? (
+                `${Math.max(0, Math.round(((modelBData.avg_cost_usd - modelAData.avg_cost_usd) / Math.max(0.0001, modelBData.avg_cost_usd)) * 100))}% Cheaper`
+              ) : "88% Cheaper"}
+            </div>
+            <p className="text-[11px] text-[#86868B]">
+              Latency Delta: {Math.abs((modelAData?.avg_latency_ms || 64) - (modelBData?.avg_latency_ms || 380))}ms faster
+            </p>
+          </div>
+
+          {/* Model B */}
+          <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+            <label className="text-[11px] text-[#86868B] font-semibold">Comparison Model B (Baseline)</label>
+            <select
+              value={compareModelB}
+              onChange={(e) => setCompareModelB(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-white dark:bg-[#252528] border border-black/[0.06] dark:border-white/[0.08] text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+            >
+              {benchmarks.map((b) => (
+                <option key={b.model_name} value={b.model_name}>{b.model_name} ({b.provider})</option>
+              ))}
+            </select>
+            <div className="text-xs space-y-1 pt-1 font-mono">
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Win Rate:</span>
+                <span className="font-bold">{((modelBData?.win_rate || 0.84) * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Cost / 1M:</span>
+                <span className="font-bold">{formatCurrency((modelBData?.avg_cost_usd || 0.0052) * 1000 * rate, activeCurrency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#86868B]">Avg TTFT:</span>
+                <span className="font-bold">{modelBData?.avg_latency_ms || 380}ms</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Filter & Search Controls and Leaderboard Table */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Task Pills */}
@@ -215,7 +326,8 @@ export default function BenchmarksPage() {
               { id: "all", label: "All Tasks" },
               { id: "sales", label: "Sales SDR" },
               { id: "code", label: "Code Review" },
-              { id: "support", label: "Support FAQ" }
+              { id: "support", label: "Support FAQ" },
+              { id: "reasoning", label: "Reasoning" }
             ].map((t) => (
               <button
                 key={t.id}
@@ -263,8 +375,8 @@ export default function BenchmarksPage() {
         </div>
 
         {/* Leaderboard Table */}
-        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
-          <table className="w-full text-left text-xs">
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
                 <th className="py-3.5 px-5 font-semibold">Model & Provider</th>
@@ -295,7 +407,7 @@ export default function BenchmarksPage() {
                   </td>
 
                   <td className="py-3.5 px-4 text-right font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                    ${(b.avg_cost_usd * 1000).toFixed(2)}
+                    {formatCurrency(b.avg_cost_usd * 1000 * rate, activeCurrency)}
                   </td>
 
                   <td className="py-3.5 px-4 text-center font-mono text-[#515154] dark:text-[#A1A1A6]">
@@ -315,12 +427,12 @@ export default function BenchmarksPage() {
                   <td className="py-3.5 px-5 text-right">
                     <button
                       onClick={() => handleSetPrimary(b)}
-                      className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
+                      className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
                     >
                       {deployedModel === b.model_name ? (
                         <>
                           <Check className="h-3 w-3 text-emerald-600" />
-                          <span>Deployed!</span>
+                          <span>Policy Created!</span>
                         </>
                       ) : (
                         <>
