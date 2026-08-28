@@ -40,8 +40,8 @@ export function Navbar() {
             <div className="flex flex-col">
               <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7] text-base leading-tight tracking-tight flex items-center gap-1.5">
                 OutcomeRouter
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-bold border border-[#0050FF]/20">
-                  v1.0
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] font-bold border border-[#0050FF]/20">
+                  v2.0 PRO
                 </span>
               </span>
               <span className="text-[11px] text-[#86868B] font-medium">Outcome-Indexed AI Spend</span>
