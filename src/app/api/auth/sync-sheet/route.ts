@@ -20,7 +20,22 @@ export async function POST(req: Request) {
       spreadsheetUrl: "https://docs.google.com/spreadsheets/d/1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8/edit?usp=sharing"
     };
 
-    // Forward to FastAPI backend persistent ledger if available
+    // 1. Forward directly to Google Apps Script Webhook
+    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
+    if (webhookUrl) {
+      try {
+        await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(record),
+          signal: AbortSignal.timeout(5000)
+        });
+      } catch (err) {
+        console.warn("Notice: Google Apps Script Webhook dispatched:", err);
+      }
+    }
+
+    // 2. Forward to FastAPI backend persistent ledger if available
     try {
       await fetch("http://127.0.0.1:8000/api/v1/auth/google-sheet-sync", {
         method: "POST",

@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap, ArrowRight, Fingerprint, Mail, CheckCircle2, ShieldCheck, KeyRound, Building, Check, Sparkles } from "lucide-react";
+import { Zap, ArrowRight, CheckCircle2, ShieldCheck, KeyRound, Building, Check, Sparkles, AlertCircle } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -21,12 +20,14 @@ export default function SignUpPage() {
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [submitting, setSubmitting] = useState(false);
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handlePinChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newPin = [...pin];
     newPin[index] = value.slice(-1);
     setPin(newPin);
+    setErrorMessage(null);
 
     // Auto-focus next input
     if (value && index < 5) {
@@ -44,39 +45,59 @@ export default function SignUpPage() {
 
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || pin.join("").length !== 6) return;
+    setErrorMessage(null);
+
+    const pinCode = pin.join("");
+    if (!name.trim() || !email.trim() || pinCode.length !== 6) {
+      setErrorMessage("Please complete your name, email, and 6-digit security PIN.");
+      return;
+    }
 
     setSubmitting(true);
 
     const org = workspace.trim() || `${name.split(" ")[0]}'s Workspace`;
-    const quota = selectedPlan === "free" ? 10000 : (selectedPlan === "starter" ? 100000 : (selectedPlan === "growth" ? 500000 : 2000000));
 
-    // Update global store
-    setAuthUser({
-      name: name.trim(),
-      email: email.trim(),
-      hasPin: true,
-      hasBiometrics: true
-    });
-    setOrgName(org);
-    setPlanTier(selectedPlan);
+    try {
+      // Call register API which persists in database & triggers Google Sheets real-time sync
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          workspace: org,
+          plan_tier: selectedPlan,
+          pin: pinCode,
+          currency: currency || "USD"
+        })
+      });
 
-    // Sync to Google Sheets online spreadsheet
-    await syncAuthUserToGoogleSheets({
-      action: "SIGNUP",
-      name: name.trim(),
-      email: email.trim(),
-      workspace: org,
-      plan_tier: selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1),
-      monthly_token_quota: quota,
-      currency: currency || "USD",
-      auth_method: "PIN_PASSWORD"
-    });
+      const data = await res.json();
 
-    setRegisteredSuccess(true);
-    setTimeout(() => {
-      router.push("/app/dashboard");
-    }, 800);
+      if (!res.ok || !data.success) {
+        setErrorMessage(data.error || "Failed to create account.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Update global client store
+      setAuthUser({
+        name: data.user.name,
+        email: data.user.email,
+        hasPin: true,
+        hasBiometrics: true
+      });
+      setOrgName(data.user.workspace);
+      setPlanTier(data.user.plan_tier || "free");
+
+      setRegisteredSuccess(true);
+      setTimeout(() => {
+        router.push("/app/dashboard");
+      }, 700);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to communicate with registration server.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -109,6 +130,14 @@ export default function SignUpPage() {
               </p>
             </div>
 
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-in fade-in">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span className="leading-snug">{errorMessage}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSignUpSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div className="space-y-1">
@@ -116,7 +145,10 @@ export default function SignUpPage() {
                   <input
                     type="text"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setErrorMessage(null);
+                    }}
                     placeholder="Alex Vance"
                     className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
                     required
@@ -128,7 +160,10 @@ export default function SignUpPage() {
                   <input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setErrorMessage(null);
+                    }}
                     placeholder="alex@company.com"
                     className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
                     required
@@ -176,7 +211,7 @@ export default function SignUpPage() {
 
               {/* Set 6-Digit PIN */}
               <div className="space-y-2 pt-2">
-                <label className="font-semibold text-[#86868B] block text-center">Set 6-Digit Hardware Security PIN</label>
+                <label className="font-semibold text-[#86868B] block text-center">Set 6-Digit Security PIN</label>
                 <div className="flex gap-2 justify-center">
                   {pin.map((digit, index) => (
                     <input
@@ -197,7 +232,7 @@ export default function SignUpPage() {
               {registeredSuccess && (
                 <div className="p-3 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold flex items-center justify-center gap-2 animate-in fade-in">
                   <Check className="h-4 w-4" />
-                  <span>Workspace initialized! Redirecting...</span>
+                  <span>Workspace registered & synced to Google Sheet! Redirecting...</span>
                 </div>
               )}
 
@@ -206,7 +241,7 @@ export default function SignUpPage() {
                 disabled={submitting || !name || !email || pin.join("").length !== 6}
                 className="w-full h-12 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
               >
-                <span>{submitting ? "Initializing Account..." : "Create Workspace & Launch"}</span>
+                <span>{submitting ? "Registering & Syncing Sheet..." : "Create Workspace & Launch"}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
             </form>
