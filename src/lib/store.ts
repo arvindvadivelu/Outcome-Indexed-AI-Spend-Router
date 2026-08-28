@@ -73,6 +73,8 @@ export interface ApiKeyItem {
   last_used_at: string;
   is_active: boolean;
   ip_restrictions?: string;
+  scopes?: string[];
+  expires_at?: string;
 }
 
 export interface AutoPilotState {
@@ -209,6 +211,8 @@ interface AppState {
   addLog: (log: LogItem) => void;
   clearUserData: () => void;
   loadDemoData: () => void;
+  exportJsonBackup: () => string;
+  importJsonBackup: (dataStr: string) => boolean;
 }
 
 const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
@@ -353,7 +357,9 @@ const DEFAULT_KEYS: ApiKeyItem[] = [
     rate_limit_rpm: 600,
     created_at: "Aug 20, 2026",
     last_used_at: "Just now",
-    is_active: true
+    is_active: true,
+    scopes: ["read:telemetry", "execute:chat"],
+    expires_at: "Never"
   }
 ];
 
@@ -471,7 +477,7 @@ export const useAppStore = create<AppState>()(
 
       addWebhookLog: (log: WebhookLogItem) =>
         set((state) => ({
-          webhookLogs: [log, ...state.webhookLogs]
+          webhookLogs: [log, ...state.webhookLogs].slice(0, 200)
         })),
 
       setFederationWeight: (weight: number) =>
@@ -486,7 +492,7 @@ export const useAppStore = create<AppState>()(
 
       addSlaContract: (contract: SlaContractItem) =>
         set((state) => ({
-          slaEscrowContracts: [contract, ...state.slaEscrowContracts]
+          slaEscrowContracts: [contract, ...state.slaEscrowContracts].slice(0, 500)
         })),
 
       setAutopilotMode: (mode) =>
@@ -595,7 +601,9 @@ export const useAppStore = create<AppState>()(
           created_at: "Just now",
           last_used_at: "Never",
           is_active: true,
-          ip_restrictions: ipRestrictions || "Any (0.0.0.0/0)"
+          ip_restrictions: ipRestrictions || "0.0.0.0/0",
+          scopes: ["read:telemetry", "execute:chat"],
+          expires_at: "Never"
         };
 
         set((state) => ({
@@ -628,7 +636,7 @@ export const useAppStore = create<AppState>()(
           const baselineCost = log.cost_usd * 1.74; // vs GPT-4o unrouted
           const currentBaseline = state.baselineSpendUSD + baselineCost;
           const totalTokens = state.currentTokens + log.tokens_in + log.tokens_out;
-          const updatedLogs = [log, ...state.logs];
+          const updatedLogs = [log, ...state.logs].slice(0, 1000); // capped at 1000 to prevent quota bloat
 
           return {
             logs: updatedLogs,
@@ -722,7 +730,40 @@ export const useAppStore = create<AppState>()(
             baselineSpendUSD: 73.95,
             currentTokens: 184000
           };
-        })
+        }),
+
+      exportJsonBackup: () => {
+        const state = get();
+        const exportPayload = {
+          version: "1.0",
+          exported_at: new Date().toISOString(),
+          user: state.user,
+          rules: state.rules,
+          apiKeys: state.apiKeys,
+          webhookConfig: state.webhookConfig,
+          monthlySpendUSD: state.monthlySpendUSD,
+          currentTokens: state.currentTokens
+        };
+        return JSON.stringify(exportPayload, null, 2);
+      },
+
+      importJsonBackup: (dataStr: string) => {
+        try {
+          const parsed = JSON.parse(dataStr);
+          if (parsed.rules) {
+            set((state) => ({
+              rules: parsed.rules,
+              routingRules: parsed.rules,
+              apiKeys: parsed.apiKeys || state.apiKeys,
+              webhookConfig: parsed.webhookConfig || state.webhookConfig
+            }));
+            return true;
+          }
+          return false;
+        } catch {
+          return false;
+        }
+      }
     }),
     {
       name: "outcome_router_storage",
