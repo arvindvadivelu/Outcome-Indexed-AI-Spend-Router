@@ -5,28 +5,23 @@ import { useAppStore, LogItem } from "@/lib/store";
 import { formatCurrency } from "@/lib/utils";
 import {
   Search,
-  Filter,
+  Bot,
+  Sparkles,
   CheckCircle2,
   XCircle,
   Clock,
   Coins,
-  Bot,
-  Sparkles,
-  Zap,
-  ShieldCheck,
-  ChevronRight,
-  Database
+  X
 } from "lucide-react";
 
 export default function LogsPage() {
-  const { telemetryLogs, currency, recordOutcome } = useAppStore();
+  const { telemetryLogs, currency } = useAppStore();
   const rate = currency === "INR" ? 86.5 : 1;
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTaskFilter, setSelectedTaskFilter] = useState("all");
   const [selectedLog, setSelectedLog] = useState<LogItem | null>(null);
 
-  // AI Log Explainer state
   const [aiExplaining, setAiExplaining] = useState(false);
   const [aiExplanation, setAiExplanation] = useState<string | null>(null);
 
@@ -46,165 +41,147 @@ export default function LogsPage() {
 
     setTimeout(() => {
       setAiExplanation(
-        `AI Diagnostic Trace for ${log.id}:\n\n` +
-        `• Complexity Score: ${log.task_type === "code_generation" ? "0.85 (High)" : "0.45 (Moderate)"}\n` +
-        `• Selected Model: ${log.model_used} (${log.provider})\n` +
-        `• Thompson Score: Prior win rate was 92.4% with expected latency of ${log.latency_ms}ms\n` +
-        `• Speculative Fast-Track: ${log.speculative_win ? "Won (Saved $0.0028 vs flagship)" : "Standard single-dispatch"}\n` +
-        `• Auto-Critic Verdict: ${log.critic_escalated ? "Escalated to flagship for refinement" : "Clean pass, zero hallucination flags"}\n` +
-        `• Net Margin Generated: +${currency === "INR" ? `₹${(0.0052 * rate - log.cost_inr).toFixed(3)}` : `$${(0.0052 - log.cost_usd).toFixed(4)}`} retained.`
+        `• Complexity Assessment: Assessed as ${log.task_type === "code_generation" ? "High Complexity" : "Standard"}.\n` +
+        `• Model Selection: Routed to ${log.model_used} based on prior 92.4% win rate.\n` +
+        `• Net Spend Savings: Saved ${currency === "INR" ? `₹${(0.0052 * rate - log.cost_inr).toFixed(3)}` : `$${(0.0052 - log.cost_usd).toFixed(4)}`} per request compared to default GPT-4o.`
       );
       setAiExplaining(false);
     }, 450);
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
-            Telemetry Logs & AI Trace Explainer
-          </h1>
-          <p className="text-xs sm:text-sm text-[#6E6E73] mt-1">
-            Real-time Bayesian routing decisions, token usage, latency metrics, and root-cause explanations
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-black/[0.06] shadow-apple-sm text-xs font-mono text-[#515154]">
-          <Bot className="h-4 w-4 text-[#0050FF]" />
-          <span>AI Log Explainer Active</span>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
+          Audit & Telemetry Logs
+        </h1>
+        <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
+          Inspect real-time routing decisions, costs, and outcome feedback
+        </p>
       </div>
 
       {/* AI Log Explanation Drawer / Modal */}
       {selectedLog && (
-        <div className="p-6 rounded-3xl bg-white border border-[#0050FF]/25 shadow-apple-md space-y-4 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-[#E5E5EA] pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#EEF4FF] text-[#0050FF]">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <h3 className="font-bold text-sm text-[#1D1D1F]">
-                AI Decision Breakdown: <span className="font-mono text-[#0050FF]">{selectedLog.id}</span>
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.06] shadow-md space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between border-b border-black/[0.05] pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#0050FF]" />
+              <h3 className="font-semibold text-xs text-[#1D1D1F]">
+                Decision Trace: <span className="font-mono text-[#0050FF]">{selectedLog.id}</span>
               </h3>
             </div>
             <button
               onClick={() => setSelectedLog(null)}
-              className="text-xs font-mono text-[#86868B] hover:text-[#1D1D1F]"
+              className="h-6 w-6 rounded-full text-[#86868B] hover:text-[#1D1D1F] hover:bg-[#F5F5F7] flex items-center justify-center transition-colors"
             >
-              Close
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {aiExplaining ? (
-            <div className="p-4 text-center space-y-2">
-              <span className="h-5 w-5 border-2 border-[#0050FF] border-t-transparent rounded-full animate-spin inline-block"></span>
-              <p className="text-xs text-[#86868B] font-mono">Analyzing prompt tokens & Bayesian decision priors...</p>
+            <div className="py-4 flex items-center justify-center gap-2 text-xs text-[#86868B]">
+              <span className="h-3.5 w-3.5 border-2 border-[#0050FF] border-t-transparent rounded-full animate-spin"></span>
+              <span>Analyzing routing trace...</span>
             </div>
           ) : (
-            <pre className="p-4 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] whitespace-pre-wrap leading-relaxed">
+            <div className="text-xs text-[#515154] leading-relaxed whitespace-pre-wrap font-sans">
               {aiExplanation}
-            </pre>
+            </div>
           )}
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      {/* Search & Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#86868B]" />
+          <Search className="h-4 w-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
           <input
             type="text"
-            placeholder="Search by request ID, model name, or prompt content..."
+            placeholder="Search by Request ID, model, prompt keywords..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 h-10 rounded-2xl bg-white border border-[#E5E5EA] text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF] shadow-apple-sm font-mono"
+            className="w-full h-10 pl-9 pr-4 rounded-full bg-white border border-black/[0.06] text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/30 shadow-sm transition-all"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          {["all", "sales_email", "code_generation", "customer_support"].map((t) => (
+        {/* Task Filter */}
+        <div className="inline-flex p-1 rounded-full bg-[#F5F5F7]">
+          {[
+            { id: "all", label: "All Logs" },
+            { id: "sales_email", label: "Sales" },
+            { id: "code_generation", label: "Code" },
+            { id: "customer_support", label: "Support" }
+          ].map((t) => (
             <button
-              key={t}
-              onClick={() => setSelectedTaskFilter(t)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-mono font-medium transition-all capitalize ${
-                selectedTaskFilter === t
-                  ? "bg-[#0050FF] text-white shadow-apple-blue"
-                  : "bg-white border border-[#E5E5EA] text-[#6E6E73] hover:text-[#1D1D1F]"
+              key={t.id}
+              onClick={() => setSelectedTaskFilter(t.id)}
+              className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${
+                selectedTaskFilter === t.id
+                  ? "bg-white text-[#1D1D1F] shadow-sm"
+                  : "text-[#86868B] hover:text-[#1D1D1F]"
               }`}
             >
-              {t.replace("_", " ")}
+              {t.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Logs Table */}
-      <div className="rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm overflow-hidden">
+      {/* Logs Table Card */}
+      <div className="rounded-2xl bg-white border border-black/[0.05] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#F5F5F7] text-[#1D1D1F] font-mono border-b border-[#E5E5EA]">
+            <thead className="bg-[#FBFBFD] text-[#86868B] border-b border-black/[0.05]">
               <tr>
-                <th className="p-4 pl-6">Request ID / Time</th>
-                <th className="p-4">Model Routed</th>
-                <th className="p-4">Prompt Preview</th>
-                <th className="p-4 text-right">Cost</th>
-                <th className="p-4 text-center">Latency</th>
-                <th className="p-4 text-center">Outcome</th>
-                <th className="p-4 pr-6 text-center">AI Diagnostics</th>
+                <th className="p-4 pl-6 font-medium">Request ID</th>
+                <th className="p-4 font-medium">Model Used</th>
+                <th className="p-4 font-medium">Task Domain</th>
+                <th className="p-4 font-medium text-right">Cost</th>
+                <th className="p-4 font-medium text-center">Latency</th>
+                <th className="p-4 font-medium text-center">Outcome</th>
+                <th className="p-4 pr-6 font-medium text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E5E5EA] bg-white font-mono">
+            <tbody className="divide-y divide-[#F5F5F7]">
               {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-[#F5F5F7]/60 transition-colors">
-                  <td className="p-4 pl-6">
-                    <span className="font-bold text-[#1D1D1F] block">{log.id}</span>
-                    <span className="text-[10px] text-[#86868B]">{log.created_at}</span>
+                <tr key={log.id} className="hover:bg-[#FBFBFD] transition-colors">
+                  <td className="p-4 pl-6 font-mono font-medium text-[#0050FF]">
+                    {log.id}
                   </td>
-
                   <td className="p-4">
-                    <span className="font-bold text-[#0050FF] bg-[#EEF4FF] px-2 py-0.5 rounded-md border border-[#0050FF]/20">
-                      {log.model_used}
-                    </span>
-                    <span className="text-[10px] text-[#86868B] block mt-0.5 uppercase">{log.provider}</span>
+                    <span className="font-semibold text-[#1D1D1F]">{log.model_used}</span>
                   </td>
-
-                  <td className="p-4 max-w-xs truncate text-[#515154] font-sans">
-                    {log.prompt_preview}
+                  <td className="p-4 text-[#515154] capitalize">
+                    {log.task_type.replace("_", " ")}
                   </td>
-
-                  <td className="p-4 text-right font-bold text-[#1D1D1F]">
+                  <td className="p-4 text-right font-mono text-[#1D1D1F]">
                     {currency === "INR" ? `₹${log.cost_inr.toFixed(3)}` : `$${log.cost_usd.toFixed(4)}`}
                   </td>
-
-                  <td className="p-4 text-center text-[#86868B]">
+                  <td className="p-4 text-center font-mono text-[#515154]">
                     {log.latency_ms}ms
                   </td>
-
                   <td className="p-4 text-center">
                     {log.outcome_success === true ? (
-                      <span className="px-2.5 py-1 rounded-full bg-[#EEF4FF] text-[#0050FF] font-bold text-[10px] border border-[#0050FF]/20">
-                        Won
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                        <CheckCircle2 className="h-3 w-3" /> Win
                       </span>
                     ) : log.outcome_success === false ? (
-                      <span className="px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-bold text-[10px]">
-                        Lost
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                        <XCircle className="h-3 w-3" /> Lost
                       </span>
                     ) : (
-                      <span className="px-2.5 py-1 rounded-full bg-[#F5F5F7] text-[#86868B] text-[10px]">
+                      <span className="text-[11px] text-[#86868B] bg-[#F5F5F7] px-2 py-0.5 rounded-full">
                         Pending
                       </span>
                     )}
                   </td>
-
-                  <td className="p-4 pr-6 text-center">
+                  <td className="p-4 pr-6 text-right">
                     <button
                       onClick={() => handleExplainWithAI(log)}
-                      className="px-3 py-1 rounded-full bg-[#EEF4FF] text-[#0050FF] font-bold text-[10px] hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 mx-auto"
+                      className="text-xs font-semibold text-[#0050FF] hover:underline"
                     >
-                      <Bot className="h-3 w-3" />
-                      <span>Explain AI Choice</span>
+                      Explain
                     </button>
                   </td>
                 </tr>

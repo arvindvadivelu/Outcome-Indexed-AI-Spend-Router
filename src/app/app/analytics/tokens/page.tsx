@@ -7,12 +7,9 @@ import {
   Layers,
   Database,
   TrendingDown,
-  Clock,
   Sparkles,
   Bot,
-  Zap,
-  CheckCircle2,
-  AlertTriangle
+  CheckCircle2
 } from "lucide-react";
 import {
   BarChart,
@@ -38,11 +35,11 @@ export default function TokenAnalyticsPage() {
       setAuditResult({
         totalWastedTokens: 184200,
         estimatedDollarLossUSD: 94.20,
-        recommendation: "Detected 4,200 repetitive system prompt headers across Customer Support traffic. Enabling Generative Context Compression will eliminate 32% of input tokens, immediately saving $94.20/month.",
+        recommendation: "Detected 4,200 repetitive system prompt headers in Customer Support. Enabling prompt de-fluffing will eliminate 32% of input tokens, immediately saving $94.20/month.",
         optimalCacheRule: "Enable pgvector cosine threshold 0.92 for 'customer_support' task domain."
       });
       setIsAuditing(false);
-    }, 500);
+    }, 450);
   };
 
   const dailyTokenData = [
@@ -56,110 +53,113 @@ export default function TokenAnalyticsPage() {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
-            Token Analytics & AI Waste Detector
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
+            Token Analytics
           </h1>
-          <p className="text-xs sm:text-sm text-[#6E6E73] mt-1">
-            Track token consumption, prompt de-fluffing compression ratios, and cache hits
+          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
+            Monitor prompt compression, token consumption, and cache hit rates
           </p>
         </div>
 
         <button
           onClick={handleRunAiAudit}
           disabled={isAuditing}
-          className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white font-bold text-xs hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex items-center gap-2"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/20"
         >
-          <Bot className="h-4 w-4" />
-          <span>{isAuditing ? "Auditing Tokens..." : "Run AI Token Waste Audit"}</span>
+          <Bot className="h-3.5 w-3.5" />
+          <span>{isAuditing ? "Auditing..." : "Audit Token Waste"}</span>
         </button>
       </div>
 
       {/* AI Token Waste Diagnostic Panel */}
       {auditResult && (
-        <div className="p-6 rounded-3xl bg-white border border-[#0050FF]/25 shadow-apple-md space-y-3 animate-in fade-in">
-          <div className="flex items-center justify-between border-b border-[#E5E5EA] pb-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#1D1D1F]">
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-2.5 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#1D1D1F]">
               <Sparkles className="h-4 w-4 text-[#0050FF]" />
               <span>AI Token Optimization Diagnostic</span>
             </div>
-            <span className="text-[10px] font-mono font-bold text-[#0050FF] bg-[#EEF4FF] px-2 py-0.5 rounded-full border border-[#0050FF]/20">
-              Actionable Fix Ready
+            <span className="text-[11px] font-semibold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-0.5 rounded-full">
+              Fix Ready
             </span>
           </div>
-          <p className="text-xs text-[#515154] leading-relaxed font-sans">{auditResult.recommendation}</p>
-          <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono text-[#0050FF] flex items-center gap-2">
+          <p className="text-xs text-[#515154] leading-relaxed">{auditResult.recommendation}</p>
+          <div className="p-2.5 rounded-xl bg-[#F5F5F7] text-xs text-[#0050FF] font-medium flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-            <span>Recommended Policy: {auditResult.optimalCacheRule}</span>
+            <span>Recommended: {auditResult.optimalCacheRule}</span>
           </div>
         </div>
       )}
 
-      {/* 4 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="p-6 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-2">
-          <span className="text-xs font-semibold text-[#86868B]">Current Tokens Consumed</span>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#1D1D1F]">
+      {/* 3 Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-1.5">
+          <span className="text-xs text-[#86868B] font-medium">Total Tokens Used</span>
+          <div className="text-2xl font-bold text-[#1D1D1F] font-mono">
             {formatNumber(currentTokens)}
           </div>
-          <p className="text-[10px] text-[#86868B] font-mono">Quota: {formatNumber(monthlyQuota)}</p>
+          <p className="text-xs text-[#86868B]">Quota: {formatNumber(monthlyQuota)}</p>
         </div>
 
-        <div className="p-6 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-2">
-          <span className="text-xs font-semibold text-[#86868B]">Tokens Saved by Cache</span>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0050FF]">
-            +537,000
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-1.5">
+          <span className="text-xs text-[#86868B] font-medium">Semantic Cache Hit Rate</span>
+          <div className="text-2xl font-bold text-[#0050FF] font-mono">
+            34.8%
           </div>
-          <p className="text-[10px] text-[#0050FF] font-mono">34.2% Cache Hit Ratio</p>
+          <p className="text-xs text-emerald-600 font-medium">Served instantly at $0 token cost</p>
         </div>
 
-        <div className="p-6 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-2">
-          <span className="text-xs font-semibold text-[#86868B]">Context Compression</span>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0050FF]">
-            -31.8%
+        <div className="p-5 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-1.5">
+          <span className="text-xs text-[#86868B] font-medium">De-Fluffing Compression</span>
+          <div className="text-2xl font-bold text-[#1D1D1F] font-mono">
+            -28.4%
           </div>
-          <p className="text-[10px] text-[#6E6E73] font-mono">Boilerplate de-fluffing</p>
-        </div>
-
-        <div className="p-6 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-2">
-          <span className="text-xs font-semibold text-[#86868B]">Net Dollars Saved</span>
-          <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0050FF]">
-            +{formatCurrency(608.30 * rate, currency)}
-          </div>
-          <p className="text-[10px] text-[#0050FF] font-mono">-42% vs GPT-4o Baseline</p>
+          <p className="text-xs text-[#86868B]">Boilerplate stripped before inference</p>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-[#E5E5EA] pb-4">
+      {/* Token Volume Chart */}
+      <div className="p-6 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h3 className="font-bold text-base text-[#1D1D1F]">Daily Token Breakdown</h3>
-            <p className="text-xs text-[#86868B]">Input, completion, and cache-saved tokens</p>
+            <h3 className="font-semibold text-[#1D1D1F] text-sm">Daily Token Breakdown</h3>
+            <p className="text-xs text-[#86868B]">Input Tokens, Output Tokens, and Cached Tokens</p>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 text-[#515154]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#0050FF]"></span> Input
+            </span>
+            <span className="flex items-center gap-1.5 text-[#515154]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#80A8FF]"></span> Output
+            </span>
+            <span className="flex items-center gap-1.5 text-[#515154]">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#E5E5EA]"></span> Cached
+            </span>
           </div>
         </div>
 
-        <div className="h-72 w-full">
+        <div className="h-64 w-full pt-2">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dailyTokenData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E5EA" vertical={false} />
-              <XAxis dataKey="day" stroke="#86868B" fontSize={11} tickLine={false} />
-              <YAxis stroke="#86868B" fontSize={11} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F2" />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: "#86868B" }} axisLine={false} tickLine={false} />
               <Tooltip
                 contentStyle={{
                   backgroundColor: "#FFFFFF",
-                  borderColor: "#E5E5EA",
-                  borderRadius: "1rem",
-                  fontSize: "12px",
-                  color: "#1D1D1F"
+                  border: "1px solid rgba(0,0,0,0.06)",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                  fontSize: "12px"
                 }}
               />
-              <Bar dataKey="input" fill="#0050FF" name="Input Tokens" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="output" fill="#80A8FF" name="Output Tokens" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="cached" fill="#D9E5FF" name="Saved by Cache" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="input" fill="#0050FF" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="output" fill="#80A8FF" radius={[4, 4, 0, 0]} stackId="a" />
+              <Bar dataKey="cached" fill="#E5E5EA" radius={[4, 4, 0, 0]} stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>

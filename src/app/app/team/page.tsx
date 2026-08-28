@@ -5,11 +5,8 @@ import {
   Users,
   Plus,
   Trash2,
-  Mail,
   Shield,
-  Bot,
-  Sparkles,
-  CheckCircle2
+  Bot
 } from "lucide-react";
 
 export default function TeamPage() {
@@ -22,7 +19,6 @@ export default function TeamPage() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Engineer");
 
-  // AI RBAC Recommender state
   const [isAuditing, setIsAuditing] = useState(false);
   const [rbacResult, setRbacResult] = useState<any>(null);
 
@@ -46,58 +42,58 @@ export default function TeamPage() {
     setIsAuditing(true);
     setTimeout(() => {
       setRbacResult({
-        recommendation: "Least-Privilege Security Check: All 3 active accounts have appropriate scopes. We recommend enforcing MFA for the 'Admin' role before generating live production API keys."
+        recommendation: "Least-Privilege Security Check: All active accounts have appropriate scopes with zero privilege leaks."
       });
       setIsAuditing(false);
     }, 450);
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
-            Team Members & AI Role Advisor
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
+            Team Members
           </h1>
-          <p className="text-xs sm:text-sm text-[#6E6E73] mt-1">
-            Manage organization seats, role-based access control (RBAC), and per-seat token limits
+          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
+            Manage organization seats, role permissions, and token budgets
           </p>
         </div>
 
         <button
           onClick={handleAuditRBAC}
           disabled={isAuditing}
-          className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white font-bold text-xs hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex items-center gap-2"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-black/[0.06] text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] shadow-sm transition-all"
         >
-          <Bot className="h-4 w-4" />
-          <span>{isAuditing ? "Auditing Roles..." : "Run AI RBAC Security Audit"}</span>
+          <Bot className="h-3.5 w-3.5 text-[#0050FF]" />
+          <span>{isAuditing ? "Auditing..." : "Audit Role Permissions"}</span>
         </button>
       </div>
 
       {/* RBAC Result */}
       {rbacResult && (
-        <div className="p-6 rounded-3xl bg-white border border-[#0050FF]/25 shadow-apple-md space-y-2 animate-in fade-in text-xs font-mono">
-          <span className="text-[#0050FF] font-bold block">✓ AI RBAC Security Assessment Complete</span>
-          <p className="text-[#515154] font-sans pt-1 leading-relaxed">{rbacResult.recommendation}</p>
+        <div className="p-4 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-1 animate-in fade-in text-xs">
+          <span className="text-[#0050FF] font-semibold block">✓ Role Assessment Complete</span>
+          <p className="text-[#515154] leading-relaxed">{rbacResult.recommendation}</p>
         </div>
       )}
 
       {/* Invite Form */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm space-y-4">
-        <h3 className="font-bold text-base text-[#1D1D1F]">Invite Team Member</h3>
-        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3">
+      <div className="p-6 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-3">
+        <h3 className="font-semibold text-sm text-[#1D1D1F]">Invite Team Member</h3>
+        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2.5">
           <input
             type="email"
             placeholder="colleague@company.com"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            className="flex-1 h-11 px-4 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
+            className="flex-1 h-10 px-4 rounded-full bg-[#F5F5F7] border border-transparent text-xs text-[#1D1D1F] placeholder:text-[#86868B] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#0050FF]/30 transition-all"
           />
           <select
             value={inviteRole}
             onChange={(e) => setInviteRole(e.target.value)}
-            className="h-11 px-4 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
+            className="h-10 px-4 rounded-full bg-[#F5F5F7] border border-transparent text-xs text-[#1D1D1F] focus:outline-none focus:bg-white transition-all"
           >
             <option value="Engineer">Engineer (Read & Route)</option>
             <option value="Admin">Admin (Full Control)</option>
@@ -106,42 +102,43 @@ export default function TeamPage() {
           <button
             type="submit"
             disabled={!inviteEmail.trim()}
-            className="px-6 h-11 rounded-2xl bg-[#0050FF] text-white font-bold text-xs hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="px-5 py-2 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm flex items-center justify-center gap-1.5"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span>Send Invite</span>
           </button>
         </form>
       </div>
 
       {/* Members List */}
-      <div className="rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm overflow-hidden">
+      <div className="rounded-2xl bg-white border border-black/[0.05] shadow-sm overflow-hidden">
         <table className="w-full text-left text-xs">
-          <thead className="bg-[#F5F5F7] text-[#1D1D1F] font-mono border-b border-[#E5E5EA]">
+          <thead className="bg-[#FBFBFD] text-[#86868B] border-b border-black/[0.05]">
             <tr>
-              <th className="p-4 pl-6">Member Name</th>
-              <th className="p-4">Email</th>
-              <th className="p-4 text-center">Role</th>
-              <th className="p-4 text-center">Token Quota</th>
-              <th className="p-4 pr-6 text-right">Actions</th>
+              <th className="p-4 pl-6 font-medium">Member Name</th>
+              <th className="p-4 font-medium">Email</th>
+              <th className="p-4 font-medium text-center">Role</th>
+              <th className="p-4 font-medium text-center">Token Quota</th>
+              <th className="p-4 pr-6 font-medium text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E5E5EA] bg-white font-mono">
+          <tbody className="divide-y divide-[#F5F5F7]">
             {members.map((m) => (
-              <tr key={m.id} className="hover:bg-[#F5F5F7]/60 transition-colors">
-                <td className="p-4 pl-6 font-bold text-[#1D1D1F]">{m.name}</td>
+              <tr key={m.id} className="hover:bg-[#FBFBFD] transition-colors">
+                <td className="p-4 pl-6 font-semibold text-[#1D1D1F]">{m.name}</td>
                 <td className="p-4 text-[#515154]">{m.email}</td>
                 <td className="p-4 text-center">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#EEF4FF] text-[#0050FF] font-bold text-[10px] border border-[#0050FF]/20">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#EEF4FF] text-[#0050FF] font-semibold text-[11px]">
                     {m.role}
                   </span>
                 </td>
-                <td className="p-4 text-center text-[#515154]">{m.tokenQuota}</td>
+                <td className="p-4 text-center text-[#86868B]">{m.tokenQuota}</td>
                 <td className="p-4 pr-6 text-right">
                   {m.role !== "Owner" && (
                     <button
                       onClick={() => setMembers((prev) => prev.filter((item) => item.id !== m.id))}
-                      className="p-1.5 rounded-xl text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-1.5 rounded-lg text-[#86868B] hover:text-red-600 hover:bg-red-50 transition-colors"
+                      title="Remove member"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

@@ -4,18 +4,16 @@ import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import {
-  Terminal,
   Copy,
   Check,
   Bot,
   Sparkles,
   Zap,
-  ArrowRight,
   Code2
 } from "lucide-react";
 
 export default function DocsPage() {
-  const [activeTab, setActiveTab] = useState<"python" | "node" | "policy" | "speculative">("python");
+  const [activeTab, setActiveTab] = useState<"python" | "node" | "curl">("python");
   const [copied, setCopied] = useState(false);
 
   // Dynamic AI Code Transpiler state
@@ -32,7 +30,7 @@ export default function DocsPage() {
     setTimeout(() => {
       if (transpilerLanguage === "python") {
         setTranspiledResult(
-          `from outcome_router import OutcomeRouterClient, track_outcome\n\n# 5-line drop-in replacement\nrouter = OutcomeRouterClient(api_key="oir_live_8f39a7b92")\n\n@track_outcome(target_metric="demo_booked", revenue_impact_usd=500.0)\ndef handle_outreach():\n    return router.chat(\n        messages=[{"role": "user", "content": "Draft outreach email"}],\n        strategy="outcome_optimized",\n        speculative=True,      # 84ms fast-track\n        auto_critic=True       # Zero hallucinations\n    )`
+          `from outcome_router import OutcomeRouterClient, track_outcome\n\n# 5-line drop-in replacement\nrouter = OutcomeRouterClient(api_key="oir_live_8f39a7b92")\n\n@track_outcome(target_metric="demo_booked", revenue_impact_usd=500.0)\ndef handle_outreach():\n    return router.chat(\n        messages=[{"role": "user", "content": "Draft outreach email"}],\n        strategy="outcome_optimized",\n        speculative=True,\n        auto_critic=True\n    )`
         );
       } else {
         setTranspiledResult(
@@ -40,26 +38,25 @@ export default function DocsPage() {
         );
       }
       setIsTranspiling(false);
-    }, 500);
+    }, 450);
   };
 
   const codeSnippets = {
     python: `from outcome_router import OutcomeRouterClient
 
-# 1. Initialize client (5-line drop-in)
+# 1. Initialize client
 router = OutcomeRouterClient(api_key="oir_live_8f39a7b92")
 
-# 2. Call chat completion with AI Auto-Critic & Speculative Racing
+# 2. Call chat completion with Outcome-Indexed Routing
 response = router.chat(
     messages=[
-        {"role": "system", "content": "You are a sales SDR."},
-        {"role": "user", "content": "Draft outreach to VP Eng at Series B FinTech"}
+        {"role": "system", "content": "You are an automated code reviewer."},
+        {"role": "user", "content": "Check this TypeScript function for memory leaks"}
     ],
     strategy="outcome_optimized",
-    target_metric="demo_booked",
-    auto_critic=True,      # Auto-refines hallucinations with flagship
-    speculative=True,      # Races Groq & Claude to cut latency by 60%
-    enable_cache=True
+    target_metric="code_merged",
+    speculative=True,      # Races fast model & flagship (cuts P95 latency by 60%)
+    auto_critic=True       # Auto-escalates errors to flagship
 )
 
 print("Optimal Model Picked:", response["_router_metadata"]["model_used"])
@@ -79,38 +76,26 @@ const response = await router.chat({
     strategy: "outcome_optimized",
     target_metric: "code_merged",
     auto_critic: true,
-    speculative_mode: true,
-    enable_cache: true
+    speculative_mode: true
   }
 });
 
 console.log("Model Selected:", response._routerMetadata.modelUsed);
 console.log("Dollars Saved:", response._routerMetadata.savedUsd);`,
-    policy: `// POST /api/v1/ai/synthesize-policy
-// Compiles plain English into executable Bayesian routing policies
-
-curl -X POST https://api.outcomerouter.com/api/v1/ai/synthesize-policy \\
+    curl: `curl -X POST https://api.outcomerouter.com/v1/chat/completions \\
   -H "Authorization: Bearer oir_live_8f39a7b92" \\
   -H "Content-Type: application/json" \\
+  -H "X-Outcome-Strategy: outcome_optimized" \\
+  -H "X-Outcome-Target-Metric: code_merged" \\
   -d '{
-    "prompt": "Optimize customer support FAQ to reply under 100ms with >95% resolution rate"
-  }'`,
-    speculative: `// POST /api/v1/ai/speculative-chat
-// Races ultra-fast budget models in parallel with deep reasoning flagships
-
-curl -X POST https://api.outcomerouter.com/api/v1/ai/speculative-chat \\
-  -H "Authorization: Bearer oir_live_8f39a7b92" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "fast_model": "llama-3.3-70b-versatile",
-    "flagship_model": "claude-3-5-sonnet-20241022",
+    "model": "auto",
     "messages": [
-      {"role": "user", "content": "Refactor this SQL join to prevent table locks"}
+      {"role": "user", "content": "Check this function for bugs"}
     ]
   }'`
   };
 
-  const handleCopy = () => {
+  const handleCopyCode = () => {
     navigator.clipboard.writeText(codeSnippets[activeTab]);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -120,136 +105,103 @@ curl -X POST https://api.outcomerouter.com/api/v1/ai/speculative-chat \\
     <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] flex flex-col selection:bg-[#0050FF] selection:text-white">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 flex-1 space-y-12">
-        {/* Title */}
-        <div className="space-y-2 border-b border-[#E5E5EA] pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EEF4FF] border border-[#0050FF]/20 text-[#0050FF] text-xs font-semibold">
-            <Sparkles className="h-3 w-3" />
-            <span>Developer Reference & Interactive AI Transpiler</span>
+      <main className="flex-1 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16">
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-4">
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F]">
+              Developer Documentation
+            </h1>
+            <p className="text-base text-[#6E6E73]">
+              Integrate the Outcome-Indexed AI Spend Router into your Python or Node.js apps in 5 minutes.
+            </p>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1D1D1F]">
-            Autonomous AI SDKs & Transpiler
-          </h1>
-          <p className="text-sm text-[#6E6E73]">
-            Integrate Speculative Racing, Self-Correction Critic, and AI Policy Synthesis into your production stack.
-          </p>
+
+          {/* Code Snippet Card */}
+          <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-black/[0.06] shadow-sm overflow-hidden space-y-0">
+            <div className="p-4 sm:p-5 border-b border-black/[0.05] flex items-center justify-between">
+              {/* Language Tabs */}
+              <div className="inline-flex p-1 rounded-full bg-[#F5F5F7]">
+                {[
+                  { id: "python", label: "Python SDK" },
+                  { id: "node", label: "Node.js / TS" },
+                  { id: "curl", label: "cURL API" }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
+                      activeTab === tab.id
+                        ? "bg-white text-[#1D1D1F] shadow-sm"
+                        : "text-[#86868B] hover:text-[#1D1D1F]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleCopyCode}
+                className="flex items-center gap-1 text-xs text-[#0050FF] hover:underline font-medium"
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                <span>{copied ? "Copied" : "Copy Code"}</span>
+              </button>
+            </div>
+
+            <div className="p-6 bg-[#FBFBFD] overflow-x-auto">
+              <pre className="text-xs font-mono text-[#1D1D1F] leading-relaxed">
+                {codeSnippets[activeTab]}
+              </pre>
+            </div>
+          </div>
+
+          {/* AI Code Converter Tool */}
+          <div className="max-w-4xl mx-auto rounded-3xl bg-white border border-black/[0.06] p-6 sm:p-8 shadow-sm space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bot className="h-4 w-4 text-[#0050FF]" />
+                <h3 className="font-bold text-base text-[#1D1D1F]">AI Code Migrator</h3>
+              </div>
+              <span className="text-xs text-[#86868B]">Converts standard OpenAI code to Outcome Router</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-[#86868B]">Existing OpenAI Code</label>
+                <textarea
+                  value={sourceCodeInput}
+                  onChange={(e) => setSourceCodeInput(e.target.value)}
+                  rows={8}
+                  className="w-full rounded-2xl bg-[#F5F5F7] border border-transparent p-3.5 text-xs font-mono text-[#1D1D1F] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#0050FF]/30 transition-all resize-none"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-[#86868B]">Migrated Outcome Router Code</label>
+                <div className="w-full h-44 rounded-2xl bg-[#F5F5F7] p-3.5 text-xs font-mono text-[#0050FF] overflow-y-auto whitespace-pre-wrap">
+                  {isTranspiling ? (
+                    <span className="text-[#86868B]">Generating 5-line drop-in code...</span>
+                  ) : (
+                    transpiledResult || "// Click Migrate Code to generate drop-in snippet"
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleTranspile}
+                disabled={isTranspiling || !sourceCodeInput.trim()}
+                className="px-5 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 shadow-sm transition-all"
+              >
+                {isTranspiling ? "Migrating..." : "Migrate to Outcome Router"}
+              </button>
+            </div>
+          </div>
         </div>
-
-        {/* 1. Interactive AI Code Transpiler Card */}
-        <section className="p-6 sm:p-8 rounded-3xl bg-white border border-[#0050FF]/25 shadow-apple-md space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#E5E5EA] pb-3 gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#EEF4FF] text-[#0050FF]">
-                <Bot className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-[#1D1D1F]">AI Legacy Code Transpiler</h3>
-                <p className="text-[11px] text-[#86868B]">Paste your legacy OpenAI or Anthropic code to instantly convert it to Outcome Router</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setTranspilerLanguage("python")}
-                className={`px-3 py-1 rounded-full text-xs font-mono font-bold transition-all ${
-                  transpilerLanguage === "python" ? "bg-[#0050FF] text-white" : "bg-[#F5F5F7] text-[#515154]"
-                }`}
-              >
-                Python
-              </button>
-              <button
-                type="button"
-                onClick={() => setTranspilerLanguage("typescript")}
-                className={`px-3 py-1 rounded-full text-xs font-mono font-bold transition-all ${
-                  transpilerLanguage === "typescript" ? "bg-[#0050FF] text-white" : "bg-[#F5F5F7] text-[#515154]"
-                }`}
-              >
-                TypeScript
-              </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleTranspile} className="space-y-3">
-            <textarea
-              rows={3}
-              value={sourceCodeInput}
-              onChange={(e) => setSourceCodeInput(e.target.value)}
-              className="w-full p-3 rounded-2xl bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono text-[#1D1D1F] focus:outline-none focus:border-[#0050FF]"
-              placeholder="Paste raw OpenAI or Anthropic code snippet..."
-            />
-            <button
-              type="submit"
-              disabled={isTranspiling}
-              className="px-6 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-bold hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {isTranspiling ? "Transpiling Code..." : "Transpile to Outcome Router"}
-            </button>
-          </form>
-
-          {transpiledResult && (
-            <div className="p-4 rounded-2xl bg-[#1D1D1F] text-slate-200 text-xs font-mono relative overflow-hidden animate-in fade-in">
-              <span className="text-[10px] uppercase font-bold text-[#0050FF] block mb-2">
-                ✓ Transpiled Drop-in Code (-42% Token Cost Enabled)
-              </span>
-              <pre className="overflow-x-auto whitespace-pre-wrap">{transpiledResult}</pre>
-            </div>
-          )}
-        </section>
-
-        {/* 2. SDK Reference & Code Switcher */}
-        <section id="quickstart" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#1D1D1F] flex items-center gap-2">
-              <Terminal className="h-5 w-5 text-[#0050FF]" />
-              <span>Standard SDK Implementation</span>
-            </h2>
-            <div className="flex items-center gap-1 p-1 rounded-full bg-[#F5F5F7] border border-[#E5E5EA] text-xs font-mono">
-              {(["python", "node", "policy", "speculative"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3.5 py-1 rounded-full transition-all capitalize ${
-                    activeTab === tab
-                      ? "bg-[#0050FF] text-white font-bold shadow-sm"
-                      : "text-[#6E6E73] hover:text-[#1D1D1F]"
-                  }`}
-                >
-                  {tab === "policy" ? "AI Policy API" : tab === "speculative" ? "Speculative Race" : tab}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative rounded-3xl bg-[#1D1D1F] text-slate-100 border border-black/[0.08] overflow-hidden shadow-apple-lg">
-            <div className="flex items-center justify-between px-5 py-3 bg-[#2D2D2F] border-b border-white/10">
-              <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
-                <span className="h-3 w-3 rounded-full bg-[#FF5F56] inline-block"></span>
-                <span className="h-3 w-3 rounded-full bg-[#FFBD2E] inline-block"></span>
-                <span className="h-3 w-3 rounded-full bg-[#27C93F] inline-block"></span>
-                <span className="ml-2">
-                  {activeTab === "python"
-                    ? "quickstart_ai.py"
-                    : activeTab === "node"
-                    ? "quickstart_ai.ts"
-                    : activeTab === "policy"
-                    ? "policy_synthesizer.sh"
-                    : "speculative_race.sh"}
-                </span>
-              </div>
-              <button
-                onClick={handleCopy}
-                className="flex items-center gap-1 text-xs text-slate-400 hover:text-white font-mono transition-colors"
-              >
-                {copied ? <Check className="h-3.5 w-3.5 text-[#0050FF]" /> : <Copy className="h-3.5 w-3.5 text-slate-400" />}
-                <span>{copied ? "Copied!" : "Copy Code"}</span>
-              </button>
-            </div>
-            <pre className="p-6 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed">
-              {codeSnippets[activeTab]}
-            </pre>
-          </div>
-        </section>
-      </div>
+      </main>
 
       <Footer />
     </div>

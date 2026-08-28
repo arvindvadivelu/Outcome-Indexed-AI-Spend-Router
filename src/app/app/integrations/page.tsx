@@ -6,9 +6,6 @@ import {
   CheckCircle2,
   ExternalLink,
   Bot,
-  Sparkles,
-  Zap,
-  Code2,
   Plug
 } from "lucide-react";
 
@@ -21,7 +18,6 @@ export default function IntegrationsPage() {
     { id: "crewai", name: "CrewAI Multi-Agent", category: "Autonomous Agents", connected: false, latency: "—" }
   ]);
 
-  // AI Integration Diagnostic state
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
 
@@ -37,7 +33,7 @@ export default function IntegrationsPage() {
     setIsDiagnosing(true);
     setTimeout(() => {
       setDiagnosticResult({
-        status: "ALL CONNECTORS OPERATIONAL",
+        status: "All Connectors Healthy",
         recommendation: "LangChain and Vercel AI SDK streams verified with sub-15ms proxy latency. 100% circuit breaker uptime active."
       });
       setIsDiagnosing(false);
@@ -45,78 +41,78 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
-            Ecosystem Integrations & AI Connector Diagnostics
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
+            Integrations
           </h1>
-          <p className="text-xs sm:text-sm text-[#6E6E73] mt-1">
-            Connect Outcome Router into your LangChain, Vercel AI, and multi-agent pipelines
+          <p className="text-xs sm:text-sm text-[#86868B] mt-0.5">
+            Connect Outcome Router into your LangChain, Vercel AI, and agent workflows
           </p>
         </div>
 
         <button
           onClick={handleRunDiagnostics}
           disabled={isDiagnosing}
-          className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white font-bold text-xs hover:bg-[#0040CC] shadow-apple-blue transition-all disabled:opacity-50 flex items-center gap-2"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-white border border-black/[0.06] text-xs font-semibold text-[#515154] hover:text-[#1D1D1F] shadow-sm transition-all"
         >
-          <Bot className="h-4 w-4" />
-          <span>{isDiagnosing ? "Diagnosing..." : "Run AI Health Diagnostics"}</span>
+          <Bot className="h-3.5 w-3.5 text-[#0050FF]" />
+          <span>{isDiagnosing ? "Checking..." : "Connector Diagnostics"}</span>
         </button>
       </div>
 
       {/* Diagnostics panel */}
       {diagnosticResult && (
-        <div className="p-6 rounded-3xl bg-white border border-[#0050FF]/25 shadow-apple-md space-y-2 animate-in fade-in text-xs font-mono">
-          <span className="text-[#0050FF] font-bold block">✓ {diagnosticResult.status}</span>
-          <p className="text-[#515154] font-sans pt-1 leading-relaxed">{diagnosticResult.recommendation}</p>
+        <div className="p-4 rounded-2xl bg-white border border-black/[0.05] shadow-sm space-y-1 animate-in fade-in text-xs">
+          <span className="text-[#0050FF] font-semibold block">✓ {diagnosticResult.status}</span>
+          <p className="text-[#515154] leading-relaxed">{diagnosticResult.recommendation}</p>
         </div>
       )}
 
       {/* Integrations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {integrations.map((item) => (
           <div
             key={item.id}
-            className="p-6 rounded-3xl bg-white border border-black/[0.06] shadow-apple-sm flex flex-col justify-between space-y-5 hover:shadow-apple-md transition-all"
+            className="p-5 rounded-2xl bg-white border border-black/[0.05] shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-all"
           >
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-0.5 rounded-full border border-[#0050FF]/20">
+                <span className="text-[11px] font-semibold text-[#0050FF] bg-[#EEF4FF] px-2.5 py-0.5 rounded-full">
                   {item.category}
                 </span>
                 <span
-                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                  className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${
                     item.connected
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                      ? "bg-emerald-50 text-emerald-600"
                       : "bg-[#F5F5F7] text-[#86868B]"
                   }`}
                 >
-                  {item.connected ? "CONNECTED" : "DISCONNECTED"}
+                  {item.connected ? "Connected" : "Inactive"}
                 </span>
               </div>
 
               <div>
-                <h3 className="font-bold text-base text-[#1D1D1F]">{item.name}</h3>
-                <p className="text-xs text-[#86868B] font-mono mt-1">Proxy Latency: {item.latency}</p>
+                <h3 className="font-semibold text-sm text-[#1D1D1F]">{item.name}</h3>
+                <p className="text-xs text-[#86868B] mt-0.5">Proxy Latency: {item.latency}</p>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-[#E5E5EA] flex items-center justify-between">
+            <div className="pt-3 border-t border-[#F5F5F7] flex items-center justify-between">
               <button
                 onClick={() => toggleConnection(item.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   item.connected
-                    ? "bg-[#F5F5F7] text-[#1D1D1F] hover:bg-red-50 hover:text-red-600 border border-[#E5E5EA]"
-                    : "bg-[#0050FF] text-white hover:bg-[#0040CC] shadow-apple-blue"
+                    ? "bg-[#F5F5F7] text-[#515154] hover:text-red-600 hover:bg-red-50"
+                    : "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-sm"
                 }`}
               >
                 {item.connected ? "Disconnect" : "Connect Adapter"}
               </button>
 
-              <span className="text-xs text-[#86868B] font-mono">v1.2.0</span>
+              <span className="text-[11px] text-[#86868B]">v1.2</span>
             </div>
           </div>
         ))}
