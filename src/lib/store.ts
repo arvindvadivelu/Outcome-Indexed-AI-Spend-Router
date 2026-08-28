@@ -133,12 +133,42 @@ export interface WebhookConfig {
 
 export interface WebhookLogItem {
   id: string;
-  timestamp: string;
+  timestamp: string; // ISO string for persistence correctness
   event: string;
   targetUrl: string;
   httpStatus: number;
   latencyMs: number;
   verified: boolean;
+}
+
+// ── NEW: Team Member (persisted in store) ──────────────────────────────────
+export interface TeamMember {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  tokenQuota: string;
+  spendLimitUsd: number;
+  mfaActive: boolean;
+  lastActive: string; // ISO timestamp
+  status: "active" | "invited" | "suspended";
+}
+
+// ── NEW: Integration state (persisted in store) ────────────────────────────
+export interface IntegrationState {
+  id: string;
+  connected: boolean;
+  connectedAt?: string; // ISO timestamp
+  latencyMs?: number;
+}
+
+// ── NEW: Analytics Snapshot for persistence ────────────────────────────────
+export interface AnalyticsSnapshot {
+  date: string; // YYYY-MM-DD
+  totalRequests: number;
+  totalCostUsd: number;
+  avgLatencyMs: number;
+  winRate: number;
 }
 
 interface AppState {
@@ -159,7 +189,7 @@ interface AppState {
   } | null;
   setAuthUser: (user: { name: string; email: string; hasPin: boolean; hasBiometrics: boolean } | null) => void;
   logout: () => void;
-  
+
   // Organization
   orgName: string;
   planTier: string;
@@ -180,12 +210,14 @@ interface AppState {
   deltaStats: DeltaCompressionStats;
   federationSettings: FederationSettings;
   setFederationWeight: (weight: number) => void;
+  setFederationEpsilon: (epsilon: number) => void;
   toggleFederation: () => void;
   addSlaContract: (contract: SlaContractItem) => void;
 
   // Webhook Persistent Config & Logs
   webhookConfig: WebhookConfig;
   setWebhookConfig: (config: Partial<WebhookConfig>) => void;
+  toggleWebhookEvent: (event: string) => void;
   webhookLogs: WebhookLogItem[];
   addWebhookLog: (log: WebhookLogItem) => void;
 
@@ -198,13 +230,30 @@ interface AppState {
   routingRules: RoutingRule[];
   apiKeys: ApiKeyItem[];
 
+  // ── NEW: Team Members (persisted) ────────────────────────────────────────
+  teamMembers: TeamMember[];
+  addTeamMember: (member: TeamMember) => void;
+  removeTeamMember: (id: number) => void;
+  updateTeamMemberRole: (id: number, role: string) => void;
+  updateTeamMemberStatus: (id: number, status: "active" | "invited" | "suspended") => void;
+  updateTeamMemberSpendLimit: (id: number, limitUsd: number) => void;
+
+  // ── NEW: Integration States (persisted) ───────────────────────────────────
+  integrationStates: IntegrationState[];
+  setIntegrationConnected: (id: string, connected: boolean) => void;
+
+  // ── NEW: Analytics Snapshots (persisted) ──────────────────────────────────
+  analyticsSnapshots: AnalyticsSnapshot[];
+  addAnalyticsSnapshot: (snapshot: AnalyticsSnapshot) => void;
+
   // Actions
   recordOutcome: (requestId: string, success: boolean) => void;
   addRule: (rule: RoutingRule) => void;
   toggleRule: (id: string) => void;
   deleteRule: (id: string) => void;
   updateRulePriority: (id: string, newPriority: string[]) => void;
-  createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string) => string;
+  createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string, scopes?: string[], expiresAt?: string) => string;
+  rotateApiKey: (key: ApiKeyItem) => string;
   deleteApiKey: (id: string) => void;
   revokeApiKey: (id: string) => void;
   updateApiKeyRateLimit: (id: string, newRpm: number) => void;
@@ -359,9 +408,44 @@ const DEFAULT_KEYS: ApiKeyItem[] = [
     last_used_at: "Just now",
     is_active: true,
     scopes: ["read:telemetry", "execute:chat"],
+    ip_restrictions: "0.0.0.0/0",
     expires_at: "Never"
   }
 ];
+
+const DEFAULT_TEAM_MEMBERS: TeamMember[] = [
+  { id: 1, name: "Alex Vance", email: "alex@company.com", role: "Owner", tokenQuota: "Unlimited", spendLimitUsd: 0, mfaActive: true, lastActive: new Date().toISOString(), status: "active" },
+  { id: 2, name: "Sarah Chen", email: "sarah@company.com", role: "Admin", tokenQuota: "200,000 / mo", spendLimitUsd: 500, mfaActive: true, lastActive: new Date(Date.now() - 900000).toISOString(), status: "active" },
+  { id: 3, name: "Marcus Rossi", email: "marcus@company.com", role: "Engineer", tokenQuota: "100,000 / mo", spendLimitUsd: 200, mfaActive: true, lastActive: new Date(Date.now() - 3600000).toISOString(), status: "active" },
+  { id: 4, name: "Priya Patel", email: "priya@company.com", role: "FinOps", tokenQuota: "50,000 / mo", spendLimitUsd: 100, mfaActive: false, lastActive: new Date(Date.now() - 86400000).toISOString(), status: "active" }
+];
+
+const DEFAULT_INTEGRATION_STATES: IntegrationState[] = [
+  { id: "langchain", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 14 },
+  { id: "llamaindex", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 18 },
+  { id: "litellm", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 11 },
+  { id: "vercel", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 8 },
+  { id: "crewai", connected: false },
+  { id: "deepseek", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 95 },
+  { id: "groq", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 84 },
+  { id: "anthropic", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 140 },
+  { id: "openai", connected: true, connectedAt: new Date(Date.now() - 86400000 * 7).toISOString(), latencyMs: 680 },
+  { id: "slack", connected: false },
+  { id: "datadog", connected: false },
+  { id: "grafana", connected: false }
+];
+
+/** Generate a cryptographically-strong webhook secret (48 hex chars = 192 bits) */
+function generateWebhookSecret(): string {
+  const arr = new Uint8Array(24);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(arr);
+  } else {
+    for (let i = 0; i < 24; i++) arr[i] = Math.floor(Math.random() * 256);
+  }
+  const hex = Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return `whsec_${hex}`;
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -393,7 +477,7 @@ export const useAppStore = create<AppState>()(
       currency: "USD",
       setCurrency: (currency) => set({ currency }),
       toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
-      
+
       // Auth State
       user: {
         name: "Alex Vance",
@@ -423,7 +507,7 @@ export const useAppStore = create<AppState>()(
 
       setMonthlyBudget: (budget: number) =>
         set((state) => ({
-          autopilot: { ...state.autopilot, monthly_budget_usd: budget }
+          autopilot: { ...state.autopilot, monthly_budget_usd: Math.max(1, budget) }
         })),
 
       prewarmMetrics: {
@@ -453,7 +537,7 @@ export const useAppStore = create<AppState>()(
 
       webhookConfig: {
         endpointUrl: "https://api.acme.ai/webhooks/outcome-events",
-        secretKey: "whsec_99a8b7c6d5e4f3a2b1",
+        secretKey: "whsec_99a8b7c6d5e4f3a2b1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4",
         events: ["outcome.indexed.success", "sla.breach.escrow_refunded", "autopilot.weight_adjusted"],
         retryPolicy: "exponential_backoff"
       },
@@ -463,10 +547,19 @@ export const useAppStore = create<AppState>()(
           webhookConfig: { ...state.webhookConfig, ...config }
         })),
 
+      toggleWebhookEvent: (event: string) =>
+        set((state) => {
+          const exists = state.webhookConfig.events.includes(event);
+          const events = exists
+            ? state.webhookConfig.events.filter((e) => e !== event)
+            : [...state.webhookConfig.events, event];
+          return { webhookConfig: { ...state.webhookConfig, events } };
+        }),
+
       webhookLogs: [
         {
           id: "wh_log_001",
-          timestamp: "5 min ago",
+          timestamp: new Date(Date.now() - 300000).toISOString(), // ISO for persistence
           event: "outcome.indexed.success",
           targetUrl: "https://api.acme.ai/webhooks/outcome-events",
           httpStatus: 200,
@@ -482,7 +575,12 @@ export const useAppStore = create<AppState>()(
 
       setFederationWeight: (weight: number) =>
         set((state) => ({
-          federationSettings: { ...state.federationSettings, weight }
+          federationSettings: { ...state.federationSettings, weight: Math.min(1, Math.max(0, weight)) }
+        })),
+
+      setFederationEpsilon: (epsilon: number) =>
+        set((state) => ({
+          federationSettings: { ...state.federationSettings, epsilon: Math.min(1, Math.max(0, epsilon)) }
         })),
 
       toggleFederation: () =>
@@ -518,10 +616,60 @@ export const useAppStore = create<AppState>()(
       routingRules: DEFAULT_RULES,
       apiKeys: DEFAULT_KEYS,
 
+      // ── Team Members ────────────────────────────────────────────────────────
+      teamMembers: DEFAULT_TEAM_MEMBERS,
+
+      addTeamMember: (member: TeamMember) =>
+        set((state) => ({
+          teamMembers: [...state.teamMembers, member]
+        })),
+
+      removeTeamMember: (id: number) =>
+        set((state) => ({
+          teamMembers: state.teamMembers.filter((m) => m.id !== id)
+        })),
+
+      updateTeamMemberRole: (id: number, role: string) =>
+        set((state) => ({
+          teamMembers: state.teamMembers.map((m) => m.id === id ? { ...m, role } : m)
+        })),
+
+      updateTeamMemberStatus: (id: number, status: "active" | "invited" | "suspended") =>
+        set((state) => ({
+          teamMembers: state.teamMembers.map((m) => m.id === id ? { ...m, status } : m)
+        })),
+
+      updateTeamMemberSpendLimit: (id: number, limitUsd: number) =>
+        set((state) => ({
+          teamMembers: state.teamMembers.map((m) => m.id === id ? { ...m, spendLimitUsd: Math.max(0, limitUsd) } : m)
+        })),
+
+      // ── Integration States ──────────────────────────────────────────────────
+      integrationStates: DEFAULT_INTEGRATION_STATES,
+
+      setIntegrationConnected: (id: string, connected: boolean) =>
+        set((state) => ({
+          integrationStates: state.integrationStates.map((s) =>
+            s.id === id
+              ? { ...s, connected, connectedAt: connected ? new Date().toISOString() : undefined }
+              : s
+          )
+        })),
+
+      // ── Analytics Snapshots ─────────────────────────────────────────────────
+      analyticsSnapshots: [],
+
+      addAnalyticsSnapshot: (snapshot: AnalyticsSnapshot) =>
+        set((state) => ({
+          analyticsSnapshots: [snapshot, ...state.analyticsSnapshots].slice(0, 365)
+        })),
+
+      // ── Core Actions ────────────────────────────────────────────────────────
       recordOutcome: (requestId: string, success: boolean) =>
         set((state) => {
           let updatedModel = "";
-          const updatedLogs = (state.logs.length > 0 ? state.logs : state.telemetryLogs).map((log) => {
+          const sourceLogs = state.logs.length > 0 ? state.logs : state.telemetryLogs;
+          const updatedLogs = sourceLogs.map((log) => {
             if (log.id === requestId) {
               updatedModel = log.model_used;
               return { ...log, outcome_success: success };
@@ -531,7 +679,11 @@ export const useAppStore = create<AppState>()(
 
           // Dynamically adjust Thompson Sampling win rates on benchmarks
           const updatedBenchmarks = state.benchmarks.map((b) => {
-            if (b.model_name.toLowerCase().includes(updatedModel.toLowerCase()) || updatedModel.toLowerCase().includes(b.model_name.toLowerCase())) {
+            if (
+              updatedModel &&
+              (b.model_name.toLowerCase().includes(updatedModel.toLowerCase()) ||
+                updatedModel.toLowerCase().includes(b.model_name.toLowerCase()))
+            ) {
               const newTotal = b.total_requests + 1;
               const newSuccess = success ? b.success_count + 1 : b.success_count;
               const newWinRate = parseFloat((newSuccess / newTotal).toFixed(3));
@@ -583,13 +735,27 @@ export const useAppStore = create<AppState>()(
           return { rules: updated, routingRules: updated };
         }),
 
-      createApiKey: (name: string, envOrLimit: string | number = "live", ipRestrictions: string = "") => {
+      createApiKey: (
+        name: string,
+        envOrLimit: string | number = "live",
+        ipRestrictions: string = "",
+        scopes: string[] = ["read:telemetry", "execute:chat"],
+        expiresAt: string = "Never"
+      ) => {
         const env = typeof envOrLimit === "string" ? (envOrLimit as "live" | "test") : "live";
-        const rateLimit = typeof envOrLimit === "number" ? envOrLimit : 600;
-        const secretHex = `${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+        const rateLimit = typeof envOrLimit === "number" ? Math.max(1, envOrLimit) : 600;
+
+        // Use crypto.getRandomValues for stronger entropy
+        const arr = new Uint8Array(18);
+        if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+          crypto.getRandomValues(arr);
+        } else {
+          for (let i = 0; i < 18; i++) arr[i] = Math.floor(Math.random() * 256);
+        }
+        const secretHex = Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
         const fullKey = `oir_${env}_${secretHex}`;
         const prefix = `oir_${env}_${secretHex.substring(0, 6)}`;
-        
+
         const newKey: ApiKeyItem = {
           id: `key_${Date.now()}`,
           name,
@@ -598,16 +764,45 @@ export const useAppStore = create<AppState>()(
           environment: env,
           rate_limit: rateLimit,
           rate_limit_rpm: rateLimit,
-          created_at: "Just now",
+          created_at: new Date().toISOString(),
           last_used_at: "Never",
           is_active: true,
           ip_restrictions: ipRestrictions || "0.0.0.0/0",
-          scopes: ["read:telemetry", "execute:chat"],
-          expires_at: "Never"
+          scopes,
+          expires_at: expiresAt
         };
 
         set((state) => ({
           apiKeys: [newKey, ...state.apiKeys]
+        }));
+
+        return fullKey;
+      },
+
+      // ── FIX: rotateApiKey preserves scopes, IP restrictions, expiry ─────────
+      rotateApiKey: (key: ApiKeyItem) => {
+        const arr = new Uint8Array(18);
+        if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+          crypto.getRandomValues(arr);
+        } else {
+          for (let i = 0; i < 18; i++) arr[i] = Math.floor(Math.random() * 256);
+        }
+        const secretHex = Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const fullKey = `oir_${key.environment}_${secretHex}`;
+        const prefix = `oir_${key.environment}_${secretHex.substring(0, 6)}`;
+
+        const rotatedKey: ApiKeyItem = {
+          ...key,
+          id: `key_${Date.now()}`,
+          key_prefix: prefix,
+          full_key: fullKey,
+          created_at: new Date().toISOString(),
+          last_used_at: "Never"
+          // scopes, ip_restrictions, expires_at, environment all preserved from original
+        };
+
+        set((state) => ({
+          apiKeys: [rotatedKey, ...state.apiKeys.filter((k) => k.id !== key.id)]
         }));
 
         return fullKey;
@@ -620,13 +815,13 @@ export const useAppStore = create<AppState>()(
 
       revokeApiKey: (id: string) =>
         set((state) => ({
-          apiKeys: state.apiKeys.filter((k) => k.id !== id)
+          apiKeys: state.apiKeys.map((k) => k.id === id ? { ...k, is_active: false } : k)
         })),
 
       updateApiKeyRateLimit: (id: string, newRpm: number) =>
         set((state) => ({
           apiKeys: state.apiKeys.map((k) =>
-            k.id === id ? { ...k, rate_limit: newRpm, rate_limit_rpm: newRpm } : k
+            k.id === id ? { ...k, rate_limit: Math.max(1, newRpm), rate_limit_rpm: Math.max(1, newRpm) } : k
           )
         })),
 
@@ -636,7 +831,7 @@ export const useAppStore = create<AppState>()(
           const baselineCost = log.cost_usd * 1.74; // vs GPT-4o unrouted
           const currentBaseline = state.baselineSpendUSD + baselineCost;
           const totalTokens = state.currentTokens + log.tokens_in + log.tokens_out;
-          const updatedLogs = [log, ...state.logs].slice(0, 1000); // capped at 1000 to prevent quota bloat
+          const updatedLogs = [log, ...state.logs].slice(0, 1000); // capped at 1000
 
           return {
             logs: updatedLogs,
@@ -655,15 +850,16 @@ export const useAppStore = create<AppState>()(
           baselineSpendUSD: 0.00,
           currentTokens: 0,
           slaEscrowContracts: [],
-          webhookLogs: []
+          webhookLogs: [],
+          analyticsSnapshots: []
         })),
 
       loadDemoData: () =>
-        set((state) => {
+        set(() => {
           const demoLogs: LogItem[] = [
             {
               id: "oir_demo_9821",
-              created_at: "2 min ago",
+              created_at: new Date(Date.now() - 120000).toISOString(),
               model_used: "DeepSeek Coder",
               provider: "deepseek",
               task_type: "code_generation",
@@ -683,7 +879,7 @@ export const useAppStore = create<AppState>()(
             },
             {
               id: "oir_demo_9820",
-              created_at: "15 min ago",
+              created_at: new Date(Date.now() - 900000).toISOString(),
               model_used: "Claude 3.5 Sonnet",
               provider: "anthropic",
               task_type: "sales_email",
@@ -703,7 +899,7 @@ export const useAppStore = create<AppState>()(
             },
             {
               id: "oir_demo_9819",
-              created_at: "1 hour ago",
+              created_at: new Date(Date.now() - 3600000).toISOString(),
               model_used: "Groq Llama 3.3",
               provider: "groq",
               task_type: "customer_support",
@@ -720,6 +916,26 @@ export const useAppStore = create<AppState>()(
               speculative_win: true,
               critic_escalated: false,
               status: "success"
+            },
+            {
+              id: "oir_demo_9818",
+              created_at: new Date(Date.now() - 7200000).toISOString(),
+              model_used: "DeepSeek-V3",
+              provider: "deepseek",
+              task_type: "general_instruction",
+              tokens_in: 520,
+              tokens_out: 310,
+              cost_usd: 0.00042,
+              cost_inr: 0.036,
+              latency_ms: 98,
+              outcome_success: false,
+              outcome_metric: "user_satisfaction",
+              prompt_preview: "Summarize the quarterly product roadmap for stakeholder review...",
+              cached_hit: false,
+              fallback_triggered: true,
+              speculative_win: false,
+              critic_escalated: true,
+              status: "fallback"
             }
           ];
 
@@ -735,14 +951,18 @@ export const useAppStore = create<AppState>()(
       exportJsonBackup: () => {
         const state = get();
         const exportPayload = {
-          version: "1.0",
+          version: "2.0",
           exported_at: new Date().toISOString(),
           user: state.user,
           rules: state.rules,
-          apiKeys: state.apiKeys,
-          webhookConfig: state.webhookConfig,
+          apiKeys: state.apiKeys.map((k) => ({ ...k, full_key: undefined })), // strip secrets on export
+          webhookConfig: { ...state.webhookConfig, secretKey: "[REDACTED]" }, // strip secret
+          teamMembers: state.teamMembers,
+          integrationStates: state.integrationStates,
           monthlySpendUSD: state.monthlySpendUSD,
-          currentTokens: state.currentTokens
+          currentTokens: state.currentTokens,
+          autopilot: state.autopilot,
+          federationSettings: state.federationSettings
         };
         return JSON.stringify(exportPayload, null, 2);
       },
@@ -750,24 +970,25 @@ export const useAppStore = create<AppState>()(
       importJsonBackup: (dataStr: string) => {
         try {
           const parsed = JSON.parse(dataStr);
-          if (parsed.rules) {
-            set((state) => ({
-              rules: parsed.rules,
-              routingRules: parsed.rules,
-              apiKeys: parsed.apiKeys || state.apiKeys,
-              webhookConfig: parsed.webhookConfig || state.webhookConfig
-            }));
-            return true;
-          }
-          return false;
+          if (!parsed.rules) return false;
+
+          set((state) => ({
+            rules: Array.isArray(parsed.rules) ? parsed.rules : state.rules,
+            routingRules: Array.isArray(parsed.rules) ? parsed.rules : state.routingRules,
+            apiKeys: Array.isArray(parsed.apiKeys) ? parsed.apiKeys : state.apiKeys,
+            teamMembers: Array.isArray(parsed.teamMembers) ? parsed.teamMembers : state.teamMembers,
+            federationSettings: parsed.federationSettings ? { ...state.federationSettings, ...parsed.federationSettings } : state.federationSettings,
+            autopilot: parsed.autopilot ? { ...state.autopilot, ...parsed.autopilot } : state.autopilot
+          }));
+          return true;
         } catch {
           return false;
         }
       }
     }),
     {
-      name: "outcome_router_storage",
-      storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : ({} as any))),
+      name: "outcome_router_storage_v2",
+      storage: createJSONStorage(() => (typeof window !== "undefined" ? localStorage : ({} as Storage))),
       partialize: (state) => ({
         theme: state.theme,
         currency: state.currency,
@@ -787,7 +1008,12 @@ export const useAppStore = create<AppState>()(
         federationSettings: state.federationSettings,
         autopilot: state.autopilot,
         webhookConfig: state.webhookConfig,
-        webhookLogs: state.webhookLogs
+        webhookLogs: state.webhookLogs,
+        teamMembers: state.teamMembers,
+        integrationStates: state.integrationStates,
+        analyticsSnapshots: state.analyticsSnapshots,
+        orgName: state.orgName,
+        planTier: state.planTier
       })
     }
   )
