@@ -16,7 +16,10 @@ import {
   Key,
   ShieldCheck,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Terminal,
+  Cpu,
+  Globe
 } from "lucide-react";
 
 export default function IntegrationsPage() {
@@ -32,7 +35,7 @@ export default function IntegrationsPage() {
       category: "Framework",
       connected: true,
       latency: "14ms",
-      desc: "Drop-in LLM router wrapper for LangChain chains and agentic graphs."
+      desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers."
     },
     {
       id: "llamaindex",
@@ -94,6 +97,7 @@ export default function IntegrationsPage() {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
+  const [activeSnippetTab, setActiveSnippetTab] = useState<"python" | "typescript" | "curl">("python");
   const [copiedCode, setCopiedCode] = useState(false);
 
   // Connection Dialog
@@ -105,45 +109,62 @@ export default function IntegrationsPage() {
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
 
-  const handleTestDiagnostics = () => {
+  const handleTestDiagnostics = async () => {
     setIsDiagnosing(true);
     setDiagnosticResult(null);
 
-    setTimeout(() => {
-      setDiagnosticResult({
-        healthyCount: 7,
-        avgPingMs: 12.4,
-        status: "All upstream API bridges operational with zero SLA timeout breaches."
-      });
+    try {
+      const res = await fetch("/api/integrations/diagnostics", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setDiagnosticResult(data);
+      }
+    } catch (err) {
+      console.warn("Diagnostics fallback:", err);
+    } finally {
       setIsDiagnosing(false);
-    }, 500);
+    }
   };
 
-  const handleConnect = (e: React.FormEvent) => {
+  const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!providerKey.trim()) return;
 
     setIsVerifying(true);
-    setTimeout(() => {
-      setIntegrations((prev) =>
-        prev.map((item) =>
-          item.id === connectingItem.id
-            ? { ...item, connected: true, latency: "24ms" }
-            : item
-        )
-      );
+
+    try {
+      const res = await fetch("/api/integrations/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          integrationId: connectingItem.id,
+          apiKey: providerKey.trim()
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setIntegrations((prev) =>
+          prev.map((item) =>
+            item.id === connectingItem.id
+              ? { ...item, connected: true, latency: "24ms" }
+              : item
+          )
+        );
+        setConnectingItem(null);
+        setProviderKey("");
+      }
+    } catch (err) {
+      console.warn("Connect fallback:", err);
+    } finally {
       setIsVerifying(false);
-      setConnectingItem(null);
-      setProviderKey("");
-    }, 600);
+    }
   };
 
-  const handleToggleConnection = (id: string) => {
-    setIntegrations((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, connected: !item.connected } : item
-      )
-    );
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
   };
 
   const filteredIntegrations = integrations.filter((item) => {
@@ -151,28 +172,42 @@ export default function IntegrationsPage() {
     return item.category.toLowerCase() === selectedCategory.toLowerCase();
   });
 
+  const getSnippets = (item: any) => {
+    return {
+      python: `# 1-Line Drop-in router for ${item.name}\nfrom openai import OpenAI\n\nclient = OpenAI(\n    base_url="https://gateway.outcomerouter.ai/v1",\n    api_key="oir_live_8f9a2b..."\n)\n\nresponse = client.chat.completions.create(\n    model="outcome-optimized",\n    messages=[{"role": "user", "content": "Analyze user intent..."}],\n    extra_headers={"X-Outcome-Strategy": "pacing_optimized"}\n)\nprint(response.choices[0].message.content)`,
+      typescript: `// Next.js & Vercel AI SDK Integration\nimport { createOpenAI } from '@ai-sdk/openai';\nimport { generateText } from 'ai';\n\nconst gateway = createOpenAI({\n  baseURL: 'https://gateway.outcomerouter.ai/v1',\n  apiKey: process.env.OUTCOME_ROUTER_API_KEY!,\n});\n\nconst { text } = await generateText({\n  model: gateway('outcome-optimized'),\n  prompt: 'Generate unit tests for auth middleware',\n});`,
+      curl: `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "Content-Type: application/json" \\\n  -H "X-Outcome-Strategy: cost_minimal" \\\n  -d '{\n    "model": "outcome-optimized",\n    "messages": [{"role": "user", "content": "Hello Outcome Router"}]\n  }'`
+    };
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
       {/* 1. Spatial Hero Header */}
       <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Ecosystem & SDK Integrations
-            </h1>
-            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Connect LangChain, LlamaIndex, LiteLLM, and upstream model providers with zero configuration changes.
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Ecosystem & SDK Integrations
+              </h1>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
+                {integrations.filter(i => i.connected).length} / {integrations.length} Active Bridges
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Connect LangChain, LlamaIndex, LiteLLM, and upstream model providers with zero configuration changes and 1-line baseURL swaps.
             </p>
           </div>
 
           <button
             onClick={handleTestDiagnostics}
             disabled={isDiagnosing}
-            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
           >
-            <Activity className="h-3.5 w-3.5" />
+            <Activity className={`h-3.5 w-3.5 ${isDiagnosing ? "animate-spin" : ""}`} />
             <span>{isDiagnosing ? "Pinging Bridges..." : "Ping Health Diagnostics"}</span>
           </button>
         </div>
@@ -221,7 +256,7 @@ export default function IntegrationsPage() {
 
       {/* Diagnostics Result Drawer */}
       {diagnosticResult && (
-        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-2 animate-in fade-in" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-4 animate-in fade-in" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
               <Activity className="h-4 w-4 text-[#0050FF]" />
@@ -230,6 +265,22 @@ export default function IntegrationsPage() {
             <button onClick={() => setDiagnosticResult(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
           </div>
           <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{diagnosticResult.status}</p>
+
+          {diagnosticResult.bridges && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+              {diagnosticResult.bridges.map((b: any, i: number) => (
+                <div key={i} className="p-3 rounded-2xl bg-white/80 dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1">
+                  <div className="flex justify-between items-center text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <span className="truncate">{b.name}</span>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                      {b.latencyMs}ms
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#86868B]">{b.category} Bridge · 0% loss</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -295,7 +346,7 @@ export default function IntegrationsPage() {
                     setConnectingItem(item);
                   }
                 }}
-                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1"
+                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs"
               >
                 <Code2 className="h-3 w-3" />
                 <span>{item.connected ? "Snippet" : "Connect"}</span>
@@ -305,14 +356,22 @@ export default function IntegrationsPage() {
         ))}
       </div>
 
-      {/* Code Snippet Modal */}
+      {/* Code Snippet Modal with Language Tabs */}
       {selectedIntegration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
-          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
-                {selectedIntegration.name} Integration
-              </h3>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-[#0050FF] text-white flex items-center justify-center shadow-xs">
+                  <Code2 className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    {selectedIntegration.name} Integration
+                  </h3>
+                  <span className="text-[11px] text-[#86868B]">1-Line Wire-Compatible baseURL Swap</span>
+                </div>
+              </div>
               <button
                 onClick={() => setSelectedIntegration(null)}
                 className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
@@ -321,19 +380,41 @@ export default function IntegrationsPage() {
               </button>
             </div>
 
-            <div className="p-4 rounded-2xl bg-[#0F172A] text-white font-mono text-xs space-y-2 overflow-x-auto">
-              <div className="text-slate-400"># 1-Line Drop-in router base URL wrapper</div>
-              <div className="text-emerald-400">from openai import OpenAI</div>
-              <div>client = OpenAI(</div>
-              <div className="pl-4 text-cyan-300">base_url=&quot;https://gateway.outcomerouter.ai/v1&quot;,</div>
-              <div className="pl-4 text-cyan-300">api_key=&quot;oir_live_8f9a2b...&quot;</div>
-              <div>)</div>
+            {/* Language Selector Tabs */}
+            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+              {(["python", "typescript", "curl"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveSnippetTab(tab)}
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
+                    activeSnippetTab === tab
+                      ? "bg-[#0050FF] text-white shadow-xs"
+                      : "text-[#86868B] hover:text-[#1D1D1F]"
+                  }`}
+                >
+                  {tab === "typescript" ? "TypeScript (Vercel AI SDK)" : (tab === "python" ? "Python (OpenAI / LangChain)" : "cURL CLI")}
+                </button>
+              ))}
+            </div>
+
+            {/* Code Block Container */}
+            <div className="relative rounded-2xl bg-[#0F172A] text-white font-mono text-xs p-4 overflow-x-auto shadow-inner">
+              <pre className="text-[11px] leading-relaxed text-slate-200">
+                {getSnippets(selectedIntegration)[activeSnippetTab]}
+              </pre>
+              <button
+                onClick={() => handleCopyCode(getSnippets(selectedIntegration)[activeSnippetTab])}
+                className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs"
+              >
+                {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
+              </button>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => setSelectedIntegration(null)}
-                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold"
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs"
               >
                 Done
               </button>
@@ -382,9 +463,9 @@ export default function IntegrationsPage() {
                 <button
                   type="submit"
                   disabled={isVerifying || !providerKey.trim()}
-                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40"
+                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 shadow-xs"
                 >
-                  {isVerifying ? "Verifying..." : "Verify & Save"}
+                  {isVerifying ? "Verifying..." : "Verify & Save Bridge"}
                 </button>
               </div>
             </form>

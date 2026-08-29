@@ -17,9 +17,11 @@ import {
   RotateCcw,
   Sliders,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Code2,
+  Radio,
+  FileCode
 } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
 import { useAppStore, WebhookLogItem } from "@/lib/store";
 
 export default function WebhooksPage() {
@@ -35,6 +37,15 @@ export default function WebhooksPage() {
   const [simResult, setSimResult] = useState<any>(null);
   const [savedStatus, setSavedStatus] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState("outcome.indexed.success");
+  const [snippetLanguage, setSnippetLanguage] = useState<"node" | "python">("node");
+  const [copiedSnippet, setCopiedSnippet] = useState(false);
+
+  const eventTopics = [
+    { id: "outcome.indexed.success", label: "outcome.indexed.success", desc: "Model conversion outcome achieved" },
+    { id: "sla.escrow.refund", label: "sla.escrow.refund", desc: "Latency breach refund credited" },
+    { id: "budget.ceiling.breach", label: "budget.ceiling.breach", desc: "Monthly spend pacing breach alert" },
+    { id: "key.rotated.notice", label: "key.rotated.notice", desc: "API credential rotated" }
+  ];
 
   const handleCopySecret = () => {
     navigator.clipboard.writeText(webhookConfig.secretKey);
@@ -63,64 +74,100 @@ export default function WebhooksPage() {
     setIsSimulating(true);
     setSimResult(null);
 
-    const response = await apiClient.dispatchTestWebhook(
-      webhookConfig.endpointUrl,
-      webhookConfig.secretKey,
-      selectedEvent
-    );
+    try {
+      const res = await fetch("/api/webhooks/dispatch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endpointUrl: webhookConfig.endpointUrl,
+          secretKey: webhookConfig.secretKey,
+          eventType: selectedEvent
+        })
+      });
+      const data = await res.json();
 
-    const resultData = response && response.success ? response : {
-      http_status: 200,
-      latency_ms: 38,
-      signature_verified: true,
-      event_payload: {
-        event: selectedEvent,
-        request_id: `oir_wh_${Math.random().toString(36).substr(2, 6)}`,
-        model_used: "DeepSeek-V3",
-        target_metric: "code_merged",
-        saved_usd: 0.00555,
-        timestamp: Math.floor(Date.now() / 1000)
+      if (data.success) {
+        setSimResult(data);
+
+        const logEntry: WebhookLogItem = {
+          id: `wh_dlv_${Date.now() % 100000}`,
+          timestamp: "Just now",
+          event: selectedEvent,
+          targetUrl: webhookConfig.endpointUrl,
+          httpStatus: data.http_status,
+          latencyMs: data.latency_ms,
+          verified: true
+        };
+        addWebhookLog(logEntry);
       }
-    };
-
-    setSimResult(resultData);
-
-    const logEntry: WebhookLogItem = {
-      id: `wh_dlv_${Date.now() % 100000}`,
-      timestamp: "Just now",
-      event: selectedEvent,
-      targetUrl: webhookConfig.endpointUrl,
-      httpStatus: resultData.http_status,
-      latencyMs: resultData.latency_ms,
-      verified: true
-    };
-    addWebhookLog(logEntry);
-
-    setIsSimulating(false);
+    } catch (err) {
+      console.warn("Webhook dispatch fallback:", err);
+    } finally {
+      setIsSimulating(false);
+    }
   };
+
+  const nodeVerificationCode = `// Verify incoming X-Outcome-Signature header
+const crypto = require('crypto');
+
+function verifyOutcomeWebhook(payload, signatureHeader, secret) {
+  const parts = signatureHeader.split(',');
+  const timestamp = parts[0].split('=')[1];
+  const signature = parts[1].split('=')[1];
+
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(\`\${timestamp}.\${payload}\`)
+    .digest('hex');
+
+  return signature === expectedSignature;
+}`;
+
+  const pythonVerificationCode = `# Verify incoming X-Outcome-Signature header
+import hmac
+import hashlib
+
+def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> bool:
+    parts = dict(item.split('=') for item in signature_header.split(','))
+    timestamp = parts.get('t')
+    signature = parts.get('v1')
+
+    expected = hmac.new(
+        secret.encode('utf-8'),
+        f"{timestamp}.{payload}".encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected)`;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
       {/* 1. Spatial Hero Header */}
       <div className="relative overflow-hidden rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-[0_16px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.3)]" suppressHydrationWarning>
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-gradient-to-br from-[#0050FF]/15 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 left-10 w-80 h-80 bg-gradient-to-tr from-emerald-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Webhook Subscriptions & Real-Time Events
-            </h1>
-            <p className="text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Stream live routing telemetry, micro-SLA refund confirmations, and budget ceiling breach alerts signed with HMAC-SHA256.
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                Webhook Subscriptions & Events
+              </h1>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
+                HMAC-SHA256 Signed
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
+              Stream live routing telemetry, micro-SLA refund confirmations, and budget ceiling breach alerts signed with HMAC-SHA256 cryptographic digests.
             </p>
           </div>
 
           <button
             onClick={handleSimulateWebhook}
             disabled={isSimulating}
-            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0"
+            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className={`h-3.5 w-3.5 ${isSimulating ? "animate-spin" : ""}`} />
             <span>{isSimulating ? "Dispatching..." : "Dispatch Test Webhook"}</span>
           </button>
         </div>
@@ -140,7 +187,7 @@ export default function WebhooksPage() {
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Dispatch Latency</span>
           <div className="my-4">
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">38ms</div>
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">34ms</div>
             <div className="text-xs text-[#86868B] mt-1">Direct HTTPS Edge Delivery</div>
           </div>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Real-time HTTP Push</span>
@@ -177,21 +224,29 @@ export default function WebhooksPage() {
             </h3>
             <button onClick={() => setSimResult(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
           </div>
-          <pre className="p-4 rounded-2xl bg-[#0F172A] text-emerald-400 font-mono text-xs overflow-x-auto">
-            {JSON.stringify(simResult.event_payload, null, 2)}
-          </pre>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs font-mono text-[#515154] dark:text-[#A1A1A6]">
+              <span className="text-[#86868B]">Signature Header:</span>
+              <code className="p-1 px-2 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] text-[#0050FF] dark:text-[#3374FF]">
+                X-Outcome-Signature: {simResult.signature_header}
+              </code>
+            </div>
+            <pre className="p-4 rounded-2xl bg-[#0F172A] text-emerald-400 font-mono text-xs overflow-x-auto">
+              {JSON.stringify(simResult.event_payload, null, 2)}
+            </pre>
+          </div>
         </div>
       )}
 
-      {/* 3. Endpoint Configuration Card */}
-      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
+      {/* 3. Endpoint Configuration Card & Event Topics */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
               Webhook Endpoint & Signing Secret
             </h3>
             <p className="text-xs text-[#86868B]">
-              Configure your listener URL and verify incoming payloads with your private secret
+              Configure your listener URL and select event subscriptions
             </p>
           </div>
           {savedStatus && (
@@ -201,7 +256,29 @@ export default function WebhooksPage() {
           )}
         </div>
 
-        <div className="space-y-4 text-xs">
+        {/* Event Topic Selector Pills */}
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-[#86868B]">Select Test Event Topic</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {eventTopics.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setSelectedEvent(t.id)}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  selectedEvent === t.id
+                    ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 border-[#0050FF] text-[#0050FF] dark:text-[#3374FF] shadow-xs"
+                    : "bg-white/80 dark:bg-[#1E1E22] border-black/[0.06] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:border-[#0050FF]/40"
+                }`}
+              >
+                <div className="font-mono text-xs font-bold">{t.label}</div>
+                <div className="text-[10px] text-[#86868B] mt-0.5">{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-4 text-xs pt-2 border-t border-black/[0.04] dark:border-white/[0.06]">
           <div className="space-y-1">
             <label className="font-semibold text-[#86868B]">Destination URL</label>
             <input
@@ -243,14 +320,62 @@ export default function WebhooksPage() {
         </div>
       </div>
 
-      {/* 4. Webhook Delivery Log Table */}
+      {/* 4. Signature Verification Guide */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4" suppressHydrationWarning>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Cryptographic Signature Verification Guide
+            </h3>
+            <p className="text-xs text-[#86868B]">
+              Verify incoming payloads against replay attacks using the timestamped HMAC-SHA256 signature
+            </p>
+          </div>
+
+          <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+            {(["node", "python"] as const).map((lang) => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setSnippetLanguage(lang)}
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
+                  snippetLanguage === lang
+                    ? "bg-[#0050FF] text-white shadow-xs"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                }`}
+              >
+                {lang === "node" ? "Node.js" : "Python"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative rounded-2xl bg-[#0F172A] text-white font-mono text-xs p-4 overflow-x-auto shadow-inner">
+          <pre className="text-[11px] leading-relaxed text-slate-200">
+            {snippetLanguage === "node" ? nodeVerificationCode : pythonVerificationCode}
+          </pre>
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(snippetLanguage === "node" ? nodeVerificationCode : pythonVerificationCode);
+              setCopiedSnippet(true);
+              setTimeout(() => setCopiedSnippet(false), 2000);
+            }}
+            className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs"
+          >
+            {copiedSnippet ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+            <span>{copiedSnippet ? "Copied!" : "Copy Code"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 5. Webhook Delivery Log Table */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
         <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
           Recent Webhook Delivery Events ({webhookLogs.length})
         </h3>
 
-        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden">
-          <table className="w-full text-left text-xs">
+        <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-x-auto">
+          <table className="w-full text-left text-xs min-w-[750px]">
             <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
               <tr>
                 <th className="py-3.5 px-5 font-semibold">Delivery ID</th>
