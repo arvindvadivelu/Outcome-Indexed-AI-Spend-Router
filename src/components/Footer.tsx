@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Zap, ShieldCheck, Lock, Activity } from "lucide-react";
+import { Zap } from "lucide-react";
 
 export function Footer() {
   return (
@@ -19,17 +19,6 @@ export function Footer() {
             <p className="text-xs leading-relaxed text-[#6E6E73] dark:text-[#A1A1A6] max-w-sm">
               The outcome-indexed AI model gateway. Route production LLM prompts dynamically to the lowest-cost model that satisfies real-world business KPIs.
             </p>
-            <div className="flex flex-wrap gap-2 pt-2">
-              <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7]">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#0050FF]" /> SOC 2 Type II
-              </div>
-              <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7]">
-                <Lock className="h-3.5 w-3.5 text-[#0050FF]" /> GDPR & DPA Ready
-              </div>
-              <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white dark:bg-[#1C1C1E] border border-[#E5E5EA] dark:border-white/[0.08] text-[#1D1D1F] dark:text-[#F5F5F7]">
-                <Activity className="h-3.5 w-3.5 text-[#0050FF]" /> 99.9% Uptime SLA
-              </div>
-            </div>
           </div>
 
           {/* Col 2: Product */}

@@ -423,39 +423,25 @@ export default function HomePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
               <div className="p-7 rounded-[28px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] space-y-1 flex flex-col justify-center">
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Estimated Net Savings</span>
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-mono whitespace-nowrap overflow-hidden text-ellipsis">
-                  +{formatCurrency(calculatedSavings * rate, activeCurrency)} / mo
+                <div className="flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold font-mono tracking-tight">
+                    +{formatCurrency(calculatedSavings * rate, activeCurrency)}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold opacity-80">/ mo</span>
                 </div>
                 <p className="text-xs text-white/80 font-semibold pt-1">42.8% immediate margin recovery</p>
               </div>
 
               <div className="p-7 rounded-[28px] bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1 flex flex-col justify-center">
                 <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider">Annual Capital Saved</span>
-                <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7] whitespace-nowrap overflow-hidden text-ellipsis">
-                  +{formatCurrency(calculatedSavings * 12 * rate, activeCurrency)} / yr
+                <div className="flex items-baseline gap-1.5 whitespace-nowrap overflow-hidden">
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-extrabold font-mono tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    +{formatCurrency(calculatedSavings * 12 * rate, activeCurrency)}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-[#86868B]">/ yr</span>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* 5. Enterprise Verification & Performance SLA Trust Bar */}
-        <section className="p-6 sm:p-8 rounded-[30px] bg-white/60 dark:bg-[#151518]/60 backdrop-blur-2xl border border-black/[0.04] dark:border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-6 text-center" suppressHydrationWarning>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">99.99%</div>
-            <div className="text-xs text-[#86868B] font-medium">Gateway Uptime SLA</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">58ms</div>
-            <div className="text-xs text-[#86868B] font-medium">Average Edge TTFT</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">100%</div>
-            <div className="text-xs text-[#86868B] font-medium">Verifiable SHA-256 Escrow</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">0-Code</div>
-            <div className="text-xs text-[#86868B] font-medium">SDK Drop-in Migration</div>
           </div>
         </section>
 

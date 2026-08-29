@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useAppStore } from "@/lib/store";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   Check,
   Zap,
@@ -16,7 +16,6 @@ import {
   Cpu,
   Layers,
   Globe,
-  Sliders,
   HelpCircle,
   Lock,
   Activity,
@@ -30,7 +29,6 @@ export default function PricingPage() {
   const [mounted, setMounted] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-  const [tokensInput, setTokensInput] = useState<number>(350000);
   const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
@@ -39,39 +37,6 @@ export default function PricingPage() {
 
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
-
-  // Real-time dynamic token recommendation calculation
-  const recommendedTier = useMemo(() => {
-    if (tokensInput <= 10000) {
-      return {
-        name: "Free",
-        priceUSD: 0,
-        monthlySavingsUSD: 35,
-        rationale: "Ideal for individual developers evaluating Thompson sampling and initial connector routing."
-      };
-    } else if (tokensInput <= 100000) {
-      return {
-        name: "Starter",
-        priceUSD: annualBilling ? 23 : 29,
-        monthlySavingsUSD: 145,
-        rationale: "Perfect for early-stage production workloads with semantic prompt caching and 30-day logs."
-      };
-    } else if (tokensInput <= 750000) {
-      return {
-        name: "Growth",
-        priceUSD: annualBilling ? 79 : 99,
-        monthlySavingsUSD: 520,
-        rationale: "Maximizes FinOps ROI with keystroke pre-warming, Micro-SLA auto-refund escrow, and semantic delta diffing."
-      };
-    } else {
-      return {
-        name: "Enterprise",
-        priceUSD: annualBilling ? 239 : 299,
-        monthlySavingsUSD: 1680,
-        rationale: "High-volume throughput with custom differential privacy priors, VPC endpoints, and 99.99% gateway SLA."
-      };
-    }
-  }, [tokensInput, annualBilling]);
 
   const pricingTiers = [
     {
@@ -263,66 +228,9 @@ export default function PricingPage() {
           </div>
         </section>
 
-        {/* 2. Interactive Token Calculator & Plan Matcher */}
-        <section className="p-7 sm:p-9 rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm max-w-4xl mx-auto space-y-6" suppressHydrationWarning>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-[#0050FF]" />
-                <h2 className="font-extrabold text-sm sm:text-base text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-                  Interactive Token Volume Matcher
-                </h2>
-              </div>
-              <p className="text-xs text-[#86868B]">
-                Slide to your estimated monthly token volume to see your recommended tier and projected savings.
-              </p>
-            </div>
-
-            <span className="text-sm font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-3.5 py-1 rounded-full shrink-0">
-              {formatNumber(tokensInput)} Tokens / mo
-            </span>
-          </div>
-
-          <input
-            type="range"
-            min="10000"
-            max="2000000"
-            step="10000"
-            value={tokensInput}
-            onChange={(e) => setTokensInput(parseInt(e.target.value))}
-            className="w-full accent-[#0050FF] h-2.5 bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-lg cursor-pointer"
-          />
-
-          {/* Dynamic Match Result Banner */}
-          <div className="p-5 rounded-2xl bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 border border-[#0050FF]/25 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs animate-in fade-in">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Recommended:</span>
-                <span className="font-extrabold text-[#0050FF] dark:text-[#3374FF] text-sm">
-                  {recommendedTier.name} Tier
-                </span>
-                <span className="text-[#86868B]">
-                  ({formatCurrency(recommendedTier.priceUSD * rate, activeCurrency)}/mo)
-                </span>
-              </div>
-              <p className="text-[#515154] dark:text-[#A1A1A6] font-mono leading-relaxed">
-                {recommendedTier.rationale}
-              </p>
-            </div>
-
-            <div className="shrink-0 text-left sm:text-right">
-              <span className="text-[10px] text-[#86868B] uppercase font-mono block">Projected Savings</span>
-              <span className="text-base font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
-                +{formatCurrency(recommendedTier.monthlySavingsUSD * rate, activeCurrency)} / mo
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* 3. Pricing Cards Bento Grid (4 Tiers) */}
+        {/* 2. Pricing Cards Bento Grid (4 Tiers) */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" suppressHydrationWarning>
           {pricingTiers.map((tier) => {
-            const isMatched = recommendedTier.name === tier.name;
             return (
               <div
                 key={tier.id}

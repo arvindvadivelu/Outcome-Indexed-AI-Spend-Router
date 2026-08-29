@@ -17,7 +17,9 @@ import {
   RotateCcw,
   Calendar,
   MessageSquare,
-  Lock
+  Lock,
+  Clock,
+  Activity
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { useAppStore } from "@/lib/store";
@@ -80,129 +82,145 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF] antialiased" suppressHydrationWarning>
       <Navbar />
 
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-20 flex-1 space-y-12 w-full" suppressHydrationWarning>
-        {/* 1. Spatial Hero Header */}
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 border border-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>AI FinOps Advisory & Solutions Support</span>
-          </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Talk to an <span className="bg-gradient-to-r from-[#0050FF] to-cyan-500 bg-clip-text text-transparent">AI FinOps Architect</span>
+      <main className="flex-1 pt-12 sm:pt-20 pb-28 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full space-y-16 sm:space-y-24">
+        {/* 1. Header */}
+        <section className="text-center space-y-6 max-w-3xl mx-auto pt-4 sm:pt-6" suppressHydrationWarning>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-[1.08]">
+            Talk to an <br />
+            <span className="bg-gradient-to-r from-[#0050FF] via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+              AI FinOps Architect.
+            </span>
           </h1>
-          <p className="text-sm sm:text-base text-[#86868B]">
-            Whether you spend $5K/mo or $100K/mo on LLMs, we will evaluate your prompt traces and calculate exact savings.
+          <p className="text-base sm:text-lg text-[#86868B] max-w-2xl mx-auto leading-relaxed font-normal">
+            Whether you spend $5K/mo or $100K+/mo on LLMs, our solutions team will audit your prompt traces and calculate exact margin recovery.
           </p>
-        </div>
+        </section>
 
-        {/* 2. Interactive Form & Enterprise Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          {/* Form */}
-          <div className="p-6 sm:p-8 rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-lg text-[#1D1D1F] dark:text-[#F5F5F7]">Request Custom Architecture Audit</h3>
-              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full">
-                15-Min Response SLA
-              </span>
-            </div>
-
+        {/* 2. Contact Form & Advisory Bento Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-5xl mx-auto" suppressHydrationWarning>
+          {/* Left Column: Form / Submitted State */}
+          <div className="lg:col-span-7 rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-10 shadow-sm space-y-6">
             {submitted ? (
-              <div className="p-6 rounded-[24px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 space-y-3 text-center animate-in fade-in">
-                <CheckCircle2 className="h-9 w-9 mx-auto text-emerald-600 dark:text-emerald-400" />
-                <h4 className="font-extrabold text-base">Inquiry Dispatched Successfully</h4>
-                <p className="text-xs leading-relaxed text-[#515154] dark:text-[#A1A1A6]">
-                  A dedicated Solutions Architect has received your request and will reach out to <span className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{email}</span> within 2 business hours.
-                </p>
-                <div className="pt-2">
+              <div className="text-center py-10 space-y-6 animate-in fade-in">
+                <div className="h-16 w-16 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-sm">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7]">Inquiry Dispatched</h3>
+                  <p className="text-xs sm:text-sm text-[#86868B] max-w-md mx-auto leading-relaxed">
+                    Thank you, <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">{name}</strong>. An AI FinOps Architect has been assigned to <span className="font-semibold text-[#0050FF] dark:text-[#3374FF]">{email}</span> and will respond within 4 hours.
+                  </p>
+                </div>
+                <div className="pt-2 flex justify-center gap-3">
                   <button
-                    type="button"
                     onClick={handleReset}
-                    className="px-5 py-2 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all inline-flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
+                    className="h-11 px-6 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF] transition-all flex items-center gap-2"
                   >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Submit Another Inquiry</span>
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Send Another Message</span>
                   </button>
+                  <Link
+                    href="/docs"
+                    className="h-11 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>Explore Docs</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Alex Vance"
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50 font-medium"
-                  />
+                  <h2 className="font-extrabold text-xl text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                    Schedule a Consultation
+                  </h2>
+                  <p className="text-xs text-[#86868B]">
+                    Receive an immediate automated token audit projection.
+                  </p>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Work Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="alex@company.com"
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50 font-medium"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Your Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Alex Vance"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Work Email *</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="alex@company.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Company / Organization</label>
-                  <input
-                    type="text"
-                    value={company}
-                    onChange={(e) => setCompany(e.target.value)}
-                    placeholder="Acme AI Lab"
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50 font-medium"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Company / Organization</label>
+                    <input
+                      type="text"
+                      placeholder="Acme AI Lab"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      className="w-full h-11 px-4 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Current Monthly LLM Spend</label>
+                    <select
+                      value={spendTier}
+                      onChange={(e) => setSpendTier(e.target.value)}
+                      className="w-full h-11 px-3 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                    >
+                      <option value="under-5k">&lt; $5,000 / month</option>
+                      <option value="5k-10k">$5,000 – $10,000 / month</option>
+                      <option value="10k-50k">$10,000 – $50,000 / month</option>
+                      <option value="50k-100k">$50,000 – $100,000 / month</option>
+                      <option value="100k+">$100,000+ / month (Enterprise)</option>
+                    </select>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Monthly AI / LLM Spend Range</label>
-                  <select
-                    value={spendTier}
-                    onChange={(e) => setSpendTier(e.target.value)}
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50 font-medium"
-                  >
-                    <option value="under-5k">&lt; $5,000 / month</option>
-                    <option value="5k-25k">$5,000 – $25,000 / month</option>
-                    <option value="25k-100k">$25,000 – $100,000 / month</option>
-                    <option value="100k+">$100,000+ / month (Custom Enterprise)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Architecture Details / Primary Models Used</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Workload Overview &amp; Requirements</label>
                   <textarea
                     rows={3}
+                    placeholder="Describe your current model usage (e.g. OpenAI GPT-4o, Claude 3.5 Sonnet, multi-agent pipelines)..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Describe your current LLM stack (e.g. LangChain with GPT-4o, latency requirements, etc.)..."
-                    className="w-full p-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50 resize-none font-medium"
+                    className="w-full p-4 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-12 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 hover:scale-[1.02] active:scale-98"
+                  className="w-full h-12 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:scale-[1.01] active:scale-[0.99]"
                 >
                   {submitting ? (
                     <>
                       <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Dispatching Request...</span>
+                      <span>Syncing Inquiry...</span>
                     </>
                   ) : (
                     <>
-                      <span>Request Architecture Audit</span>
                       <Send className="h-3.5 w-3.5" />
+                      <span>Send Consultation Request</span>
                     </>
                   )}
                 </button>
@@ -210,47 +228,47 @@ export default function ContactPage() {
             )}
           </div>
 
-          {/* Right Info Cards */}
-          <div className="space-y-4">
-            <div className="p-6 rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
-              <div className="h-10 w-10 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center shadow-xs">
-                <Globe className="h-5 w-5" />
-              </div>
-              <h4 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Global 24/7 Enterprise Coverage</h4>
-              <p className="text-xs text-[#86868B] leading-relaxed">
-                Dedicated support engineers stationed across San Francisco, London, and Bengaluru offering 15-minute SLA response for Enterprise tier tenants.
-              </p>
-            </div>
+          {/* Right Column: Advisory Direct Benefits */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 shadow-sm space-y-6">
+              <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                What to Expect on the Call
+              </h3>
 
-            <div className="p-6 rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm space-y-3">
-              <div className="h-10 w-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <h4 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">Security & Compliance Direct Access</h4>
-              <p className="text-xs text-[#86868B] leading-relaxed">
-                Request custom SOC 2 Type II audit packages, execute mutual non-disclosure agreements (NDAs), and configure isolated VPC peering.
-              </p>
-            </div>
+              <div className="space-y-4 text-xs">
+                <div className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] flex items-center justify-center shrink-0">
+                    <Activity className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Prompt Token Bloat Audit</h4>
+                    <p className="text-[#86868B] leading-relaxed mt-0.5">We analyze sample payloads to compute exact token savings via semantic delta diffing.</p>
+                  </div>
+                </div>
 
-            <div className="p-6 rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-md space-y-2">
-              <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Fast-Track Integration</span>
-              <h4 className="text-base font-bold">Have 5 minutes right now?</h4>
-              <p className="text-xs text-white/80 leading-relaxed">
-                Try the live console sandbox or explore our 1-line SDK integration guide.
-              </p>
-              <div className="pt-2 flex items-center gap-2">
-                <Link
-                  href="/app/dashboard"
-                  className="px-4 py-2 rounded-full bg-white text-[#0050FF] text-xs font-bold hover:bg-neutral-100 transition-all shadow-xs"
-                >
-                  Open Sandbox
-                </Link>
-                <Link
-                  href="/docs"
-                  className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs font-semibold transition-all border border-white/20"
-                >
-                  Read Docs
-                </Link>
+                <div className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Micro-SLA Escrow Setup</h4>
+                    <p className="text-[#86868B] leading-relaxed mt-0.5">Define custom latency and quality contracts with zero-loss fallback guarantees.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="h-8 w-8 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Dedicated Slack Channel</h4>
+                    <p className="text-[#86868B] leading-relaxed mt-0.5">Direct access to core engineering architects for VPC deployment assistance.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-black/[0.04] dark:border-white/[0.06] text-xs text-[#86868B]">
+                Direct Contact: <a href="mailto:solutions@outcomerouter.ai" className="text-[#0050FF] dark:text-[#3374FF] font-semibold hover:underline">solutions@outcomerouter.ai</a>
               </div>
             </div>
           </div>

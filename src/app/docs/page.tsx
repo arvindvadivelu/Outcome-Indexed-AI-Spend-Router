@@ -19,7 +19,11 @@ import {
   Play,
   Key,
   CheckCircle2,
-  FileCode
+  FileCode,
+  Lock,
+  Activity,
+  Sliders,
+  ChevronRight
 } from "lucide-react";
 import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
@@ -98,301 +102,314 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
     setLiveResponse(null);
 
     setTimeout(() => {
+      let routed = "DeepSeek Coder V2";
+      let cost = "$0.00062";
+      let ttft = "58.4ms";
+      let savings = "88.2%";
+
+      if (testTargetMetric === "first_contact_resolution") {
+        routed = "Groq Llama 3.3 70B";
+        cost = "$0.00018";
+        ttft = "42.1ms";
+        savings = "92.4%";
+      } else if (testTargetMetric === "demo_booked") {
+        routed = "Claude 3.5 Sonnet";
+        cost = "$0.0034";
+        ttft = "68.2ms";
+        savings = "74.1%";
+      }
+
       setLiveResponse({
-        id: `oir_chat_${Math.random().toString(36).substring(2, 8)}`,
-        object: "chat.completion",
-        created: Math.floor(Date.now() / 1000),
-        model: "deepseek-coder",
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: "assistant",
-              content: `-- Optimized Query with Explicit Locking and Covering Index\nCREATE INDEX CONCURRENTLY IF NOT EXISTS idx_trans_status_created ON transactions(status, created_at);\n\nBEGIN;\nSELECT * FROM transactions WHERE status = 'pending' FOR UPDATE SKIP LOCKED LIMIT 100;\n-- Process rows safely\nCOMMIT;`
-            },
-            finish_reason: "stop"
-          }
-        ],
-        usage: {
-          prompt_tokens: 38,
-          completion_tokens: 64,
-          total_tokens: 102
-        },
-        _router_metadata: {
-          model_selected: "DeepSeek Coder",
-          cost_usd: 0.00065,
-          saved_vs_gpt4o_usd: 0.00555,
-          latency_ms: 112,
-          sla_contract_nonce: `0x${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}`,
-          critic_verified: true,
-          target_metric_confidence: "94.2%"
-        }
+        id: "oir_req_" + Math.random().toString(36).substring(2, 9),
+        model_routed: routed,
+        ttft: ttft,
+        cost_usd: cost,
+        spend_saved_pct: savings,
+        sla_contract_nonce: "0x" + Math.random().toString(16).substring(2, 14),
+        delta_cached_tokens: 284,
+        content: `OutcomeRouter Gateway synthesized your request under Pareto target [${testTargetMetric}].\n\n- Model Selected: ${routed} (Marginal KPI win probability: 94.6%)\n- TTFT Edge Latency: ${ttft}\n- Avoided Spend vs GPT-4o: -${savings}\n- SHA-256 Micro-SLA Contract Nonce: Active`
       });
       setIsExecuting(false);
     }, 450);
   };
 
+  const customHeaders = [
+    {
+      header: "X-Outcome-Strategy",
+      values: "outcome_optimized | cost_minimal | quality_boost",
+      desc: "Dictates Bayesian Dirichlet optimization weights across Pareto frontier models."
+    },
+    {
+      header: "X-Outcome-Target-Metric",
+      values: "code_merged | demo_booked | first_contact_resolution | custom",
+      desc: "Specific business outcome conversion target used to rank historical Thompson posteriors."
+    },
+    {
+      header: "X-Outcome-SLA-Threshold-Ms",
+      values: "150 (integer milliseconds)",
+      desc: "Maximum acceptable TTFT latency. If breached, failover triggers at $0 overage with instant token refund."
+    },
+    {
+      header: "X-Outcome-Semantic-Delta",
+      values: "true | false",
+      desc: "Enables cryptographic <delta_ref> conversation diffing to avoid retransmitting multi-turn chat history."
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
+    <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] flex flex-col selection:bg-[#0050FF]/20 selection:text-[#0050FF] antialiased" suppressHydrationWarning>
       <Navbar />
 
-      <main className="flex-1 pt-8 sm:pt-10 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-16">
-        {/* 1. Spatial Hero Header */}
-        <section className="relative overflow-hidden rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-14 shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] text-center space-y-6" suppressHydrationWarning>
-          <div className="absolute top-0 right-1/4 w-[450px] h-[450px] bg-gradient-to-br from-[#0050FF]/20 via-indigo-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+      <main className="flex-1 pt-12 sm:pt-20 pb-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full space-y-24 sm:space-y-32">
+        {/* 1. Header */}
+        <section className="text-center space-y-6 max-w-3xl mx-auto pt-4 sm:pt-6" suppressHydrationWarning>
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-[1.08]">
+            Developer &amp; API <br />
+            <span className="bg-gradient-to-r from-[#0050FF] via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
+              Integration Documentation.
+            </span>
+          </h1>
+          <p className="text-base sm:text-lg text-[#86868B] max-w-2xl mx-auto leading-relaxed font-normal">
+            Drop-in OpenAI wire compatible endpoints, cryptographic Micro-SLA headers, and multi-model autonomous routing specifications.
+          </p>
 
-          <div className="relative z-10 space-y-4 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] backdrop-blur-md">
-              <BookOpen className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF]" />
-              <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-                Developer SDK & API Reference
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <Link
+              href="/app/settings/api-keys"
+              className="h-12 px-8 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_8px_24px_rgba(0,80,255,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <span>Get API Key</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
 
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7] leading-tight">
-              1-Line Drop-in Integration. <br />
-              <span className="bg-gradient-to-r from-[#0050FF] via-indigo-500 to-cyan-500 bg-clip-text text-transparent">
-                100% OpenAI Wire-Compatible.
-              </span>
-            </h1>
-
-            <p className="text-sm sm:text-base text-[#86868B] max-w-2xl mx-auto leading-relaxed">
-              Route production traffic dynamically with zero code refactoring. Change your SDK <code className="font-mono text-xs px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.08]">baseURL</code> and pass custom outcome headers.
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => setShowSimulate(true)}
-                className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-              >
-                <Play className="h-3.5 w-3.5 fill-current" />
-                <span>Simulate Gateway Prompt</span>
-              </button>
-              <Link
-                href="/app/settings/api-keys"
-                className="h-10 px-6 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all flex items-center gap-2 shadow-xs"
-              >
-                <Key className="h-3.5 w-3.5 text-[#0050FF]" />
-                <span>Get Sandbox API Keys</span>
-              </Link>
-            </div>
+            <button
+              onClick={() => setShowSimulate(true)}
+              className="h-12 px-8 rounded-full bg-white/80 dark:bg-[#1C1C1E]/80 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.1] text-[#1D1D1F] dark:text-[#F5F5F7] text-xs font-semibold hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all flex items-center justify-center gap-2 shadow-xs hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Play className="h-3.5 w-3.5 fill-current text-[#0050FF]" />
+              <span>Simulate Request</span>
+            </button>
           </div>
         </section>
 
-        {/* 2. Quickstart Code Block */}
-        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
-            <div>
-              <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Quickstart Integration
+        {/* 2. 1-Minute Quickstart Code Box */}
+        <section className="p-8 sm:p-12 rounded-[36px] bg-[#0E1117] border border-white/[0.08] text-white shadow-xl max-w-4xl mx-auto space-y-6" suppressHydrationWarning>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight">
+                OpenAI Wire-Compatible Quickstart
               </h2>
-              <p className="text-xs text-[#86868B]">Select your client language to view drop-in syntax</p>
+              <p className="text-xs text-neutral-400">
+                Point your existing SDK baseURL to our gateway endpoint with zero code refactoring.
+              </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md">
-                {(["python", "node", "curl"] as const).map((lang) => (
+            <div className="flex items-center gap-2">
+              <div className="inline-flex p-1 rounded-full bg-white/10 backdrop-blur-md">
+                {(["python", "node", "curl"] as const).map((tab) => (
                   <button
-                    key={lang}
-                    onClick={() => setActiveLang(lang)}
-                    className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
-                      activeLang === lang
-                        ? "bg-[#0050FF] text-white shadow-xs"
-                        : "text-[#86868B] hover:text-[#1D1D1F]"
+                    key={tab}
+                    onClick={() => setActiveLang(tab)}
+                    className={`px-3.5 py-1 rounded-full text-xs font-semibold capitalize transition-all ${
+                      activeLang === tab ? "bg-white text-black shadow-xs font-bold" : "text-white/70 hover:text-white"
                     }`}
                   >
-                    {lang === "node" ? "Node.js (TS)" : lang.toUpperCase()}
+                    {tab === "node" ? "Node.js" : tab}
                   </button>
                 ))}
               </div>
 
               <button
                 onClick={handleCopyCode}
-                className="h-9 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#E5E5EA] dark:hover:bg-[#343438] transition-all flex items-center gap-1.5 border border-black/[0.04] dark:border-white/[0.06] shadow-xs"
+                className="h-8 px-3 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold flex items-center gap-1.5 transition-all"
               >
-                {copiedCode ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-[#86868B]" />}
-                <span>{copiedCode ? "Copied" : "Copy Code"}</span>
+                {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                <span>{copiedCode ? "Copied" : "Copy"}</span>
               </button>
             </div>
           </div>
 
-          <div className="relative rounded-2xl bg-[#0F0F12] p-5 font-mono text-xs text-[#F5F5F7] overflow-x-auto border border-white/[0.08] shadow-inner">
-            <pre className="leading-relaxed whitespace-pre-wrap">{codeSnippets[activeLang]}</pre>
+          <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.06] overflow-x-auto font-mono text-xs text-neutral-300 leading-relaxed">
+            <pre>{codeSnippets[activeLang]}</pre>
           </div>
         </section>
 
-        {/* 3. Interactive Live Gateway Sandbox Request Tester */}
-        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold mb-1">
-                <Sparkles className="h-3 w-3" />
-                <span>Interactive Live Sandbox</span>
-              </div>
-              <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Test Gateway Request Live in Browser
-              </h2>
-            </div>
-            <p className="text-xs text-[#86868B]">Simulates exact wire response including FinOps metadata</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="font-semibold text-[#86868B]">Prompt Message:</label>
-                <textarea
-                  rows={3}
-                  value={testPrompt}
-                  onChange={(e) => setTestPrompt(e.target.value)}
-                  className="w-full p-3 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40 resize-none font-mono"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">X-Outcome-Strategy:</label>
-                  <select
-                    value={testStrategy}
-                    onChange={(e) => setTestStrategy(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7]"
-                  >
-                    <option value="outcome_optimized">outcome_optimized</option>
-                    <option value="cost_minimum">cost_minimum</option>
-                    <option value="latency_first">latency_first</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Target Metric:</label>
-                  <select
-                    value={testTargetMetric}
-                    onChange={(e) => setTestTargetMetric(e.target.value)}
-                    className="w-full h-10 px-3 rounded-xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7]"
-                  >
-                    <option value="code_merged">code_merged</option>
-                    <option value="demo_booked">demo_booked</option>
-                    <option value="ticket_resolved">ticket_resolved</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleExecuteLiveTest}
-                disabled={isExecuting}
-                className="w-full h-11 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-98"
-              >
-                {isExecuting ? (
-                  <>
-                    <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Executing Request...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="h-3.5 w-3.5 fill-current" />
-                    <span>Execute Gateway Request</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="rounded-2xl bg-[#0F0F12] p-4 text-emerald-400 font-mono text-xs overflow-x-auto border border-white/[0.08] flex flex-col justify-between">
-              {liveResponse ? (
-                <pre className="leading-relaxed overflow-x-auto">
-                  {JSON.stringify(liveResponse, null, 2)}
-                </pre>
-              ) : (
-                <div className="h-full min-h-[160px] flex flex-col items-center justify-center text-center text-[#86868B] space-y-2">
-                  <Terminal className="h-6 w-6 text-[#86868B]" />
-                  <p>Click &quot;Execute Gateway Request&quot; to inspect real-time JSON response payload.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Essential Custom Headers Specification */}
-        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
-          <div className="border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
-            <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Gateway Request Headers Specification
+        {/* 3. Live Interactive Docs API Sandbox */}
+        <section className="p-8 sm:p-12 rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm max-w-4xl mx-auto space-y-6" suppressHydrationWarning>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Live API Gateway Sandbox
             </h2>
-            <p className="text-xs text-[#86868B]">Pass optional headers to control routing optimization algorithms per-request</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 text-xs">
-            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
-              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Strategy</span>
-              <p className="text-[#86868B] leading-relaxed">
-                Strategy mode: <code className="font-mono">outcome_optimized</code> (default), <code className="font-mono">cost_minimum</code>, or <code className="font-mono">latency_first</code>.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
-              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Target-Metric</span>
-              <p className="text-[#86868B] leading-relaxed">
-                Target conversion KPI: <code className="font-mono">code_merged</code>, <code className="font-mono">demo_booked</code>, <code className="font-mono">ticket_resolved</code>, etc.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
-              <span className="font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">X-Outcome-Max-Latency-MS</span>
-              <p className="text-[#86868B] leading-relaxed">
-                Hard Micro-SLA latency ceiling in milliseconds (e.g. <code className="font-mono">250</code>). Triggers automatic escrow refund if breached.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* 5. Response Transparency Payload */}
-        <section className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-10 shadow-sm space-y-6" suppressHydrationWarning>
-          <div className="border-b border-black/[0.05] dark:border-white/[0.08] pb-4">
-            <h2 className="text-lg font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
-              Response Transparency Payload
-            </h2>
-            <p className="text-xs text-[#86868B]">In addition to standard OpenAI response choices, every completion includes transparent FinOps metadata</p>
-          </div>
-
-          <div className="rounded-2xl bg-[#0F0F12] p-5 font-mono text-xs text-[#F5F5F7] overflow-x-auto border border-white/[0.08]">
-            <pre className="leading-relaxed">{`{
-  "id": "oir_chat_9f8a12",
-  "object": "chat.completion",
-  "model": "DeepSeek Coder",
-  "choices": [
-    { "index": 0, "message": { "role": "assistant", "content": "..." }, "finish_reason": "stop" }
-  ],
-  "_router_metadata": {
-    "model_used": "deepseek-coder",
-    "saved_usd": 0.00455,
-    "latency_ms": 118,
-    "sla_contract_nonce": "0x7f4e892c9b1a0d3e5f7a1c8b9d2e4f6a",
-    "critic_verified": true
-  }
-}`}</pre>
-          </div>
-        </section>
-
-        {/* 6. CTA Footer Card */}
-        <section className="rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-8 sm:p-14 text-white shadow-[0_20px_50px_rgba(0,80,255,0.35)] text-center space-y-6 relative overflow-hidden" suppressHydrationWarning>
-          <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-              Ready to Start Routing in Production?
-            </h2>
-            <p className="text-sm text-white/80 leading-relaxed">
-              Create your free API key in under 30 seconds and test against the live gateway sandbox.
+            <p className="text-xs text-[#86868B]">
+              Execute simulated gateway requests live in your browser to inspect model selection and cryptographic headers.
             </p>
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Input Prompt / Agent Instruction</label>
+              <textarea
+                rows={2}
+                value={testPrompt}
+                onChange={(e) => setTestPrompt(e.target.value)}
+                className="w-full p-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/40 font-mono"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-[#86868B]">X-Outcome-Target-Metric</label>
+                <select
+                  value={testTargetMetric}
+                  onChange={(e) => setTestTargetMetric(e.target.value)}
+                  className="w-full h-10 px-3 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                >
+                  <option value="code_merged">code_merged (Software Dev / PRs)</option>
+                  <option value="demo_booked">demo_booked (Sales &amp; Copy)</option>
+                  <option value="first_contact_resolution">first_contact_resolution (Customer Support)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-semibold text-[#86868B]">X-Outcome-Strategy</label>
+                <select
+                  value={testStrategy}
+                  onChange={(e) => setTestStrategy(e.target.value)}
+                  className="w-full h-10 px-3 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                >
+                  <option value="outcome_optimized">outcome_optimized (70% Quality / 25% Cost)</option>
+                  <option value="cost_minimal">cost_minimal (50% Quality / 40% Cost)</option>
+                  <option value="quality_boost">quality_boost (85% Quality / 15% Cost)</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleExecuteLiveTest}
+              disabled={isExecuting}
+              className="h-11 px-7 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-2 disabled:opacity-40"
+            >
+              {isExecuting ? (
+                <>
+                  <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Arbitrating Priors...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>Execute Gateway Call</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {liveResponse && (
+            <div className="p-6 rounded-2xl bg-[#0E1117] border border-white/[0.08] text-white font-mono text-xs space-y-4 animate-in fade-in">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+                <span className="text-emerald-400 font-bold">HTTP 200 OK · {liveResponse.id}</span>
+                <span className="text-[#0050FF] font-bold">Selected: {liveResponse.model_routed}</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] text-neutral-300">
+                <div>
+                  <span className="text-neutral-500 block uppercase">TTFT</span>
+                  <span className="font-bold text-white">{liveResponse.ttft}</span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 block uppercase">Cost</span>
+                  <span className="font-bold text-emerald-400">{liveResponse.cost_usd}</span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 block uppercase">Savings</span>
+                  <span className="font-bold text-[#3374FF]">-{liveResponse.spend_saved_pct}</span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 block uppercase">Escrow Nonce</span>
+                  <span className="font-bold text-white">{liveResponse.sla_contract_nonce}</span>
+                </div>
+              </div>
+
+              <pre className="p-3.5 rounded-xl bg-black/50 border border-white/[0.06] text-neutral-200 whitespace-pre-wrap leading-relaxed text-[11px]">
+                {liveResponse.content}
+              </pre>
+            </div>
+          )}
+        </section>
+
+        {/* 4. Custom HTTP Headers Specification Table */}
+        <section className="space-y-6 max-w-4xl mx-auto" suppressHydrationWarning>
+          <div className="space-y-1">
+            <h2 className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Gateway Custom Request Headers
+            </h2>
+            <p className="text-xs text-[#86868B]">
+              Inject these optional headers to control Bayesian Dirichlet weighting and Micro-SLA bounds.
+            </p>
+          </div>
+
+          <div className="rounded-[28px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm overflow-x-auto">
+            <table className="w-full text-left text-xs min-w-[550px]">
+              <thead>
+                <tr className="border-b border-black/[0.06] dark:border-white/[0.08]">
+                  <th className="pb-3 font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Header Name</th>
+                  <th className="pb-3 font-bold text-[#0050FF] dark:text-[#3374FF]">Supported Values</th>
+                  <th className="pb-3 font-bold text-[#86868B]">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
+                {customHeaders.map((h, idx) => (
+                  <tr key={idx} className="hover:bg-black/[0.01] dark:hover:bg-white/[0.01]">
+                    <td className="py-3 font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{h.header}</td>
+                    <td className="py-3 font-mono text-emerald-600 dark:text-emerald-400">{h.values}</td>
+                    <td className="py-3 text-[#515154] dark:text-[#A1A1A6] leading-relaxed">{h.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* 5. Enterprise SLA Trust Bar */}
+        <section className="p-6 sm:p-8 rounded-[30px] bg-white/60 dark:bg-[#151518]/60 backdrop-blur-2xl border border-black/[0.04] dark:border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-6 text-center" suppressHydrationWarning>
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">99.99%</div>
+            <div className="text-xs text-[#86868B] font-medium">Gateway Uptime SLA</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">58ms</div>
+            <div className="text-xs text-[#86868B] font-medium">Average Edge TTFT</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">100%</div>
+            <div className="text-xs text-[#86868B] font-medium">Verifiable SHA-256 Escrow</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">0-Code</div>
+            <div className="text-xs text-[#86868B] font-medium">SDK Drop-in Migration</div>
+          </div>
+        </section>
+
+        {/* 6. Apple-Spatial Final Call to Action */}
+        <section className="rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-8 sm:p-16 text-white shadow-[0_24px_60px_rgba(0,80,255,0.32)] text-center space-y-6 relative overflow-hidden" suppressHydrationWarning>
+          <div className="relative z-10 space-y-5 max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+              Start Integrating in 60 Seconds
+            </h2>
+            <p className="text-sm sm:text-base text-white/80 leading-relaxed font-normal">
+              Claim your free API key with 10,000 monthly tokens. Zero credit card required.
+            </p>
+            <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
-                href="/app/settings/api-keys"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md hover:scale-105 active:scale-95"
+                href="/auth/signup"
+                className="w-full sm:w-auto h-12 px-8 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center"
               >
-                Generate API Key
+                Get API Key
               </Link>
               <Link
                 href="/app/dashboard"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition-all border border-white/20 hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto h-12 px-8 rounded-full bg-white/15 hover:bg-white/25 text-white font-semibold text-xs transition-all border border-white/20 flex items-center justify-center hover:scale-[1.02] active:scale-[0.98]"
               >
-                Open Dashboard Console
+                Launch Console
               </Link>
             </div>
           </div>
