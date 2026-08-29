@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Zap, ArrowRight, CheckCircle2, ShieldCheck, KeyRound, Building, Check, Sparkles, AlertCircle } from "lucide-react";
@@ -10,6 +10,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export default function SignUpPage() {
   const router = useRouter();
   const { setAuthUser, setOrgName, setPlanTier, currency } = useAppStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -21,6 +26,15 @@ export default function SignUpPage() {
   const [submitting, setSubmitting] = useState(false);
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const activeCurrency = mounted ? currency : "USD";
+
+  const tiers = [
+    { id: "free", name: "Free", quota: "10K tokens", price: activeCurrency === "INR" ? "₹0 /mo" : "$0 /mo" },
+    { id: "starter", name: "Starter", quota: "100K tokens", price: activeCurrency === "INR" ? "₹2,509 /mo" : "$29 /mo" },
+    { id: "growth", name: "Growth", quota: "500K tokens", price: activeCurrency === "INR" ? "₹8,564 /mo" : "$99 /mo" },
+    { id: "enterprise", name: "Enterprise", quota: "2M+ tokens", price: activeCurrency === "INR" ? "₹25,864 /mo" : "$299 /mo" }
+  ];
 
   const handlePinChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -68,7 +82,7 @@ export default function SignUpPage() {
           workspace: org,
           plan_tier: selectedPlan,
           pin: pinCode,
-          currency: currency || "USD"
+          currency: activeCurrency
         })
       });
 
@@ -186,12 +200,7 @@ export default function SignUpPage() {
               <div className="space-y-1.5 pt-1">
                 <label className="font-semibold text-[#86868B]">Select Initial Subscription Tier</label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  {[
-                    { id: "free", name: "Free", quota: "10K tokens", price: "₹0 /mo" },
-                    { id: "starter", name: "Starter", quota: "100K tokens", price: "₹2,509 /mo" },
-                    { id: "growth", name: "Growth", quota: "500K tokens", price: "₹8,564 /mo" },
-                    { id: "enterprise", name: "Enterprise", quota: "2M+ tokens", price: "₹25,864 /mo" }
-                  ].map((tier) => (
+                  {tiers.map((tier) => (
                     <button
                       type="button"
                       key={tier.id}
@@ -239,7 +248,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 disabled={submitting || !name || !email || pin.join("").length !== 6}
-                className="w-full h-12 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2"
+                className="w-full h-12 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 mt-2 hover:scale-[1.01] active:scale-[0.99]"
               >
                 <span>{submitting ? "Registering & Syncing Sheet..." : "Create Workspace & Launch"}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -248,11 +257,20 @@ export default function SignUpPage() {
           </div>
 
           {/* Footer Link */}
-          <div className="text-center text-xs text-[#86868B]">
-            Already have a workspace?{" "}
-            <Link href="/auth/signin" className="font-semibold text-[#0050FF] dark:text-[#3374FF] hover:underline">
-              Sign In
-            </Link>
+          <div className="text-center text-xs text-[#86868B] space-y-2">
+            <div>
+              Already have a workspace?{" "}
+              <Link href="/auth/signin" className="font-semibold text-[#0050FF] dark:text-[#3374FF] hover:underline">
+                Sign In
+              </Link>
+            </div>
+            <div className="flex items-center justify-center gap-4 text-[11px] text-[#86868B] pt-1">
+              <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
+              <span>•</span>
+              <Link href="/terms" className="hover:underline">Terms of Service</Link>
+              <span>•</span>
+              <Link href="/dpa" className="hover:underline">DPA</Link>
+            </div>
           </div>
         </div>
       </main>
