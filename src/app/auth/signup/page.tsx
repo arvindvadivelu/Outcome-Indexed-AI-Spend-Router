@@ -19,7 +19,6 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [workspace, setWorkspace] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<"free" | "starter" | "growth" | "enterprise">("free");
   
   // 6-digit PIN state
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
@@ -28,13 +27,6 @@ export default function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const activeCurrency = mounted ? currency : "USD";
-
-  const tiers = [
-    { id: "free", name: "Free", quota: "10K tokens", price: activeCurrency === "INR" ? "₹0 /mo" : "$0 /mo" },
-    { id: "starter", name: "Starter", quota: "100K tokens", price: activeCurrency === "INR" ? "₹2,509 /mo" : "$29 /mo" },
-    { id: "growth", name: "Growth", quota: "500K tokens", price: activeCurrency === "INR" ? "₹8,564 /mo" : "$99 /mo" },
-    { id: "enterprise", name: "Enterprise", quota: "2M+ tokens", price: activeCurrency === "INR" ? "₹25,864 /mo" : "$299 /mo" }
-  ];
 
   const handlePinChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
@@ -72,7 +64,7 @@ export default function SignUpPage() {
     const org = workspace.trim() || `${name.split(" ")[0]}'s Workspace`;
 
     try {
-      // Call register API which persists in database & triggers Google Sheets real-time sync
+      // Call register API which persists in database & triggers Google Sheets real-time sync with Free Tier default
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,7 +72,7 @@ export default function SignUpPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           workspace: org,
-          plan_tier: selectedPlan,
+          plan_tier: "free",
           pin: pinCode,
           currency: activeCurrency
         })
@@ -102,7 +94,7 @@ export default function SignUpPage() {
         hasBiometrics: true
       });
       setOrgName(data.user.workspace);
-      setPlanTier(data.user.plan_tier || "free");
+      setPlanTier("free");
 
       setRegisteredSuccess(true);
       setTimeout(() => {
@@ -129,12 +121,12 @@ export default function SignUpPage() {
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 py-8">
-        <div className="w-full max-w-lg space-y-6">
+        <div className="w-full max-w-md space-y-6">
           <div className="rounded-[32px] bg-white/80 dark:bg-[#151518]/80 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.4)] space-y-6">
             <div className="text-center space-y-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Start Free · 10,000 Monthly Tokens</span>
+                <span>Free Plan · 10,000 Monthly Tokens</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Create Your Organization
@@ -153,36 +145,34 @@ export default function SignUpPage() {
             )}
 
             <form onSubmit={handleSignUpSubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Full Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setErrorMessage(null);
-                    }}
-                    placeholder="Alex Vance"
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
-                    required
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setErrorMessage(null);
+                  }}
+                  placeholder="Alex Vance"
+                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
+                  required
+                />
+              </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-[#86868B]">Work Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setErrorMessage(null);
-                    }}
-                    placeholder="alex@company.com"
-                    className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
-                    required
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">Work Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setErrorMessage(null);
+                  }}
+                  placeholder="alex@company.com"
+                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
+                  required
+                />
               </div>
 
               <div className="space-y-1">
@@ -194,28 +184,6 @@ export default function SignUpPage() {
                   placeholder="Acme AI Lab"
                   className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
                 />
-              </div>
-
-              {/* Initial Subscription Tier Selection */}
-              <div className="space-y-1.5 pt-1">
-                <label className="font-semibold text-[#86868B]">Select Initial Subscription Tier</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  {tiers.map((tier) => (
-                    <button
-                      type="button"
-                      key={tier.id}
-                      onClick={() => setSelectedPlan(tier.id as any)}
-                      className={`p-2.5 rounded-2xl border transition-all ${
-                        selectedPlan === tier.id
-                          ? "border-[#0050FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] shadow-xs font-bold"
-                          : "border-black/[0.05] dark:border-white/[0.06] bg-[#F7F7F9] dark:bg-[#1E1E22] text-[#86868B]"
-                      }`}
-                    >
-                      <div className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{tier.name}</div>
-                      <div className="text-[10px] font-mono">{tier.quota}</div>
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Set 6-Digit PIN */}

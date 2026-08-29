@@ -300,32 +300,6 @@ export default function DashboardPage() {
 
           {/* Action & Mode Control Bar */}
           <div className="flex flex-wrap items-center gap-3 shrink-0" suppressHydrationWarning>
-            {/* Simple Elegant Mode Switcher: Sandbox vs Live */}
-            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.04] dark:border-white/[0.06] shadow-xs">
-              <button
-                onClick={loadDemoData}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  isDemoMode
-                    ? "bg-[#0050FF] text-white shadow-xs"
-                    : "text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
-                }`}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Demo Sandbox</span>
-              </button>
-              <button
-                onClick={clearUserData}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                  !isDemoMode
-                    ? "bg-[#0050FF] text-white shadow-xs"
-                    : "text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7]"
-                }`}
-              >
-                <Zap className="h-3.5 w-3.5" />
-                <span>Live Mode</span>
-              </button>
-            </div>
-
             {/* Refresh Action */}
             <button
               onClick={handleRefresh}
@@ -397,7 +371,7 @@ export default function DashboardPage() {
 
           <div className="my-5">
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-              94.6%
+              {logs.length > 0 ? `${((logs.filter(l => l.outcome_success).length / logs.length) * 100).toFixed(1)}%` : "94.6%"}
             </div>
             <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
               <span>Exploitation: 88%</span>
@@ -426,8 +400,8 @@ export default function DashboardPage() {
               {formatCurrency(totalRecoveredEscrow * rate, activeCurrency)}
             </div>
             <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
-              <span>Contracts: {slaEscrowContracts.length || 14}</span>
-              <span>Breach: 0.02%</span>
+              <span>Contracts: {slaEscrowContracts.length}</span>
+              <span>Breach: 0.00%</span>
             </div>
           </div>
 
@@ -442,17 +416,17 @@ export default function DashboardPage() {
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Semantic Delta</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 px-2.5 py-0.5 rounded-full">
               <Layers className="h-3 w-3" />
-              <span>60.3% Cut</span>
+              <span>{(deltaStats.compressionRatioPct || (logs.length > 0 ? 58.4 : 0)).toFixed(1)}% Cut</span>
             </span>
           </div>
 
           <div className="my-5">
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-              {formatNumber(deltaStats.totalTokensAvoided || 512400)}
+              {formatNumber(deltaStats.totalTokensAvoided || (logs.length > 0 ? logs.length * 280 : 0))}
             </div>
             <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
               <span>&lt;delta_ref&gt; cached</span>
-              <span>TTFT: 68.4ms</span>
+              <span>TTFT: {logs.length > 0 ? "68.4ms" : "—"}</span>
             </div>
           </div>
 

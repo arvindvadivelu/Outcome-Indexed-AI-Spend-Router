@@ -19,18 +19,22 @@ import {
   Sliders,
   Send,
   RotateCw,
-  Check
+  Check,
+  AlertCircle
 } from "lucide-react";
+import Link from "next/link";
+import { useAppStore } from "@/lib/store";
 import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 
 export default function TeamPage() {
+  const { planTier, orgName, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const [members, setMembers] = useState([
-    { id: 1, name: "Alex Vance", email: "alex@company.com", role: "Owner", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" },
+    { id: 1, name: user?.name || "Alex Vance", email: user?.email || "alex@company.com", role: "Owner", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" },
     { id: 2, name: "Sarah Chen", email: "sarah@company.com", role: "Admin", tokenQuota: "200,000 / mo", mfaActive: true, lastActive: "15 min ago" },
     { id: 3, name: "Marcus Rossi", email: "marcus@company.com", role: "Engineer", tokenQuota: "100,000 / mo", mfaActive: true, lastActive: "1 hour ago" },
     { id: 4, name: "Priya Patel", email: "priya@company.com", role: "FinOps", tokenQuota: "50,000 / mo", mfaActive: false, lastActive: "Yesterday" }
@@ -38,6 +42,8 @@ export default function TeamPage() {
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Engineer");
+  const [customRoleInput, setCustomRoleInput] = useState("");
+  const [isCustomRole, setIsCustomRole] = useState(false);
   const [inviteQuota, setInviteQuota] = useState("100,000 / mo");
   const [isInviting, setIsInviting] = useState(false);
   const [inviteNotice, setInviteNotice] = useState<string | null>(null);
@@ -46,9 +52,15 @@ export default function TeamPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [rbacResult, setRbacResult] = useState<any>(null);
 
+  // Seat capacity based on subscribed plan
+  const seatLimit = planTier === "starter" ? 8 : (planTier === "growth" ? 15 : (planTier === "enterprise" ? 50 : 4));
+  const isSeatLimitReached = members.length >= seatLimit;
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteEmail.trim()) return;
+    if (!inviteEmail.trim() || isSeatLimitReached) return;
+
+    const assignedRole = isCustomRole && customRoleInput.trim() ? customRoleInput.trim() : inviteRole;
 
     setIsInviting(true);
     setInviteNotice(null);
@@ -59,7 +71,7 @@ export default function TeamPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: inviteEmail.trim(),
-          role: inviteRole,
+          role: assignedRole,
           tokenQuota: inviteQuota
         })
       });
@@ -72,7 +84,7 @@ export default function TeamPage() {
             id: Date.now(),
             name: inviteEmail.split("@")[0],
             email: inviteEmail.trim(),
-            role: inviteRole,
+            role: assignedRole,
             tokenQuota: inviteQuota,
             mfaActive: true,
             lastActive: "Invited"
@@ -83,14 +95,16 @@ export default function TeamPage() {
           action: "TEAM_INVITE",
           name: inviteEmail.split("@")[0],
           email: inviteEmail.trim(),
-          workspace: "Acme AI Lab",
-          plan_tier: "Growth",
+          workspace: orgName || "Acme AI Lab",
+          plan_tier: planTier || "Growth",
           monthly_token_quota: 100000,
           currency: "USD",
           auth_method: "INVITE_LINK"
         });
 
         setInviteEmail("");
+        setCustomRoleInput("");
+        setIsCustomRole(false);
         setInviteNotice(`Invitation link dispatched to ${inviteEmail}!`);
         setTimeout(() => setInviteNotice(null), 3000);
       }
@@ -103,7 +117,7 @@ export default function TeamPage() {
 
   const handleRoleChange = (id: number, newRole: string) => {
     setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, role: newRole } : m))
+      prev.map((m) => (m.id === id && m.role !== "Owner" ? { ...m, role: newRole } : m))
     );
   };
 
@@ -114,7 +128,7 @@ export default function TeamPage() {
   };
 
   const handleRemoveMember = (id: number) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id));
+    setMembers((prev) => prev.filter((m) => m.id !== id || m.role === "Owner"));
   };
 
   const handleResendMfa = (id: number) => {
@@ -159,8 +173,12 @@ export default function TeamPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Team Members & RBAC Access Control
               </h1>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
-                {members.length} Active Seats
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                isSeatLimitReached
+                  ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-300"
+                  : "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20"
+              }`}>
+                {members.length} / {seatLimit} Seats Allocated
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
@@ -168,14 +186,24 @@ export default function TeamPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleAuditRBAC}
-            disabled={isAuditing}
-            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
-          >
-            <ShieldCheck className={`h-3.5 w-3.5 ${isAuditing ? "animate-spin" : ""}`} />
-            <span>{isAuditing ? "Auditing RBAC..." : "Audit RBAC Scopes"}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/app/billing"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#F5F5F7] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Upgrade Seats</span>
+            </Link>
+
+            <button
+              onClick={handleAuditRBAC}
+              disabled={isAuditing}
+              className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
+            >
+              <ShieldCheck className={`h-3.5 w-3.5 ${isAuditing ? "animate-spin" : ""}`} />
+              <span>{isAuditing ? "Auditing RBAC..." : "Audit RBAC Scopes"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -184,10 +212,10 @@ export default function TeamPage() {
         <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Active Workspace Seats</span>
           <div className="my-4">
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono">{members.length} / 10</div>
-            <div className="text-xs text-white/70 mt-1">Unlimited invite allowance</div>
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">{members.length} / {seatLimit}</div>
+            <div className="text-xs text-white/70 mt-1">{isSeatLimitReached ? "Seat limit reached" : `${seatLimit - members.length} seats available`}</div>
           </div>
-          <span className="text-[11px] text-white/80">Pro Tier Allocation</span>
+          <span className="text-[11px] text-white/80 capitalize">{planTier || "Free"} Tier Allocation</span>
         </div>
 
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
@@ -203,9 +231,9 @@ export default function TeamPage() {
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Role Permissions</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">Least-Privilege</div>
-            <div className="text-xs text-[#86868B] mt-1">Granular API Scopes</div>
+            <div className="text-xs text-[#86868B] mt-1">Granular Custom Scopes</div>
           </div>
-          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Per-seat token budgets</span>
+          <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">1 Primary Workspace Owner</span>
         </div>
 
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
@@ -254,74 +282,98 @@ export default function TeamPage() {
 
       {/* 3. Invite Member Card */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
-        <div>
-          <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Invite Team Member to Organization
-          </h3>
-          <p className="text-xs text-[#86868B]">
-            Invited users will receive an email link to join with pre-assigned RBAC scopes and token budgets
-          </p>
-        </div>
-
-        {/* Quick Sample Presets */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] text-[#86868B] font-medium">Quick Presets:</span>
-          {[
-            { email: "lead.dev@company.com", role: "Engineer" },
-            { email: "finops.analyst@company.com", role: "FinOps" },
-            { email: "security.admin@company.com", role: "Admin" }
-          ].map((preset, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => {
-                setInviteEmail(preset.email);
-                setInviteRole(preset.role);
-              }}
-              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
-            >
-              {preset.email} ({preset.role})
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleInvite} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-          <div className="sm:col-span-2">
-            <input
-              type="email"
-              placeholder="colleague@company.com"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="w-full h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none"
-              required
-            />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Invite Team Member to Organization
+            </h3>
+            <p className="text-xs text-[#86868B]">
+              Invited users will receive an email link to join with pre-assigned RBAC scopes and token budgets
+            </p>
           </div>
 
-          <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
-            {["Engineer", "FinOps", "Admin"].map((r) => (
+          {isSeatLimitReached && (
+            <div className="p-2.5 px-4 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-300 text-amber-700 dark:text-amber-300 text-xs font-semibold flex items-center gap-2 shrink-0">
+              <AlertCircle className="h-4 w-4" />
+              <span>Seat capacity reached ({members.length}/{seatLimit}).</span>
+              <Link href="/app/billing" className="underline hover:text-amber-900 font-bold">
+                Upgrade Plan
+              </Link>
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleInvite} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="sm:col-span-2">
+              <input
+                type="email"
+                placeholder="colleague@company.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                disabled={isSeatLimitReached}
+                className="w-full h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none disabled:opacity-50"
+                required
+              />
+            </div>
+
+            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+              {["Engineer", "FinOps", "Admin"].map((r) => (
+                <button
+                  type="button"
+                  key={r}
+                  disabled={isSeatLimitReached}
+                  onClick={() => {
+                    setInviteRole(r);
+                    setIsCustomRole(false);
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                    !isCustomRole && inviteRole === r
+                      ? "bg-[#0050FF] text-white shadow-xs"
+                      : "text-[#86868B] hover:text-[#1D1D1F]"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
               <button
                 type="button"
-                key={r}
-                onClick={() => setInviteRole(r)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 ${
-                  inviteRole === r
+                disabled={isSeatLimitReached}
+                onClick={() => setIsCustomRole(true)}
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                  isCustomRole
                     ? "bg-[#0050FF] text-white shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
                 }`}
               >
-                {r}
+                Custom
               </button>
-            ))}
+            </div>
+
+            <button
+              type="submit"
+              disabled={!inviteEmail.trim() || isInviting || isSeatLimitReached}
+              className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
+            </button>
           </div>
 
-          <button
-            type="submit"
-            disabled={!inviteEmail.trim() || isInviting}
-            className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
-          >
-            <Send className="h-3.5 w-3.5" />
-            <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
-          </button>
+          {/* Custom Role Name Input */}
+          {isCustomRole && (
+            <div className="flex items-center gap-3 pt-1 animate-in fade-in">
+              <label className="text-xs font-semibold text-[#86868B] shrink-0">Custom Role Name:</label>
+              <input
+                type="text"
+                value={customRoleInput}
+                onChange={(e) => setCustomRoleInput(e.target.value)}
+                placeholder="e.g. Lead ML Engineer, Security Officer, Product Analyst"
+                className="flex-1 h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]"
+                required={isCustomRole}
+              />
+            </div>
+          )}
         </form>
 
         {inviteNotice && (
@@ -333,9 +385,12 @@ export default function TeamPage() {
 
       {/* 4. Team Members Table */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
-        <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-          Active Members ({members.length})
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+            Active Members ({members.length})
+          </h3>
+          <span className="text-xs text-[#86868B]">1 Primary Owner Enforced</span>
+        </div>
 
         <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[750px]">
@@ -358,17 +413,31 @@ export default function TeamPage() {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    <select
-                      value={m.role}
-                      onChange={(e) => handleRoleChange(m.id, e.target.value)}
-                      disabled={m.role === "Owner"}
-                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none disabled:opacity-60 cursor-pointer"
-                    >
-                      <option value="Owner">Owner</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Engineer">Engineer</option>
-                      <option value="FinOps">FinOps</option>
-                    </select>
+                    {m.role === "Owner" ? (
+                      <span className="px-3 py-1 rounded-full bg-[#0050FF]/15 text-[#0050FF] dark:text-[#3374FF] font-bold text-xs">
+                        Owner (Primary)
+                      </span>
+                    ) : (
+                      <select
+                        value={["Admin", "Engineer", "FinOps"].includes(m.role) ? m.role : "Custom"}
+                        onChange={(e) => {
+                          if (e.target.value === "Custom") {
+                            const custom = prompt("Enter Custom Role Name:", m.role);
+                            if (custom && custom.trim()) {
+                              handleRoleChange(m.id, custom.trim());
+                            }
+                          } else {
+                            handleRoleChange(m.id, e.target.value);
+                          }
+                        }}
+                        className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none cursor-pointer"
+                      >
+                        <option value="Admin">Admin</option>
+                        <option value="Engineer">Engineer</option>
+                        <option value="FinOps">FinOps</option>
+                        <option value="Custom">{["Admin", "Engineer", "FinOps"].includes(m.role) ? "Custom Role..." : `${m.role} (Custom)`}</option>
+                      </select>
+                    )}
                   </td>
 
                   <td className="py-3.5 px-4">

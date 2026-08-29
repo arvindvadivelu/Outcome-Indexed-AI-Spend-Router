@@ -20,11 +20,16 @@ import {
   Terminal,
   Cpu,
   Globe,
-  Play
+  Play,
+  Plus,
+  AlertCircle
 } from "lucide-react";
+import Link from "next/link";
+import { useAppStore } from "@/lib/store";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function IntegrationsPage() {
+  const { planTier } = useAppStore();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -116,9 +121,22 @@ export default function IntegrationsPage() {
   const [providerKey, setProviderKey] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Custom Integration Modal
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customCategory, setCustomCategory] = useState("Provider");
+  const [customBaseUrl, setCustomBaseUrl] = useState("");
+  const [customDesc, setCustomDesc] = useState("");
+  const [customKey, setCustomKey] = useState("");
+
   // Diagnostics state
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
+
+  // Capacity Limits
+  const bridgeLimit = planTier === "starter" ? 10 : (planTier === "growth" ? 20 : (planTier === "enterprise" ? 100 : 5));
+  const connectedCount = integrations.filter((i) => i.connected).length;
+  const isBridgeLimitReached = connectedCount >= bridgeLimit;
 
   const handleTestDiagnostics = async () => {
     setIsDiagnosing(true);
@@ -139,16 +157,15 @@ export default function IntegrationsPage() {
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!providerKey.trim()) return;
+    if (!connectingItem || !providerKey.trim() || isBridgeLimitReached) return;
 
     setIsVerifying(true);
-
     try {
       const res = await fetch("/api/integrations/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          integrationId: connectingItem.id,
+          providerId: connectingItem.id,
           apiKey: providerKey.trim()
         })
       });
@@ -170,6 +187,29 @@ export default function IntegrationsPage() {
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const handleCreateCustomIntegration = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customName.trim() || !customBaseUrl.trim() || isBridgeLimitReached) return;
+
+    const newId = `custom_${Date.now()}`;
+    const newIntegration = {
+      id: newId,
+      name: customName.trim(),
+      category: customCategory,
+      connected: true,
+      latency: "19ms",
+      desc: customDesc.trim() || `Custom wire-compatible gateway connected at ${customBaseUrl.trim()}`,
+      docsUrl: customBaseUrl.trim()
+    };
+
+    setIntegrations((prev) => [newIntegration, ...prev]);
+    setShowCustomModal(false);
+    setCustomName("");
+    setCustomBaseUrl("");
+    setCustomDesc("");
+    setCustomKey("");
   };
 
   const handleCopyCode = (code: string) => {
@@ -204,8 +244,12 @@ export default function IntegrationsPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Ecosystem & SDK Integrations
               </h1>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
-                {integrations.filter(i => i.connected).length} / {integrations.length} Active Bridges
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                isBridgeLimitReached
+                  ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-300"
+                  : "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20"
+              }`}>
+                {connectedCount} / {bridgeLimit} Active Bridges
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
@@ -213,14 +257,25 @@ export default function IntegrationsPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleTestDiagnostics}
-            disabled={isDiagnosing}
-            className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
-          >
-            <Activity className={`h-3.5 w-3.5 ${isDiagnosing ? "animate-spin" : ""}`} />
-            <span>{isDiagnosing ? "Pinging Bridges..." : "Ping Health Diagnostics"}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Custom Integration Button */}
+            <button
+              onClick={() => setShowCustomModal(true)}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#F5F5F7] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Custom Integration</span>
+            </button>
+
+            <button
+              onClick={handleTestDiagnostics}
+              disabled={isDiagnosing}
+              className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
+            >
+              <Activity className={`h-3.5 w-3.5 ${isDiagnosing ? "animate-spin" : ""}`} />
+              <span>{isDiagnosing ? "Pinging Bridges..." : "Ping Health Diagnostics"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -230,11 +285,11 @@ export default function IntegrationsPage() {
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Connected Bridges</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">
-              {integrations.filter(i => i.connected).length} / {integrations.length}
+              {connectedCount} / {bridgeLimit}
             </div>
-            <div className="text-xs text-white/70 mt-1">OpenAI Wire-Compatible</div>
+            <div className="text-xs text-white/70 mt-1">{isBridgeLimitReached ? "Bridge limit reached" : `${bridgeLimit - connectedCount} bridges available`}</div>
           </div>
-          <span className="text-[11px] text-white/80">Active Edge Proxy</span>
+          <span className="text-[11px] text-white/80 capitalize">{planTier || "Free"} Plan Allocation</span>
         </div>
 
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
@@ -264,6 +319,22 @@ export default function IntegrationsPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">BYOK Key Vaulting</span>
         </div>
       </div>
+
+      {/* Bridge Limit Warning Bar */}
+      {isBridgeLimitReached && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 text-amber-800 dark:text-amber-200 text-xs font-medium flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>You have reached the maximum connected bridges ({connectedCount}/{bridgeLimit}) for your current tier. Upgrade to unlock more bridges.</span>
+          </div>
+          <Link
+            href="/app/billing"
+            className="px-4 py-1.5 rounded-full bg-amber-600 text-white font-semibold text-xs hover:bg-amber-700 transition-all shrink-0"
+          >
+            Upgrade Plan
+          </Link>
+        </div>
+      )}
 
       {/* Diagnostics Result Drawer */}
       {diagnosticResult && (
@@ -354,7 +425,11 @@ export default function IntegrationsPage() {
                   if (item.connected) {
                     setSelectedIntegration(item);
                   } else {
-                    setConnectingItem(item);
+                    if (isBridgeLimitReached) {
+                      alert(`Bridge limit reached (${connectedCount}/${bridgeLimit}). Upgrade plan to connect more.`);
+                    } else {
+                      setConnectingItem(item);
+                    }
                   }
                 }}
                 className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
@@ -366,6 +441,94 @@ export default function IntegrationsPage() {
           </div>
         ))}
       </div>
+
+      {/* Custom Integration Modal */}
+      {showCustomModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
+                <Plus className="h-4 w-4 text-[#0050FF]" />
+                <span>Add Custom Integration</span>
+              </h3>
+              <button
+                onClick={() => setShowCustomModal(false)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomIntegration} className="space-y-3.5 text-xs">
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">Integration Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Local Ollama Node, vLLM Cluster"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="w-full h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">Category</label>
+                <select
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  className="w-full h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                >
+                  <option value="Provider">Provider (OpenAI-compatible)</option>
+                  <option value="Framework">Framework / Pipeline</option>
+                  <option value="Proxy">Proxy Gateway</option>
+                  <option value="Agents">Multi-Agent System</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">Gateway Base URL</label>
+                <input
+                  type="url"
+                  placeholder="http://localhost:11434/v1 or https://ai.corp/v1"
+                  value={customBaseUrl}
+                  onChange={(e) => setCustomBaseUrl(e.target.value)}
+                  className="w-full h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-[#86868B]">API Key / Secret (Optional)</label>
+                <input
+                  type="password"
+                  placeholder="sk-custom-..."
+                  value={customKey}
+                  onChange={(e) => setCustomKey(e.target.value)}
+                  className="w-full h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomModal(false)}
+                  className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!customName.trim() || !customBaseUrl.trim()}
+                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 shadow-xs hover:scale-105 active:scale-95 transition-all"
+                >
+                  Add Bridge
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Code Snippet Modal with Language Tabs */}
       {selectedIntegration && (
@@ -458,17 +621,6 @@ export default function IntegrationsPage() {
                 className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
               >
                 <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Quick Test Key Preset */}
-            <div className="pt-1">
-              <button
-                type="button"
-                onClick={() => setProviderKey(`sk_live_${connectingItem.id}_mock_vault_token_99`)}
-                className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] hover:underline"
-              >
-                + Auto-fill Sandbox Secret Key
               </button>
             </div>
 

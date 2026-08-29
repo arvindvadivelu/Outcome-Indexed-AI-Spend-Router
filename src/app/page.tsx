@@ -146,7 +146,7 @@ export default function HomePage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.04] dark:border-white/[0.08] backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-[#0050FF] animate-pulse" />
               <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-                Outcome-Indexed AI Spend Router · V2
+                Outcome-Indexed AI Spend Router
               </span>
             </div>
 

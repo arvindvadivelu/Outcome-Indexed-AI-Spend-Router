@@ -3,20 +3,30 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, ArrowRight } from "lucide-react";
+import { Zap, ArrowRight, User } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { currency, toggleCurrency } = useAppStore();
+  const { user, currency } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const activeCurrency = mounted ? currency : "USD";
+  const userName = mounted && user?.name ? user.name : "";
+  const initials = userName
+    ? userName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "AV";
+
+  const isUserLoggedIn = mounted && !!user;
 
   const navLinks = [
     { href: "/features", label: "Features" },
@@ -65,12 +75,27 @@ export function Navbar() {
 
         {/* Right actions */}
         <div className="flex items-center gap-3" suppressHydrationWarning>
-          <Link
-            href="/auth/signin"
-            className="hidden sm:inline-flex text-sm font-medium text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] px-3 py-1.5 transition-colors"
-          >
-            Sign In
-          </Link>
+          {isUserLoggedIn ? (
+            <Link
+              href="/app/dashboard"
+              className="flex items-center gap-2 p-1 pl-2.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] transition-all hover:scale-105 active:scale-95"
+              title={`${userName} (Go to Dashboard)`}
+            >
+              <span className="text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hidden sm:inline-block max-w-[120px] truncate">
+                {userName}
+              </span>
+              <div className="h-8 w-8 rounded-full bg-[#1D1D1F] dark:bg-[#2C2C30] text-white flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-[#0050FF]/30">
+                {initials}
+              </div>
+            </Link>
+          ) : (
+            <Link
+              href="/auth/signin"
+              className="hidden sm:inline-flex text-sm font-medium text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] px-3 py-1.5 transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
 
           <Link
             href="/app/dashboard"
