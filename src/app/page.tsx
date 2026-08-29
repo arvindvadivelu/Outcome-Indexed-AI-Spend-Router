@@ -398,19 +398,87 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* 5. Apple Spatial Final CTA */}
+        {/* 5. Interactive Live Workload Synthesizer */}
+        <section className="rounded-[36px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-8 sm:p-12 shadow-sm space-y-6 max-w-4xl mx-auto" suppressHydrationWarning>
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Live Workload Synthesizer</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+              Test Your Exact Production Workload
+            </h2>
+            <p className="text-xs sm:text-sm text-[#86868B]">
+              Enter any prompt or agentic task description to see the mathematically optimal model and cost cut
+            </p>
+          </div>
+
+          <form onSubmit={handleTailorWorkload} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="e.g. Extract JSON from customer invoice PDF or review Python code..."
+              value={customWorkloadInput}
+              onChange={(e) => setCustomWorkloadInput(e.target.value)}
+              className="flex-1 h-12 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/40"
+            />
+            <button
+              type="submit"
+              disabled={isTailoring || !customWorkloadInput.trim()}
+              className="h-12 px-7 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-2 shrink-0"
+            >
+              {isTailoring ? (
+                <>
+                  <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Evaluating Priors...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Synthesize Route</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Synthesized Result Box */}
+          {tailoredResult && (
+            <div className="p-5 sm:p-6 rounded-[28px] bg-gradient-to-br from-[#EEF4FF] via-white to-[#F5F5F7] dark:from-[#0050FF]/15 dark:via-[#161618] dark:to-[#1C1C1E] border border-[#0050FF]/25 space-y-4 animate-in fade-in">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-[#86868B]">Winner:</span>
+                  <span className="text-xs font-extrabold text-[#0050FF] dark:text-[#3374FF] bg-[#EEF4FF] dark:bg-[#0050FF]/20 px-3 py-1 rounded-full">
+                    {tailoredResult.optimalModel}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 rounded-full">
+                    -{tailoredResult.estimatedSpendCut} Spend vs GPT-4o
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-[#515154] dark:text-[#A1A1A6]">
+                    {tailoredResult.latencySla} P95
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed font-mono">
+                {tailoredResult.rationale}
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* 6. Apple Spatial Final CTA */}
         <section className="rounded-[36px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-8 sm:p-14 text-white shadow-[0_20px_50px_rgba(0,80,255,0.35)] text-center space-y-6 relative overflow-hidden" suppressHydrationWarning>
           <div className="relative z-10 space-y-4 max-w-2xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
               Ready to Recover 40%+ of Your LLM Spend?
             </h2>
             <p className="text-sm text-white/80 leading-relaxed">
-              Integrate in 1 line of code with LangChain, LlamaIndex, or OpenAI SDK. Free Sandbox tier includes 500,000 monthly tokens with zero setup fees.
+              Integrate in 1 line of code with LangChain, LlamaIndex, or OpenAI SDK. Free Sandbox tier includes 10,000 monthly tokens with zero setup fees.
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href="/app/dashboard"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md"
+                href="/auth/signup"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-white text-[#0050FF] font-bold text-xs hover:bg-neutral-100 transition-all shadow-md hover:scale-105 active:scale-95"
               >
                 Get Started Free
               </Link>

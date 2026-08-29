@@ -16,12 +16,13 @@ import {
   ShieldCheck,
   Cpu,
   Layers,
-  Globe
+  Globe,
+  Sliders
 } from "lucide-react";
 import Link from "next/link";
 
 export default function PricingPage() {
-  const { currency } = useAppStore();
+  const { currency, toggleCurrency } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -176,45 +177,58 @@ export default function PricingPage() {
             <Sparkles className="h-3.5 w-3.5" />
             <span>Outcome-Indexed Pricing</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-            Pay for Successful Outcomes. Not Wasted Tokens.
+          <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
+            Pay for Successful Outcomes. <br className="hidden sm:inline" /> Not Wasted Tokens.
           </h1>
           <p className="text-sm sm:text-base text-[#86868B]">
             Transparent tiers engineered to guarantee immediate FinOps ROI. Cancel or upgrade anytime.
           </p>
 
-          {/* Billing Toggle (Annual / Monthly) */}
-          <div className="flex items-center justify-center gap-3 pt-4">
-            <span className={`text-xs font-semibold ${!annualBilling ? "text-[#1D1D1F] dark:text-[#F5F5F7]" : "text-[#86868B]"}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setAnnualBilling(!annualBilling)}
-              className="w-12 h-6 rounded-full bg-[#0050FF] p-1 flex items-center transition-colors"
-            >
-              <div
-                className={`h-4 w-4 rounded-full bg-white transition-transform ${
-                  annualBilling ? "translate-x-6" : "translate-x-0"
+          {/* Controls: Annual / Monthly Billing Switch & Currency Quick Switch */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <div className="inline-flex items-center gap-3 p-1.5 rounded-full bg-white/80 dark:bg-[#161618]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-xs">
+              <button
+                onClick={() => setAnnualBilling(false)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  !annualBilling
+                    ? "bg-[#0050FF] text-white shadow-xs"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
                 }`}
-              ></div>
-            </button>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-xs font-semibold ${annualBilling ? "text-[#1D1D1F] dark:text-[#F5F5F7]" : "text-[#86868B]"}`}>
-                Annual Billing
-              </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-                Save 20%
-              </span>
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setAnnualBilling(true)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  annualBilling
+                    ? "bg-[#0050FF] text-white shadow-xs"
+                    : "text-[#86868B] hover:text-[#1D1D1F]"
+                }`}
+              >
+                <span>Annual</span>
+                <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                  Save 20%
+                </span>
+              </button>
             </div>
+
+            <button
+              onClick={toggleCurrency}
+              className="h-10 px-4 rounded-full bg-white/80 dark:bg-[#161618]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-xs"
+              title="Toggle Currency (USD / INR)"
+            >
+              <Globe className="h-3.5 w-3.5 text-[#0050FF]" />
+              <span>Currency: {activeCurrency === "USD" ? "$ USD" : "₹ INR"}</span>
+            </button>
           </div>
         </div>
 
         {/* Dynamic AI Plan Recommender & Token Slider */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm max-w-4xl mx-auto space-y-4">
+        <div className="p-6 sm:p-8 rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm max-w-4xl mx-auto space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Bot className="h-4 w-4 text-[#0050FF] dark:text-[#3374FF]" />
-              <h3 className="font-semibold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
+              <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">
                 Interactive Token Calculator & Plan Matcher
               </h3>
             </div>
@@ -230,7 +244,7 @@ export default function PricingPage() {
             step="25000"
             value={tokensInput}
             onChange={(e) => setTokensInput(parseInt(e.target.value))}
-            className="w-full accent-[#0050FF] h-2 bg-[#F5F5F7] dark:bg-[#1F1F23] rounded-lg cursor-pointer"
+            className="w-full accent-[#0050FF] h-2.5 bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-lg cursor-pointer"
           />
 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
@@ -240,7 +254,7 @@ export default function PricingPage() {
             <button
               onClick={handleRecommendPlan}
               disabled={isRecommending}
-              className="px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-sm shadow-[#0050FF]/25 flex items-center gap-1.5 shrink-0"
+              className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-[0_4px_14px_rgba(0,80,255,0.3)] flex items-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
             >
               <Zap className="h-3 w-3 fill-current" />
               <span>{isRecommending ? "Calculating ROI..." : "Calculate Best Plan"}</span>
@@ -248,47 +262,47 @@ export default function PricingPage() {
           </div>
 
           {recommendedPlanResult && (
-            <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 space-y-1.5 animate-in fade-in text-xs">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#EEF4FF] via-white to-[#F5F5F7] dark:from-[#0050FF]/15 dark:via-[#161618] dark:to-[#1C1C1E] border border-[#0050FF]/25 space-y-2 animate-in fade-in text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-[#0050FF] dark:text-[#3374FF]">
-                  Recommended Tier: {recommendedPlanResult.tier} ({formatCurrency(recommendedPlanResult.priceUSD * rate, currency)}/mo)
+                  Recommended Tier: {recommendedPlanResult.tier} ({formatCurrency(recommendedPlanResult.priceUSD * rate, activeCurrency)}/mo)
                 </span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  Est. Net Savings: +{formatCurrency(recommendedPlanResult.monthlySavingsUSD * rate, currency)}/mo
+                  Est. Net Savings: +{formatCurrency(recommendedPlanResult.monthlySavingsUSD * rate, activeCurrency)}/mo
                 </span>
               </div>
-              <p className="text-[#515154] dark:text-[#A1A1A6]">{recommendedPlanResult.rationale}</p>
+              <p className="text-[#515154] dark:text-[#A1A1A6] font-mono leading-relaxed">{recommendedPlanResult.rationale}</p>
             </div>
           )}
         </div>
 
-        {/* Pricing Cards Grid */}
+        {/* Pricing Cards Grid (4 Tiers) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {pricingTiers.map((tier, idx) => (
             <div
               key={idx}
-              className={`rounded-3xl p-6 flex flex-col justify-between space-y-6 transition-all ${
+              className={`rounded-[32px] p-6 sm:p-7 flex flex-col justify-between space-y-6 transition-all hover:scale-[1.02] ${
                 tier.highlighted
-                  ? "bg-white dark:bg-[#161618] border-2 border-[#0050FF] shadow-xl relative"
-                  : "bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm hover:shadow-md"
+                  ? "bg-white/90 dark:bg-[#151518]/90 backdrop-blur-3xl border-2 border-[#0050FF] shadow-[0_16px_40px_rgba(0,80,255,0.15)] relative"
+                  : "bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm hover:shadow-md"
               }`}
             >
               {tier.highlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#0050FF] text-white text-[10px] font-bold tracking-wide uppercase shadow-sm">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-[#0050FF] text-white text-[10px] font-bold tracking-wider uppercase shadow-sm">
                   Most Popular
                 </span>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-bold text-lg text-[#1D1D1F] dark:text-[#F5F5F7]">{tier.name}</h3>
+                  <h3 className="font-extrabold text-lg text-[#1D1D1F] dark:text-[#F5F5F7]">{tier.name}</h3>
                   <p className="text-xs text-[#86868B] mt-1 leading-relaxed">{tier.description}</p>
                 </div>
 
                 <div className="pt-2">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-                      {formatCurrency(tier.priceUSD * rate, currency)}
+                    <span className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
+                      {formatCurrency(tier.priceUSD * rate, activeCurrency)}
                     </span>
                     <span className="text-xs text-[#86868B]">/{tier.period}</span>
                   </div>
@@ -297,7 +311,7 @@ export default function PricingPage() {
                   </span>
                 </div>
 
-                <div className="space-y-2.5 pt-2 border-t border-black/[0.05] dark:border-white/[0.06]">
+                <div className="space-y-2.5 pt-3 border-t border-black/[0.04] dark:border-white/[0.06]">
                   {tier.features.map((feat, fIdx) => (
                     <div key={fIdx} className="flex items-start gap-2 text-xs">
                       <Check className="h-3.5 w-3.5 text-[#0050FF] dark:text-[#3374FF] shrink-0 mt-0.5" />
@@ -309,10 +323,10 @@ export default function PricingPage() {
 
               <Link
                 href={tier.ctaHref}
-                className={`w-full py-2.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs ${
+                className={`w-full py-3 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-105 active:scale-95 ${
                   tier.highlighted
-                    ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[#0050FF]/25"
-                    : "bg-[#F5F5F7] dark:bg-[#1F1F23] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
+                    ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)]"
+                    : "bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
                 }`}
               >
                 {tier.ctaText}
@@ -322,29 +336,33 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Accordion */}
-        <div className="max-w-3xl mx-auto space-y-6 pt-10">
+        <div className="max-w-3xl mx-auto space-y-6 pt-6">
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">Frequently Asked Questions</h2>
-            <p className="text-xs text-[#86868B]">Everything you need to know about Outcome-Indexed routing and billing</p>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xs sm:text-sm text-[#86868B]">
+              Everything you need to know about Outcome-Indexed routing, Micro-SLA escrow, and billing
+            </p>
           </div>
 
           <div className="space-y-3">
             {faqs.map((faq, fIdx) => (
               <div
                 key={fIdx}
-                className="p-5 rounded-2xl bg-white dark:bg-[#161618] border border-black/[0.05] dark:border-white/[0.08] shadow-sm cursor-pointer transition-all"
+                className="p-5 rounded-[24px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] shadow-sm cursor-pointer transition-all hover:border-[#0050FF]/30"
                 onClick={() => setOpenFaq(openFaq === fIdx ? null : fIdx)}
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">{faq.q}</h4>
+                  <h4 className="font-bold text-xs sm:text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">{faq.q}</h4>
                   {openFaq === fIdx ? (
-                    <ChevronUp className="h-4 w-4 text-[#86868B]" />
+                    <ChevronUp className="h-4 w-4 text-[#0050FF]" />
                   ) : (
                     <ChevronDown className="h-4 w-4 text-[#86868B]" />
                   )}
                 </div>
                 {openFaq === fIdx && (
-                  <p className="text-xs text-[#515154] dark:text-[#A1A1A6] mt-2.5 leading-relaxed animate-in fade-in">
+                  <p className="text-xs text-[#515154] dark:text-[#A1A1A6] mt-3 leading-relaxed animate-in fade-in">
                     {faq.a}
                   </p>
                 )}
