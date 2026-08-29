@@ -105,7 +105,7 @@ export function AppHeader() {
   const handleLogout = () => {
     logout();
     setDropdownOpen(false);
-    router.push("/auth/signin");
+    router.push("/");
   };
 
   return (
