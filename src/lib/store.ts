@@ -318,44 +318,7 @@ const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
   }
 ];
 
-const DEFAULT_RULES: RoutingRule[] = [
-  {
-    id: "rule_1",
-    name: "Sales Outreach: High Conversion",
-    task_type: "sales_email",
-    condition_pattern: "task == 'sales_email'",
-    target_metric: "demo_booked",
-    is_active: true,
-    enabled: true,
-    priority_models: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
-    models_priority: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
-    fallback_model: "GPT-4o",
-    max_latency_ms: 450,
-    max_cost_usd: 0.0035,
-    min_win_rate: 0.90,
-    strategy: "outcome_optimized",
-    trigger_count: 412,
-    total_saved_usd: 14.82
-  },
-  {
-    id: "rule_2",
-    name: "Code Generation & PR Review",
-    task_type: "code_generation",
-    condition_pattern: "task == 'code_generation'",
-    target_metric: "code_merged",
-    is_active: true,
-    enabled: true,
-    priority_models: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
-    models_priority: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
-    fallback_model: "GPT-4o",
-    max_latency_ms: 400,
-    max_cost_usd: 0.002,
-    min_win_rate: 0.88,
-    strategy: "cost_minimum",
-    trigger_count: 684,
-    total_saved_usd: 31.45
-  }
-];
+const DEFAULT_RULES: RoutingRule[] = [];
 
 const DEFAULT_KEYS: ApiKeyItem[] = [
   {

@@ -9,6 +9,12 @@ export interface UserAccount {
   plan_tier: "free" | "starter" | "growth" | "enterprise";
   monthly_token_quota: number;
   tokens_used?: number;
+  monthlySpendUSD?: number;
+  baselineSpendUSD?: number;
+  rules?: any[];
+  apiKeys?: any[];
+  logs?: any[];
+  slaEscrowContracts?: any[];
   pin: string;
   currency: "USD" | "INR";
   created_at: string;
@@ -98,6 +104,19 @@ function saveUsers(users: UserAccount[]) {
 
 export function getAllUsers(): UserAccount[] {
   return ensureStorage();
+}
+
+export function updateUserAccountState(email: string, updates: Partial<UserAccount>): UserAccount | null {
+  const users = ensureStorage();
+  const normalized = email.trim().toLowerCase();
+  const index = users.findIndex((u) => u.email.trim().toLowerCase() === normalized);
+  if (index === -1) return null;
+  users[index] = {
+    ...users[index],
+    ...updates
+  };
+  saveUsers(users);
+  return users[index];
 }
 
 export function findUserByEmail(email: string): UserAccount | null {

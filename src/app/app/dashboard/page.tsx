@@ -78,18 +78,25 @@ export default function DashboardPage() {
   }, []);
 
   const fetchSessionTelemetry = () => {
-    fetch("/api/auth/session")
+    const userEmail = useAppStore.getState().user?.email || "varvind2004@gmail.com";
+    fetch(`/api/auth/session?email=${encodeURIComponent(userEmail)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user) {
+          const currentStore = useAppStore.getState();
           useAppStore.setState({
-            currentTokens: data.user.tokens_used,
-            monthlyQuota: data.user.monthly_token_quota,
-            monthlySpendUSD: data.user.monthlySpendUSD,
-            baselineSpendUSD: data.user.baselineSpendUSD,
-            planTier: data.user.plan_tier,
-            orgName: data.user.workspace,
-            currency: data.user.currency || "INR"
+            currentTokens: data.user.tokens_used ?? currentStore.currentTokens ?? 0,
+            monthlyQuota: data.user.monthly_token_quota || currentStore.monthlyQuota || 10000,
+            monthlySpendUSD: data.user.monthlySpendUSD ?? currentStore.monthlySpendUSD ?? 0,
+            baselineSpendUSD: data.user.baselineSpendUSD ?? currentStore.baselineSpendUSD ?? 0,
+            planTier: data.user.plan_tier || currentStore.planTier || "free",
+            orgName: data.user.workspace || currentStore.orgName || "Arvind's Workspace",
+            currency: data.user.currency || currentStore.currency || "INR",
+            rules: data.user.rules || currentStore.rules || [],
+            routingRules: data.user.rules || currentStore.routingRules || [],
+            apiKeys: (data.user.apiKeys && data.user.apiKeys.length > 0) ? data.user.apiKeys : currentStore.apiKeys,
+            logs: (data.user.logs && data.user.logs.length > 0) ? data.user.logs : currentStore.logs,
+            slaEscrowContracts: (data.user.slaEscrowContracts && data.user.slaEscrowContracts.length > 0) ? data.user.slaEscrowContracts : currentStore.slaEscrowContracts
           });
         }
       })

@@ -182,6 +182,28 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
       cryptographicHash: contractHash
     };
     addSlaContract(slaContract);
+
+    // Persist updated metrics and logs to server disk for account continuity across logouts
+    try {
+      const state = useAppStore.getState();
+      const userEmail = state.user?.email || "varvind2004@gmail.com";
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userEmail,
+          tokens_used: state.currentTokens,
+          monthlySpendUSD: state.monthlySpendUSD,
+          baselineSpendUSD: state.baselineSpendUSD,
+          rules: state.rules,
+          apiKeys: state.apiKeys,
+          logs: [logEntry, ...state.logs].slice(0, 100),
+          slaEscrowContracts: [slaContract, ...state.slaEscrowContracts].slice(0, 100)
+        })
+      }).catch(() => {});
+    } catch (e) {
+      // ignore
+    }
   };
 
   const handleFeedback = (success: boolean) => {

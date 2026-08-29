@@ -183,7 +183,7 @@ export default function SettingsPage() {
         useAppStore.getState().logout();
         if (typeof window !== "undefined") {
           window.localStorage.clear();
-          window.location.href = "/auth/signin";
+          window.location.href = "/";
         }
       }, 1200);
     } catch (err: any) {

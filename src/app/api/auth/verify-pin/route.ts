@@ -29,34 +29,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Record login to Google Sheets Webhook
-    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          localTime: new Date().toLocaleString(),
-          action: "SIGNIN",
-          name: user.name,
-          email: user.email,
-          workspace: user.workspace,
-          plan_tier: user.plan_tier,
-          monthly_token_quota: user.monthly_token_quota,
-          currency: user.currency,
-          auth_method: "PIN_PASSWORD"
-        }),
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000)
-      });
-    } catch (e) {
-      console.warn("Google Sheet webhook notice:", e);
-    }
-
-    const tokensUsed = user.tokens_used ?? 10003;
-    const baselineSpend = Number(((tokensUsed / 1000) * 0.0052).toFixed(2));
-    const actualSpend = Number(((tokensUsed / 1000) * 0.00065).toFixed(2));
+    const tokensUsed = user.tokens_used ?? 0;
+    const baselineSpend = user.baselineSpendUSD ?? Number(((tokensUsed / 1000) * 0.0052).toFixed(2));
+    const actualSpend = user.monthlySpendUSD ?? Number(((tokensUsed / 1000) * 0.00065).toFixed(2));
 
     return NextResponse.json({
       success: true,
@@ -71,7 +46,11 @@ export async function POST(req: Request) {
         tokens_used: tokensUsed,
         monthlySpendUSD: actualSpend,
         baselineSpendUSD: baselineSpend,
-        currency: user.currency || "INR"
+        currency: user.currency || "INR",
+        rules: user.rules || [],
+        apiKeys: user.apiKeys || [],
+        logs: user.logs || [],
+        slaEscrowContracts: user.slaEscrowContracts || []
       }
     });
   } catch (error: any) {

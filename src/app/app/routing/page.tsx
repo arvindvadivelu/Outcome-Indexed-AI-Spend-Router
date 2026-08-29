@@ -82,71 +82,6 @@ export default function RoutingRulesPage() {
   // In-Page Simulation Modal Trigger
   const [showSimulate, setShowSimulate] = useState(false);
 
-  // Default initial rules restore if list is emptied
-  const handleRestoreDefaults = () => {
-    const defaultList: RoutingRule[] = [
-      {
-        id: "rule_1",
-        name: "Sales Outreach: High Conversion",
-        task_type: "sales_email",
-        condition_pattern: "task == 'sales_email' && latency < 400ms",
-        target_metric: "demo_booked",
-        is_active: true,
-        enabled: true,
-        priority_models: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
-        models_priority: ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"],
-        fallback_model: "GPT-4o",
-        max_latency_ms: 400,
-        max_cost_usd: 0.0035,
-        min_win_rate: 0.90,
-        strategy: "outcome_optimized",
-        ai_synthesized: false,
-        trigger_count: 1420,
-        total_saved_usd: 48.20
-      },
-      {
-        id: "rule_2",
-        name: "Code Generation: PR Merge SLA",
-        task_type: "code_generation",
-        condition_pattern: "task == 'code_generation' && tokens < 2000",
-        target_metric: "code_merged",
-        is_active: true,
-        enabled: true,
-        priority_models: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
-        models_priority: ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"],
-        fallback_model: "GPT-4o",
-        max_latency_ms: 250,
-        max_cost_usd: 0.0018,
-        min_win_rate: 0.93,
-        strategy: "outcome_optimized",
-        ai_synthesized: false,
-        trigger_count: 3840,
-        total_saved_usd: 124.50
-      },
-      {
-        id: "rule_3",
-        name: "Support FAQ: Sub-100ms Speed",
-        task_type: "customer_support",
-        condition_pattern: "task == 'customer_support' && latency < 120ms",
-        target_metric: "ticket_resolved",
-        is_active: true,
-        enabled: true,
-        priority_models: ["Groq Llama 3.3", "DeepSeek-V3", "GPT-4o Mini"],
-        models_priority: ["Groq Llama 3.3", "DeepSeek-V3", "GPT-4o Mini"],
-        fallback_model: "Claude 3.5 Sonnet",
-        max_latency_ms: 120,
-        max_cost_usd: 0.0004,
-        min_win_rate: 0.95,
-        strategy: "outcome_optimized",
-        ai_synthesized: false,
-        trigger_count: 5120,
-        total_saved_usd: 88.90
-      }
-    ];
-
-    defaultList.forEach(r => addRule(r));
-  };
-
   const handleSynthesize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
@@ -287,16 +222,6 @@ export default function RoutingRulesPage() {
               <span>Simulate Gateway</span>
             </button>
 
-            {routingRules.length === 0 && (
-              <button
-                onClick={handleRestoreDefaults}
-                className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
-              >
-                <RotateCcw className="h-3.5 w-3.5 text-[#0050FF]" />
-                <span>Restore Defaults</span>
-              </button>
-            )}
-
             <button
               onClick={() => setShowManualModal(true)}
               className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
@@ -377,12 +302,29 @@ export default function RoutingRulesPage() {
       {/* 3. Strategic Subsystems Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
         {/* Card 1: Thompson Auto-Pilot */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
+        <div
+          onClick={() => {
+            if (!plan.canUseAutopilot) {
+              setUpgradeModalInfo({
+                title: "Auto-Pilot Dirichlet Budget Pacing",
+                desc: "Auto-Pilot autonomous cost vs quality balancing is unlocked on Starter & Growth tiers. Upgrade to enable automated budget pacing.",
+                targetPlan: "Starter"
+              });
+            }
+          }}
+          className={`rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group ${
+            !plan.canUseAutopilot ? "cursor-pointer" : ""
+          }`}
+          suppressHydrationWarning
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Thompson Sampling</span>
             {plan.canUseAutopilot ? (
               <button
-                onClick={toggleAutopilot}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleAutopilot();
+                }}
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                   autopilot.enabled
                     ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
@@ -393,11 +335,14 @@ export default function RoutingRulesPage() {
               </button>
             ) : (
               <button
-                onClick={() => setUpgradeModalInfo({
-                  title: "Auto-Pilot Dirichlet Budget Pacing",
-                  desc: "Auto-Pilot autonomous cost vs quality balancing is unlocked on Starter & Growth tiers. Upgrade to enable automated budget pacing.",
-                  targetPlan: "Starter"
-                })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUpgradeModalInfo({
+                    title: "Auto-Pilot Dirichlet Budget Pacing",
+                    desc: "Auto-Pilot autonomous cost vs quality balancing is unlocked on Starter & Growth tiers. Upgrade to enable automated budget pacing.",
+                    targetPlan: "Starter"
+                  });
+                }}
                 className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
               >
                 <Lock className="h-3 w-3" />
@@ -417,7 +362,21 @@ export default function RoutingRulesPage() {
         </div>
 
         {/* Card 2: Keystroke Pre-Warming */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
+        <div
+          onClick={() => {
+            if (!plan.canUseSpeculativePrewarm) {
+              setUpgradeModalInfo({
+                title: "Speculative Pre-Warming (TTFT <70ms)",
+                desc: "Predictive speculative pre-warming on user keystrokes is unlocked on Growth & Enterprise tiers. Drops TTFT by 70%+.",
+                targetPlan: "Growth"
+              });
+            }
+          }}
+          className={`rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group ${
+            !plan.canUseSpeculativePrewarm ? "cursor-pointer" : ""
+          }`}
+          suppressHydrationWarning
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Speculative Prewarm</span>
             {plan.canUseSpeculativePrewarm ? (
@@ -426,11 +385,14 @@ export default function RoutingRulesPage() {
               </span>
             ) : (
               <button
-                onClick={() => setUpgradeModalInfo({
-                  title: "Speculative Pre-Warming (TTFT <70ms)",
-                  desc: "Predictive speculative pre-warming on user keystrokes is unlocked on Growth & Enterprise tiers. Drops TTFT by 70%+.",
-                  targetPlan: "Growth"
-                })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUpgradeModalInfo({
+                    title: "Speculative Pre-Warming (TTFT <70ms)",
+                    desc: "Predictive speculative pre-warming on user keystrokes is unlocked on Growth & Enterprise tiers. Drops TTFT by 70%+.",
+                    targetPlan: "Growth"
+                  });
+                }}
                 className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
               >
                 <Lock className="h-3 w-3" />
@@ -450,12 +412,29 @@ export default function RoutingRulesPage() {
         </div>
 
         {/* Card 3: Federated Thompson Priors */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
+        <div
+          onClick={() => {
+            if (!plan.canUseDifferentialPrivacy) {
+              setUpgradeModalInfo({
+                title: "Federated Differential Privacy Priors",
+                desc: "Cross-tenant Bayesian prior sharing with ε=0.5 Laplacian noise is unlocked on Growth & Enterprise tiers.",
+                targetPlan: "Growth"
+              });
+            }
+          }}
+          className={`rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group ${
+            !plan.canUseDifferentialPrivacy ? "cursor-pointer" : ""
+          }`}
+          suppressHydrationWarning
+        >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Federated Priors</span>
             {plan.canUseDifferentialPrivacy ? (
               <button
-                onClick={toggleFederation}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFederation();
+                }}
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                   federationSettings.enabled
                     ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF]"
@@ -466,11 +445,14 @@ export default function RoutingRulesPage() {
               </button>
             ) : (
               <button
-                onClick={() => setUpgradeModalInfo({
-                  title: "Federated Differential Privacy Priors",
-                  desc: "Cross-tenant Bayesian prior sharing with ε=0.5 Laplacian noise is unlocked on Growth & Enterprise tiers.",
-                  targetPlan: "Growth"
-                })}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUpgradeModalInfo({
+                    title: "Federated Differential Privacy Priors",
+                    desc: "Cross-tenant Bayesian prior sharing with ε=0.5 Laplacian noise is unlocked on Growth & Enterprise tiers.",
+                    targetPlan: "Growth"
+                  });
+                }}
                 className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
               >
                 <Lock className="h-3 w-3" />
@@ -616,13 +598,23 @@ export default function RoutingRulesPage() {
         </div>
 
         {routingRules.length === 0 ? (
-          <div className="p-10 text-center space-y-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1B1B1E] border border-black/[0.04] dark:border-white/[0.06]">
-            <p className="text-xs text-[#86868B]">No active routing policies configured.</p>
+          <div className="p-12 text-center space-y-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1B1B1E] border border-black/[0.04] dark:border-white/[0.06]">
+            <div className="h-12 w-12 rounded-2xl bg-[#0050FF]/10 text-[#0050FF] flex items-center justify-center mx-auto">
+              <Sliders className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-bold text-sm text-[#1D1D1F] dark:text-[#F5F5F7]">No Custom Routing Policies Configured</h4>
+              <p className="text-xs text-[#86868B] max-w-md mx-auto">
+                All prompt requests currently utilize the autonomous Bayesian Thompson sampling prior gateway. Create your first custom policy or synthesize one using natural language above.
+              </p>
+            </div>
             <button
-              onClick={handleRestoreDefaults}
-              className="px-5 h-9 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
+              type="button"
+              onClick={() => setShowManualModal(true)}
+              className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs inline-flex items-center gap-2 hover:scale-105 active:scale-95"
             >
-              Restore Production Defaults
+              <Plus className="h-3.5 w-3.5" />
+              <span>Create Custom Policy</span>
             </button>
           </div>
         ) : (

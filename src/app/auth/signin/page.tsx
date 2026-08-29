@@ -12,10 +12,10 @@ export default function SignInPage() {
   const { setAuthUser, setOrgName, setPlanTier } = useAppStore();
 
   const [authMode, setAuthMode] = useState<"pin" | "otp">("pin");
-  const [email, setEmail] = useState("alex@company.com");
+  const [email, setEmail] = useState("");
   
   // 6-digit PIN password state
-  const [pin, setPin] = useState(["1", "2", "3", "4", "5", "6"]);
+  const [pin, setPin] = useState(["", "", "", "", "", ""]);
   
   // Email OTP state
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -68,7 +68,7 @@ export default function SignInPage() {
     }
   };
 
-  // 1. PIN Mode Submission (Live Verification against Database & Google Sheet)
+  // 1. PIN-Based Login Submission
   const handlePinLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -76,7 +76,7 @@ export default function SignInPage() {
 
     const pinCode = pin.join("");
     if (!email.trim() || pinCode.length !== 6) {
-      setErrorMessage("Please enter your work email and complete the 6-digit PIN.");
+      setErrorMessage("Please enter your registered email and 6-digit security PIN.");
       return;
     }
 
@@ -98,14 +98,25 @@ export default function SignInPage() {
       }
 
       // Success: Apply verified user details & active plan tier to global store
-      setAuthUser({
-        name: data.user.name,
-        email: data.user.email,
-        hasPin: true,
-        hasBiometrics: true
+      useAppStore.setState({
+        user: {
+          name: data.user.name,
+          email: data.user.email,
+          hasPin: true,
+          hasBiometrics: true
+        },
+        orgName: data.user.workspace || "Arvind's Workspace",
+        planTier: data.user.plan_tier || "free",
+        monthlyQuota: data.user.monthly_token_quota || 10000,
+        currentTokens: data.user.tokens_used ?? 0,
+        monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
+        baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
+        currency: data.user.currency || "INR",
+        rules: data.user.rules || [],
+        routingRules: data.user.rules || [],
+        apiKeys: data.user.apiKeys || [],
+        logs: data.user.logs || []
       });
-      setOrgName(data.user.workspace);
-      setPlanTier(data.user.plan_tier || "free");
 
       setSuccessMessage("Security PIN verified! Redirecting to Console...");
       setTimeout(() => {
@@ -185,14 +196,25 @@ export default function SignInPage() {
       }
 
       // Success
-      setAuthUser({
-        name: data.user.name,
-        email: data.user.email,
-        hasPin: true,
-        hasBiometrics: true
+      useAppStore.setState({
+        user: {
+          name: data.user.name,
+          email: data.user.email,
+          hasPin: true,
+          hasBiometrics: true
+        },
+        orgName: data.user.workspace || "Arvind's Workspace",
+        planTier: data.user.plan_tier || "free",
+        monthlyQuota: data.user.monthly_token_quota || 10000,
+        currentTokens: data.user.tokens_used ?? 0,
+        monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
+        baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
+        currency: data.user.currency || "INR",
+        rules: data.user.rules || [],
+        routingRules: data.user.rules || [],
+        apiKeys: data.user.apiKeys || [],
+        logs: data.user.logs || []
       });
-      setOrgName(data.user.workspace);
-      setPlanTier(data.user.plan_tier || "free");
 
       setSuccessMessage("OTP verified successfully! Access granted.");
       setTimeout(() => {
