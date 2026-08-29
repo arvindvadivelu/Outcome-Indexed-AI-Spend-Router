@@ -27,9 +27,13 @@ import {
   ArrowDown,
   RotateCcw,
   SlidersHorizontal,
-  Play
+  Play,
+  Lock,
+  AlertCircle
 } from "lucide-react";
+import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
+import { getPlanFeatures } from "@/lib/plan-gates";
 
 export default function RoutingRulesPage() {
   const {
@@ -43,13 +47,19 @@ export default function RoutingRulesPage() {
     federationSettings,
     setFederationWeight,
     toggleFederation,
-    prewarmMetrics
+    prewarmMetrics,
+    planTier
   } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const plan = getPlanFeatures(planTier);
+
+  // Upgrade Requirement Modal state
+  const [upgradeModalInfo, setUpgradeModalInfo] = useState<{ title: string; desc: string; targetPlan: string } | null>(null);
 
   // Synthesizer state
   const [aiPrompt, setAiPrompt] = useState("");
@@ -141,6 +151,15 @@ export default function RoutingRulesPage() {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
 
+    if (!plan.canUseAiRuleSynthesis) {
+      setUpgradeModalInfo({
+        title: "AI Policy Synthesizer (Starter+ Feature)",
+        desc: "Autonomous natural language policy generation is available on Starter and Growth tiers. Free tier includes standard Thompson Sampling Pareto routing. Upgrade to generate autonomous rules from natural language.",
+        targetPlan: "Starter"
+      });
+      return;
+    }
+
     setIsSynthesizing(true);
 
     try {
@@ -168,6 +187,16 @@ export default function RoutingRulesPage() {
   const handleCreateManualRule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualName.trim()) return;
+
+    if (routingRules.length >= plan.maxActiveRules) {
+      setShowManualModal(false);
+      setUpgradeModalInfo({
+        title: "Routing Rule Limit Reached",
+        desc: `Your current tier allows up to ${plan.maxActiveRules} active routing rules (${routingRules.length}/${plan.maxActiveRules}). Upgrade to Starter for 5 rules, or Growth for unlimited rules.`,
+        targetPlan: "Starter"
+      });
+      return;
+    }
 
     let priority = ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"];
     if (manualTask === "code_generation") priority = ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"];
@@ -351,16 +380,30 @@ export default function RoutingRulesPage() {
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Thompson Sampling</span>
-            <button
-              onClick={toggleAutopilot}
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
-                autopilot.enabled
-                  ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
-                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-              }`}
-            >
-              {autopilot.enabled ? "ACTIVE" : "PAUSED"}
-            </button>
+            {plan.canUseAutopilot ? (
+              <button
+                onClick={toggleAutopilot}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
+                  autopilot.enabled
+                    ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                }`}
+              >
+                {autopilot.enabled ? "ACTIVE" : "PAUSED"}
+              </button>
+            ) : (
+              <button
+                onClick={() => setUpgradeModalInfo({
+                  title: "Auto-Pilot Dirichlet Budget Pacing",
+                  desc: "Auto-Pilot autonomous cost vs quality balancing is unlocked on Starter & Growth tiers. Upgrade to enable automated budget pacing.",
+                  targetPlan: "Starter"
+                })}
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Lock className="h-3 w-3" />
+                <span>STARTER</span>
+              </button>
+            )}
           </div>
           <div>
             <div className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono capitalize">
@@ -377,9 +420,23 @@ export default function RoutingRulesPage() {
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Speculative Prewarm</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] text-[#137333] dark:bg-[#1E3A2F] dark:text-[#81C995]">
-              75.6% FASTER
-            </span>
+            {plan.canUseSpeculativePrewarm ? (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] text-[#137333] dark:bg-[#1E3A2F] dark:text-[#81C995]">
+                75.6% FASTER
+              </span>
+            ) : (
+              <button
+                onClick={() => setUpgradeModalInfo({
+                  title: "Speculative Pre-Warming (TTFT <70ms)",
+                  desc: "Predictive speculative pre-warming on user keystrokes is unlocked on Growth & Enterprise tiers. Drops TTFT by 70%+.",
+                  targetPlan: "Growth"
+                })}
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Lock className="h-3 w-3" />
+                <span>GROWTH</span>
+              </button>
+            )}
           </div>
           <div>
             <div className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
@@ -396,16 +453,30 @@ export default function RoutingRulesPage() {
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Federated Priors</span>
-            <button
-              onClick={toggleFederation}
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
-                federationSettings.enabled
-                  ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF]"
-                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-              }`}
-            >
-              {federationSettings.enabled ? "SHARING ON" : "PRIVATE"}
-            </button>
+            {plan.canUseDifferentialPrivacy ? (
+              <button
+                onClick={toggleFederation}
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
+                  federationSettings.enabled
+                    ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF]"
+                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                }`}
+              >
+                {federationSettings.enabled ? "SHARING ON" : "PRIVATE"}
+              </button>
+            ) : (
+              <button
+                onClick={() => setUpgradeModalInfo({
+                  title: "Federated Differential Privacy Priors",
+                  desc: "Cross-tenant Bayesian prior sharing with ε=0.5 Laplacian noise is unlocked on Growth & Enterprise tiers.",
+                  targetPlan: "Growth"
+                })}
+                className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Lock className="h-3 w-3" />
+                <span>GROWTH</span>
+              </button>
+            )}
           </div>
           <div>
             <div className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] font-mono">
@@ -718,6 +789,61 @@ export default function RoutingRulesPage() {
       {/* Simulator Modal */}
       {showSimulate && (
         <SimulateRequestModal onClose={() => setShowSimulate(false)} />
+      )}
+
+      {/* Plan Upgrade Requirement Modal */}
+      {upgradeModalInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  {upgradeModalInfo.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setUpgradeModalInfo(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+              {upgradeModalInfo.desc}
+            </p>
+
+            <div className="p-3.5 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 text-xs space-y-1">
+              <div className="font-bold text-[#0050FF] dark:text-[#3374FF]">
+                Recommended: {upgradeModalInfo.targetPlan} Plan
+              </div>
+              <p className="text-[11px] text-[#86868B]">
+                Unlock expanded token quotas, autonomous policies, and priority routing.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setUpgradeModalInfo(null)}
+                className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
+              >
+                Dismiss
+              </button>
+              <Link
+                href="/app/billing"
+                onClick={() => setUpgradeModalInfo(null)}
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Upgrade Plan</span>
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -28,15 +28,18 @@ import {
   RotateCcw
 } from "lucide-react";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
+import Link from "next/link";
+import { getPlanFeatures } from "@/lib/plan-gates";
 
 export default function LogsPage() {
-  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome } = useAppStore();
+  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome, planTier } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const plan = getPlanFeatures(planTier);
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
 
@@ -125,9 +128,15 @@ export default function LogsPage() {
               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] border border-[#0050FF]/20">
                 {activeLogs.length} Verified Traces
               </span>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300">
+                {plan.logRetentionDays}-Day Retention ({planTier?.toUpperCase() || "FREE"})
+              </span>
             </div>
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
               Every request bound to cryptographic SHA-256 Micro-SLA contracts with inline outcome feedback and cURL reproduction snippets.
+              {plan.logRetentionDays <= 3 && (
+                <> <Link href="/app/billing" className="text-[#0050FF] dark:text-[#3374FF] font-semibold hover:underline">Upgrade to Starter for 30 days retention.</Link></>
+              )}
             </p>
           </div>
 

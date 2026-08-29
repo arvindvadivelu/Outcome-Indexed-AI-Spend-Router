@@ -16,7 +16,8 @@ import {
   Shield,
   X,
   Lock,
-  Globe
+  Globe,
+  Home
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -79,6 +80,7 @@ export function AppHeader() {
   const currentSpend = monthlySpendUSD * rate;
   const baselineSpend = baselineSpendUSD * rate;
   const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
+  const savedPercent = baselineSpend > 0 ? Math.round((savedAmount / baselineSpend) * 100) : 0;
 
   const userName = mounted && user?.name ? user.name : "Alex Vance";
   const userEmail = mounted && user?.email ? user.email : "alex@company.com";
@@ -124,14 +126,26 @@ export function AppHeader() {
           </div>
         </div>
 
-        {/* Right: Net Savings Pill, Simulate Button, Avatar Dropdown */}
+        {/* Right: Home Button, Net Savings Pill, Simulate Button, Avatar Dropdown */}
         <div className="flex items-center gap-3" suppressHydrationWarning>
+          {/* Home Button linking to Landing Page http://localhost:3000/ */}
+          <Link
+            href="/"
+            className="h-9 w-9 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] border border-black/[0.04] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] dark:hover:text-[#3374FF] hover:bg-white dark:hover:bg-[#252528] flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-2xs"
+            title="Go to Home Page (http://localhost:3000/)"
+          >
+            <Home className="h-4 w-4" />
+          </Link>
+
+          {/* Dynamic Real-Time Net Savings Pill */}
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#F5F5F7] dark:bg-[#1F1F23] text-xs" suppressHydrationWarning>
             <span className="text-[#86868B] font-medium">Saved:</span>
             <span className="font-semibold text-[#0050FF] dark:text-[#3374FF]">
               +{formatCurrency(savedAmount, activeCurrency)}
             </span>
-            <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-medium">(-42%)</span>
+            <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-medium">
+              (-{savedPercent}%)
+            </span>
           </div>
 
           {/* Simulate Action Button */}

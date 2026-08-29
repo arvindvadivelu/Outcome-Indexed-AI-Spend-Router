@@ -22,11 +22,13 @@ import {
   Globe,
   Play,
   Plus,
-  AlertCircle
+  AlertCircle,
+  Lock
 } from "lucide-react";
 import Link from "next/link";
 import { useAppStore } from "@/lib/store";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
+import { getPlanFeatures, isConnectorAllowed } from "@/lib/plan-gates";
 
 export default function IntegrationsPage() {
   const { planTier } = useAppStore();
@@ -34,6 +36,11 @@ export default function IntegrationsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const plan = getPlanFeatures(planTier);
+
+  // Upgrade Requirement Modal State
+  const [upgradeModalInfo, setUpgradeModalInfo] = useState<{ title: string; desc: string; targetPlan: string } | null>(null);
 
   const [integrations, setIntegrations] = useState([
     {
@@ -260,7 +267,17 @@ export default function IntegrationsPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Custom Integration Button */}
             <button
-              onClick={() => setShowCustomModal(true)}
+              onClick={() => {
+                if (!plan.canUseCustomIntegrations) {
+                  setUpgradeModalInfo({
+                    title: "Custom Ecosystem Integrations (Starter+ Feature)",
+                    desc: "Custom private VPC, local Ollama nodes, and dedicated vLLM cluster endpoints are unlocked on Starter & Growth tiers. Free tier includes OpenAI, Anthropic, and Groq standard connectors.",
+                    targetPlan: "Starter"
+                  });
+                } else {
+                  setShowCustomModal(true);
+                }
+              }}
               className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#F5F5F7] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -389,57 +406,83 @@ export default function IntegrationsPage() {
         ))}
       </div>
 
-      {/* 4. Integrations Grid */}
+      {/* 4. Integrations Grid with Plan Locking */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        {filteredIntegrations.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group"
-          >
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/[0.04] dark:bg-white/[0.06] text-[#86868B] uppercase">
-                  {item.category}
-                </span>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  item.connected
-                    ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
-                    : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
-                }`}>
-                  {item.connected ? "CONNECTED" : "AVAILABLE"}
-                </span>
+        {filteredIntegrations.map((item) => {
+          const isAllowed = isConnectorAllowed(planTier, item.id);
+          const requiredTier = ["langchain", "llamaindex", "vercel", "crewai"].includes(item.id) ? "Growth" : "Starter";
+
+          return (
+            <div
+              key={item.id}
+              className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-black/[0.04] dark:bg-white/[0.06] text-[#86868B] uppercase">
+                    {item.category}
+                  </span>
+                  {isAllowed ? (
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      item.connected
+                        ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
+                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
+                    }`}>
+                      {item.connected ? "CONNECTED" : "AVAILABLE"}
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <Lock className="h-2.5 w-2.5" />
+                      <span>{requiredTier.toUpperCase()}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] group-hover:text-[#0050FF] transition-colors">
+                    {item.name}
+                  </h3>
+                  <p className="text-[11px] text-[#86868B] mt-1 leading-relaxed">{item.desc}</p>
+                </div>
               </div>
 
-              <div>
-                <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] group-hover:text-[#0050FF] transition-colors">
-                  {item.name}
-                </h3>
-                <p className="text-[11px] text-[#86868B] mt-1 leading-relaxed">{item.desc}</p>
+              <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
+                <span className="text-[11px] font-mono text-[#86868B]">Latency: {item.latency}</span>
+                {isAllowed ? (
+                  <button
+                    onClick={() => {
+                      if (item.connected) {
+                        setSelectedIntegration(item);
+                      } else {
+                        if (isBridgeLimitReached) {
+                          alert(`Bridge limit reached (${connectedCount}/${bridgeLimit}). Upgrade plan to connect more.`);
+                        } else {
+                          setConnectingItem(item);
+                        }
+                      }
+                    }}
+                    className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
+                  >
+                    <Code2 className="h-3 w-3" />
+                    <span>{item.connected ? "Snippet" : "Connect"}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setUpgradeModalInfo({
+                      title: `${item.name} Connector`,
+                      desc: `${item.name} is included in ${requiredTier} tier and above. Free tier includes OpenAI, Anthropic, and Groq standard connectors. Upgrade your workspace to unlock this integration.`,
+                      targetPlan: requiredTier
+                    })}
+                    className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[11px] font-semibold hover:bg-amber-500 hover:text-white transition-all flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
+                  >
+                    <Lock className="h-3 w-3" />
+                    <span>Upgrade</span>
+                  </button>
+                )}
               </div>
             </div>
-
-            <div className="pt-3 border-t border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between">
-              <span className="text-[11px] font-mono text-[#86868B]">Latency: {item.latency}</span>
-              <button
-                onClick={() => {
-                  if (item.connected) {
-                    setSelectedIntegration(item);
-                  } else {
-                    if (isBridgeLimitReached) {
-                      alert(`Bridge limit reached (${connectedCount}/${bridgeLimit}). Upgrade plan to connect more.`);
-                    } else {
-                      setConnectingItem(item);
-                    }
-                  }
-                }}
-                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
-              >
-                <Code2 className="h-3 w-3" />
-                <span>{item.connected ? "Snippet" : "Connect"}</span>
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Custom Integration Modal */}
@@ -654,6 +697,61 @@ export default function IntegrationsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Plan Upgrade Requirement Modal */}
+      {upgradeModalInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  {upgradeModalInfo.title}
+                </h3>
+              </div>
+              <button
+                onClick={() => setUpgradeModalInfo(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+              {upgradeModalInfo.desc}
+            </p>
+
+            <div className="p-3.5 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 text-xs space-y-1">
+              <div className="font-bold text-[#0050FF] dark:text-[#3374FF]">
+                Recommended: {upgradeModalInfo.targetPlan} Plan
+              </div>
+              <p className="text-[11px] text-[#86868B]">
+                Unlock expanded ecosystem framework connectors, direct provider gateways, and custom endpoints.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setUpgradeModalInfo(null)}
+                className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
+              >
+                Dismiss
+              </button>
+              <Link
+                href="/app/billing"
+                onClick={() => setUpgradeModalInfo(null)}
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Upgrade Plan</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}
