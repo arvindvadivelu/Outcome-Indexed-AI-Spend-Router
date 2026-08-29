@@ -73,22 +73,20 @@ function ensureStorage(): UserAccount[] {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(USERS_FILE)) {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(DEFAULT_USERS, null, 2), "utf-8");
-      return DEFAULT_USERS;
+      fs.writeFileSync(USERS_FILE, "[]", "utf-8");
+      return [];
     }
     const raw = fs.readFileSync(USERS_FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    
-    // Ensure varvind2004@gmail.com exists
-    if (!parsed.some((u: UserAccount) => u.email === "varvind2004@gmail.com")) {
-      parsed.push(DEFAULT_USERS[1]);
-      fs.writeFileSync(USERS_FILE, JSON.stringify(parsed, null, 2), "utf-8");
-    }
-    return parsed;
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     console.error("Auth DB read error:", err);
-    return DEFAULT_USERS;
+    return [];
   }
+}
+
+export function clearAllUsers(): void {
+  saveUsers([]);
 }
 
 function saveUsers(users: UserAccount[]) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, deleteUser } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +13,40 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = findUserByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Live Google Sheet Verification: If row was deleted in Google Sheet, block login
+    const webhookUrl =
+      process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
+      "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
+
+    try {
+      const sheetRes = await fetch(webhookUrl, {
+        signal: AbortSignal.timeout(2500),
+        redirect: "follow"
+      });
+      if (sheetRes.ok) {
+        const sheetData = await sheetRes.json();
+        if (sheetData.status === "success" && Array.isArray(sheetData.emails)) {
+          const sheetEmails = sheetData.emails.map((e: string) => e.trim().toLowerCase());
+          if (!sheetEmails.includes(normalizedEmail)) {
+            // User was removed from Google Sheet directory! Purge locally & deny access
+            deleteUser(normalizedEmail);
+            return NextResponse.json(
+              {
+                success: false,
+                error: `Account for "${email}" has been deleted from the Google Sheet directory. Login is disabled.`
+              },
+              { status: 403 }
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Fallback to local DB if sheet check timed out
+    }
+
+    const user = findUserByEmail(normalizedEmail);
 
     if (!user) {
       return NextResponse.json(
