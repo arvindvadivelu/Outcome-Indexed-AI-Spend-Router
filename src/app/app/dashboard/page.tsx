@@ -150,10 +150,10 @@ export default function DashboardPage() {
   const modelShareData = useMemo(() => {
     if (activeLogs.length === 0) {
       return [
-        { name: "DeepSeek-V3", provider: "DeepSeek", share: 48, cost: "$0.00042/req", savings: "88%", ratePerMillion: "$0.27 / 1M", avgTtft: "64ms", color: "#0050FF", badgeColor: "bg-[#EEF4FF] text-[#0050FF] dark:bg-[#0050FF]/20 dark:text-[#3374FF]" },
-        { name: "Groq Llama 3.3", provider: "Groq", share: 32, cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.18 / 1M", avgTtft: "48ms", color: "#10B981", badgeColor: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400" },
-        { name: "Claude 3.5 Sonnet", provider: "Anthropic", share: 15, cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M", avgTtft: "140ms", color: "#F59E0B", badgeColor: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400" },
-        { name: "GPT-4o (Fallback)", provider: "OpenAI", share: 5, cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M", avgTtft: "380ms", color: "#8E8E93", badgeColor: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" }
+        { name: "DeepSeek-V3", provider: "DeepSeek", share: 0, cost: "$0.00042/req", savings: "88%", ratePerMillion: "$0.27 / 1M", avgTtft: "—", color: "#0050FF", badgeColor: "bg-[#EEF4FF] text-[#0050FF] dark:bg-[#0050FF]/20 dark:text-[#3374FF]" },
+        { name: "Groq Llama 3.3", provider: "Groq", share: 0, cost: "$0.00018/req", savings: "96%", ratePerMillion: "$0.18 / 1M", avgTtft: "—", color: "#10B981", badgeColor: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400" },
+        { name: "Claude 3.5 Sonnet", provider: "Anthropic", share: 0, cost: "$0.0034/req", savings: "35%", ratePerMillion: "$3.00 / 1M", avgTtft: "—", color: "#F59E0B", badgeColor: "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400" },
+        { name: "GPT-4o (Fallback)", provider: "OpenAI", share: 0, cost: "$0.0052/req", savings: "0%", ratePerMillion: "$5.00 / 1M", avgTtft: "—", color: "#8E8E93", badgeColor: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300" }
       ];
     }
 
@@ -330,6 +330,32 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Monthly Quota Reached Alert Banner */}
+      {currentTokens >= effectiveQuota && (
+        <div className="p-4 rounded-2xl bg-red-500/10 dark:bg-red-500/20 border border-red-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-xl bg-red-500 text-white flex items-center justify-center shrink-0">
+              <Zap className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="font-bold text-red-600 dark:text-red-400">
+                Monthly Token Quota Reached ({formatNumber(currentTokens)} / {formatNumber(effectiveQuota)} tokens)
+              </div>
+              <p className="text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+                Execution is halted until the next automatic 30-day billing cycle reset. Upgrade your plan to resume real-time routing.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/app/billing"
+            className="px-5 h-9 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Upgrade Plan</span>
+          </Link>
+        </div>
+      )}
+
       {/* 2. Apple Bento Grid — 4 Core Metric Glass Pillars */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
         {/* Pillar 1: Avoided AI Spend */}
@@ -371,17 +397,17 @@ export default function DashboardPage() {
 
           <div className="my-5">
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-              {logs.length > 0 ? `${((logs.filter(l => l.outcome_success).length / logs.length) * 100).toFixed(1)}%` : "94.6%"}
+              {logs.length > 0 ? `${((logs.filter(l => l.outcome_success).length / logs.length) * 100).toFixed(1)}%` : "0.0%"}
             </div>
             <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
-              <span>Exploitation: 88%</span>
-              <span>Exploration: 12%</span>
+              <span>Exploitation: {logs.length > 0 ? "88%" : "0%"}</span>
+              <span>Exploration: {logs.length > 0 ? "12%" : "0%"}</span>
             </div>
           </div>
 
           <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden flex">
-            <div className="bg-emerald-500 h-full w-[88%]" />
-            <div className="bg-amber-400 h-full w-[12%]" />
+            <div className="bg-emerald-500 h-full transition-all duration-700" style={{ width: logs.length > 0 ? "88%" : "0%" }} />
+            <div className="bg-amber-400 h-full transition-all duration-700" style={{ width: logs.length > 0 ? "12%" : "0%" }} />
           </div>
         </div>
 
@@ -406,7 +432,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full w-[98%]" />
+            <div className="bg-emerald-500 h-full" style={{ width: slaEscrowContracts.length > 0 ? "100%" : "0%" }} />
           </div>
         </div>
 
@@ -416,22 +442,22 @@ export default function DashboardPage() {
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Semantic Delta</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 px-2.5 py-0.5 rounded-full">
               <Layers className="h-3 w-3" />
-              <span>{(deltaStats.compressionRatioPct || (logs.length > 0 ? 58.4 : 0)).toFixed(1)}% Cut</span>
+              <span>{(deltaStats.totalTokensAvoided > 0 || logs.length > 0) ? (deltaStats.compressionRatioPct || 58.4).toFixed(1) : "0.0"}% Cut</span>
             </span>
           </div>
 
           <div className="my-5">
             <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-              {formatNumber(deltaStats.totalTokensAvoided || (logs.length > 0 ? logs.length * 280 : 0))}
+              {formatNumber(deltaStats.totalTokensAvoided || 0)}
             </div>
             <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
               <span>&lt;delta_ref&gt; cached</span>
-              <span>TTFT: {logs.length > 0 ? "68.4ms" : "—"}</span>
+              <span>TTFT: {(deltaStats.totalTokensAvoided > 0 || logs.length > 0) ? "68.4ms" : "—"}</span>
             </div>
           </div>
 
           <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
-            <div className="bg-purple-500 h-full w-[60%]" />
+            <div className="bg-purple-500 h-full transition-all duration-700" style={{ width: (deltaStats.totalTokensAvoided > 0 || logs.length > 0) ? "60%" : "0%" }} />
           </div>
         </div>
       </div>
@@ -517,32 +543,27 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            {/* Strategy & Budget Slider Controls */}
+            {/* Strategy & Custom Budget Input Controls */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Quick Budget Adjust Buttons with Dynamic Currency */}
-              <div className="flex items-center gap-1.5 bg-[#F5F5F7] dark:bg-[#242428] px-3 py-1.5 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
+              {/* Custom Editable Budget Input */}
+              <div className="flex items-center gap-2 bg-[#F5F5F7] dark:bg-[#242428] px-3.5 py-1.5 rounded-full border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
                 <span className="text-[11px] text-[#86868B] font-medium">Budget:</span>
-                {[500, 1500, 3000, 5000].map((amt) => {
-                  const displayAmt = activeCurrency === "INR" 
-                    ? `₹${Math.round((amt * 86.5) / 1000)}k` 
-                    : `$${amt}`;
-                  return (
-                    <button
-                      key={amt}
-                      onClick={() => handleBudgetChange(amt)}
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono transition-all ${
-                        customBudget === amt
-                          ? "bg-[#0050FF] text-white shadow-xs"
-                          : "text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F]"
-                      }`}
-                    >
-                      {displayAmt}
-                    </button>
-                  );
-                })}
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">{currencySymbol}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  value={customBudget}
+                  onChange={(e) => {
+                    const val = Math.max(0, parseInt(e.target.value) || 0);
+                    handleBudgetChange(val);
+                  }}
+                  className="w-24 bg-transparent text-xs font-mono font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none border-b border-[#0050FF]/40 focus:border-[#0050FF]"
+                  placeholder="1500"
+                />
               </div>
 
-              {/* Strategy Capsule */}
+              {/* Functional Strategy Mode Capsule */}
               <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#252528]/70">
                 {(["optimal_pace", "aggressive_savings", "quality_boost"] as const).map((m) => (
                   <button
@@ -559,6 +580,18 @@ export default function DashboardPage() {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Strategy Mode Explanation Banner */}
+          <div className="px-3.5 py-2 rounded-2xl bg-[#EEF4FF]/70 dark:bg-[#0050FF]/10 border border-[#0050FF]/15 flex items-center justify-between text-xs">
+            <span className="text-[11px] text-[#515154] dark:text-[#A1A1A6]">
+              {autopilot.mode === "optimal_pace" && "✨ Balanced Mode: 70% Quality / 25% Cost Dirichlet weight with automated fallback pacing."}
+              {autopilot.mode === "aggressive_savings" && "⚡ Cost-Minimal Mode: 50% Quality / 40% Cost Dirichlet weight prioritizing sub-cent providers (Groq/DeepSeek)."}
+              {autopilot.mode === "quality_boost" && "🎯 Max Quality Mode: 85% Quality / 15% Cost Dirichlet weight prioritizing Claude 3.5 Sonnet & GPT-4o frontier models."}
+            </span>
+            <span className="text-[10px] font-bold text-[#0050FF] dark:text-[#3374FF] font-mono shrink-0 ml-2">
+              w₁: {Math.round((autopilot.quality_weight_w1 || 0.7) * 100)}% · w₂: {Math.round(autopilot.cost_weight_w2 || 25)}%
+            </span>
           </div>
 
           {/* Interactive Progress Bar */}

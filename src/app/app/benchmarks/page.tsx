@@ -330,31 +330,17 @@ export default function BenchmarksPage() {
       {/* 5. Filter & Search Controls and Leaderboard Table */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Task Pills */}
-          <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 backdrop-blur-md overflow-x-auto">
-            {[
-              { id: "all", label: "All Tasks" },
-              { id: "sales", label: "Sales SDR" },
-              { id: "code", label: "Code Review" },
-              { id: "support", label: "Support FAQ" },
-              { id: "reasoning", label: "Reasoning" }
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTask(t.id)}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap hover:scale-105 active:scale-95 ${
-                  selectedTask === t.id
-                    ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
-                    : "text-[#86868B] hover:text-[#1D1D1F]"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="space-y-1">
+            <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Empirical Pareto Model Leaderboard
+            </h3>
+            <p className="text-xs text-[#86868B]">
+              Autonomous prompt categorization and multi-objective Pareto ranking across active providers
+            </p>
           </div>
 
           {/* Search & Sort */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
               <Search className="h-3.5 w-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#86868B]" />
               <input

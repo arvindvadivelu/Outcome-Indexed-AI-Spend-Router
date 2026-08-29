@@ -186,6 +186,8 @@ interface AppState {
   prewarmMetrics: PrewarmMetrics;
   slaEscrowContracts: SlaContractItem[];
   deltaStats: DeltaCompressionStats;
+  customProviders: any[];
+  addCustomProvider: (provider: any) => void;
   federationSettings: FederationSettings;
   setFederationWeight: (weight: number) => void;
   toggleFederation: () => void;
@@ -402,13 +404,8 @@ export const useAppStore = create<AppState>()(
       setCurrency: (currency) => set({ currency }),
       toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
       
-      // Auth State
-      user: {
-        name: "Alex Vance",
-        email: "alex@company.com",
-        hasPin: true,
-        hasBiometrics: true
-      },
+      // Auth State - null by default until user signs in or registers
+      user: null,
       setAuthUser: (user) => set({ user }),
       updateUserProfile: (name: string, email: string) =>
         set((state) => ({
@@ -441,7 +438,7 @@ export const useAppStore = create<AppState>()(
         if (state.currentTokens >= state.monthlyQuota) {
           return false; // Execution halted due to quota limit
         }
-        const newTotal = state.currentTokens + amount;
+        const newTotal = Math.min(state.monthlyQuota, state.currentTokens + amount);
         set({ currentTokens: newTotal });
         return true;
       },
@@ -476,22 +473,28 @@ export const useAppStore = create<AppState>()(
         })),
 
       prewarmMetrics: {
-        totalEvents: 1420,
-        speculativeHits: 1294,
-        hitRatePct: 91.1,
+        totalEvents: 0,
+        speculativeHits: 0,
+        hitRatePct: 0.0,
         baselineTtftMs: 280.0,
         acceleratedTtftMs: 68.4,
-        reductionPct: 75.6,
+        reductionPct: 0.0,
         activeHotSlots: 4
       },
 
       slaEscrowContracts: [],
 
       deltaStats: {
-        totalTokensAvoided: 512400,
-        compressionRatioPct: 60.3,
-        costSavedUsd: 17.93
+        totalTokensAvoided: 0,
+        compressionRatioPct: 0.0,
+        costSavedUsd: 0.00
       },
+
+      customProviders: [],
+      addCustomProvider: (provider: any) =>
+        set((state) => ({
+          customProviders: [provider, ...state.customProviders]
+        })),
 
       federationSettings: {
         enabled: true,

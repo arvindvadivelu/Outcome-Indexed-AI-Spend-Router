@@ -1,5 +1,16 @@
 [
   {
+    "name": "Sudha",
+    "email": "vjsudha@gmail.com",
+    "workspace": "Demo",
+    "plan_tier": "free",
+    "monthly_token_quota": 10000,
+    "pin": "222222",
+    "currency": "INR",
+    "id": "usr_1788008914848_x2h8r",
+    "created_at": "2026-08-29T13:08:34.848Z"
+  },
+  {
     "name": "Elena Rostova",
     "email": "elena@codereview.io",
     "workspace": "CodeReview HQ",

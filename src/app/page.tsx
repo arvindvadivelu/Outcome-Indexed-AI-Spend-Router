@@ -30,7 +30,7 @@ import {
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function HomePage() {
-  const { currency } = useAppStore();
+  const { currency, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [monthlySpend, setMonthlySpend] = useState(15000);
   const [activeTab, setActiveTab] = useState<"sales" | "code" | "support">("sales");
@@ -163,7 +163,7 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 pt-4">
               <Link
-                href="/app/dashboard"
+                href={mounted && user ? "/app/dashboard" : "/auth/signin"}
                 className="w-full sm:w-auto px-8 py-3.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <span>Launch Production Console</span>

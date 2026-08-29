@@ -98,7 +98,7 @@ export function Navbar() {
           )}
 
           <Link
-            href="/app/dashboard"
+            href={isUserLoggedIn ? "/app/dashboard" : "/auth/signin"}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#0050FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0040CC] transition-all shadow-sm shadow-[#0050FF]/20 hover:scale-[1.02]"
           >
             <span>Open Console</span>

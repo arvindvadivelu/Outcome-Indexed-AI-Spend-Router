@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { GlobalAICopilot } from "@/components/GlobalAICopilot";
 import { RegionCurrencyInitializer } from "@/components/RegionCurrencyInitializer";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -54,7 +53,6 @@ export default function RootLayout({
       <body className="font-sans antialiased bg-[#FBFBFD] dark:bg-[#0A0A0C] text-[#1D1D1F] dark:text-[#F5F5F7] selection:bg-[#0050FF] selection:text-white" suppressHydrationWarning>
         <RegionCurrencyInitializer />
         {children}
-        <GlobalAICopilot />
       </body>
     </html>
   );
