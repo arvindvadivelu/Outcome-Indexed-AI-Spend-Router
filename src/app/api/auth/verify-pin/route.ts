@@ -54,6 +54,10 @@ export async function POST(req: Request) {
       console.warn("Google Sheet webhook notice:", e);
     }
 
+    const tokensUsed = user.tokens_used ?? 10003;
+    const baselineSpend = Number(((tokensUsed / 1000) * 0.0052).toFixed(2));
+    const actualSpend = Number(((tokensUsed / 1000) * 0.00065).toFixed(2));
+
     return NextResponse.json({
       success: true,
       message: "PIN verified successfully.",
@@ -61,10 +65,13 @@ export async function POST(req: Request) {
         id: user.id,
         name: user.name,
         email: user.email,
-        workspace: user.workspace,
+        workspace: user.workspace || "Arvind's Workspace",
         plan_tier: user.plan_tier,
         monthly_token_quota: user.monthly_token_quota,
-        currency: user.currency
+        tokens_used: tokensUsed,
+        monthlySpendUSD: actualSpend,
+        baselineSpendUSD: baselineSpend,
+        currency: user.currency || "INR"
       }
     });
   } catch (error: any) {

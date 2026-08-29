@@ -78,6 +78,13 @@ export default function SettingsPage() {
   const [exportedNotice, setExportedNotice] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  // Delete Account States
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+
   useEffect(() => {
     if (orgName) setWorkspaceName(orgName);
   }, [orgName]);
@@ -144,6 +151,45 @@ export default function SettingsPage() {
   const handleConfirmReset = () => {
     clearUserData();
     setShowResetConfirm(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") {
+      setDeleteError('Please type "DELETE" exactly to confirm.');
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const userEmail = user?.email || contactEmail || "varvind2004@gmail.com";
+      const res = await fetch("/api/auth/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setDeleteError(data.error || "Failed to delete account. Please try again.");
+        setIsDeleting(false);
+        return;
+      }
+
+      setDeleteSuccess(true);
+      setTimeout(() => {
+        clearUserData();
+        useAppStore.getState().logout();
+        if (typeof window !== "undefined") {
+          window.localStorage.clear();
+          window.location.href = "/auth/signin";
+        }
+      }, 1200);
+    } catch (err: any) {
+      setDeleteError(err.message || "Network error deleting account.");
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -645,6 +691,33 @@ export default function SettingsPage() {
                   <span>Load Sample Telemetry</span>
                 </button>
               </div>
+
+              {/* Delete Account Card */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-[#1E1E22] border-2 border-red-500/30 shadow-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    <span className="font-bold text-red-600 dark:text-red-400 text-sm">
+                      Permanently Delete Account & Organization
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#86868B] max-w-xl leading-relaxed">
+                    Permanently purges your account ({user?.email || contactEmail}), security PIN, workspace settings, token history from our database, and dispatches deletion to Google Sheets ledger.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirmText("");
+                    setDeleteError(null);
+                    setShowDeleteConfirm(true);
+                  }}
+                  className="px-5 py-2.5 rounded-full bg-red-600 text-white font-bold hover:bg-red-700 transition-all flex items-center justify-center gap-2 shadow-sm hover:scale-105 active:scale-95 shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Account</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -677,6 +750,88 @@ export default function SettingsPage() {
                 className="px-5 h-10 rounded-full bg-red-600 text-white text-xs font-semibold hover:bg-red-700 shadow-xs hover:scale-105 active:scale-95"
               >
                 Confirm Wipe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Double Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border-2 border-red-500/40 rounded-[32px] p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-in zoom-in-95">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="h-10 w-10 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  Delete Account & Data?
+                </h3>
+                <span className="text-[11px] text-red-500 font-semibold uppercase tracking-wider">
+                  Irreversible Action
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3 text-xs text-[#86868B] leading-relaxed">
+              <p>
+                Are you sure you want to permanently delete your account{" "}
+                <strong className="text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  ({user?.email || contactEmail})
+                </strong>?
+              </p>
+              <p className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-[11px] border border-red-500/20">
+                ⚠️ All user credentials, security PIN, workspace telemetry, and records in our <strong>local database</strong> and <strong>Google Sheets ledger</strong> will be permanently wiped.
+              </p>
+              <div>
+                <label className="block text-[11px] font-bold text-[#1D1D1F] dark:text-[#F5F5F7] mb-1.5">
+                  Type <span className="text-red-600 font-mono">DELETE</span> to confirm:
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full h-10 px-4 rounded-xl bg-[#F5F5F7] dark:bg-[#242428] border border-black/[0.08] dark:border-white/[0.1] text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-red-500 text-[#1D1D1F] dark:text-[#F5F5F7]"
+                  disabled={isDeleting || deleteSuccess}
+                />
+              </div>
+
+              {deleteError && (
+                <div className="p-2.5 rounded-lg bg-red-500/10 text-red-600 text-[11px] font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span>{deleteError}</span>
+                </div>
+              )}
+
+              {deleteSuccess && (
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[11px] font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>Account deleted successfully from database and Google Sheets! Redirecting...</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDeleting) setShowDeleteConfirm(false);
+                }}
+                disabled={isDeleting || deleteSuccess}
+                className="px-4 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:scale-105 active:scale-95 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={isDeleting || deleteSuccess || deleteConfirmText.trim().toUpperCase() !== "DELETE"}
+                className="px-5 h-10 rounded-full bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow-sm hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className={`h-3.5 w-3.5 ${isDeleting ? "animate-spin" : ""}`} />
+                <span>{isDeleting ? "Deleting..." : "Permanently Delete"}</span>
               </button>
             </div>
           </div>

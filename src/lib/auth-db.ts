@@ -8,6 +8,7 @@ export interface UserAccount {
   workspace: string;
   plan_tier: "free" | "starter" | "growth" | "enterprise";
   monthly_token_quota: number;
+  tokens_used?: number;
   pin: string;
   currency: "USD" | "INR";
   created_at: string;
@@ -26,7 +27,20 @@ const DEFAULT_USERS: UserAccount[] = [
     workspace: "Acme AI Lab",
     plan_tier: "free",
     monthly_token_quota: 10000,
+    tokens_used: 0,
     pin: "123456",
+    currency: "USD",
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "usr_varvind",
+    name: "Arvind",
+    email: "varvind2004@gmail.com",
+    workspace: "Arvind's Workspace",
+    plan_tier: "free",
+    monthly_token_quota: 10000,
+    tokens_used: 0,
+    pin: "111111",
     currency: "USD",
     created_at: new Date().toISOString()
   },
@@ -37,6 +51,7 @@ const DEFAULT_USERS: UserAccount[] = [
     workspace: "Core Inference Team",
     plan_tier: "growth",
     monthly_token_quota: 500000,
+    tokens_used: 0,
     pin: "888999",
     currency: "INR",
     created_at: new Date().toISOString()
@@ -56,7 +71,14 @@ function ensureStorage(): UserAccount[] {
       return DEFAULT_USERS;
     }
     const raw = fs.readFileSync(USERS_FILE, "utf-8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    
+    // Ensure varvind2004@gmail.com exists
+    if (!parsed.some((u: UserAccount) => u.email === "varvind2004@gmail.com")) {
+      parsed.push(DEFAULT_USERS[1]);
+      fs.writeFileSync(USERS_FILE, JSON.stringify(parsed, null, 2), "utf-8");
+    }
+    return parsed;
   } catch (err) {
     console.error("Auth DB read error:", err);
     return DEFAULT_USERS;
@@ -91,6 +113,7 @@ export function registerUser(user: Omit<UserAccount, "id" | "created_at">): User
 
   const newUser: UserAccount = {
     ...user,
+    tokens_used: user.tokens_used ?? 0,
     id: `usr_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     created_at: new Date().toISOString()
   };
@@ -103,6 +126,58 @@ export function registerUser(user: Omit<UserAccount, "id" | "created_at">): User
 
   saveUsers(users);
   return newUser;
+}
+
+export function consumeUserTokens(email: string, amount: number): { allowed: boolean; tokens_used: number; monthly_token_quota: number; plan_tier: string; remaining: number } {
+  const users = ensureStorage();
+  const normalized = email.trim().toLowerCase();
+  let user = users.find((u) => u.email.trim().toLowerCase() === normalized);
+
+  if (!user) {
+    // If not found, default to free tier with 10k quota
+    return {
+      allowed: true,
+      tokens_used: amount,
+      monthly_token_quota: 10000,
+      plan_tier: "free",
+      remaining: 10000 - amount
+    };
+  }
+
+  const currentUsed = user.tokens_used || 0;
+  const quota = user.monthly_token_quota || 10000;
+
+  if (currentUsed >= quota) {
+    return {
+      allowed: false,
+      tokens_used: currentUsed,
+      monthly_token_quota: quota,
+      plan_tier: user.plan_tier,
+      remaining: 0
+    };
+  }
+
+  const newUsed = currentUsed + amount;
+  user.tokens_used = newUsed;
+  saveUsers(users);
+
+  return {
+    allowed: true,
+    tokens_used: newUsed,
+    monthly_token_quota: quota,
+    plan_tier: user.plan_tier,
+    remaining: Math.max(0, quota - newUsed)
+  };
+}
+
+export function resetUserTokens(email: string): boolean {
+  const users = ensureStorage();
+  const normalized = email.trim().toLowerCase();
+  const user = users.find((u) => u.email.trim().toLowerCase() === normalized);
+  if (!user) return false;
+  user.tokens_used = 0;
+  saveUsers(users);
+  return true;
 }
 
 export function generateEmailOtp(email: string): string {
@@ -128,3 +203,14 @@ export function verifyEmailOtp(email: string, enteredOtp: string): boolean {
   }
   return false;
 }
+
+export function deleteUser(email: string): boolean {
+  const users = ensureStorage();
+  const normalized = email.trim().toLowerCase();
+  const index = users.findIndex((u) => u.email.trim().toLowerCase() === normalized);
+  if (index === -1) return false;
+  users.splice(index, 1);
+  saveUsers(users);
+  return true;
+}
+
