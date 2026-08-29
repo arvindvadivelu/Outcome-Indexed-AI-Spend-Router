@@ -26,7 +26,8 @@ import {
   DollarSign,
   CreditCard,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Inbox
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -220,9 +221,17 @@ export default function DashboardPage() {
 
   const handleExportCSV = () => {
     const headers = "Timestamp,RequestID,Model,Provider,TokensIn,TokensOut,CostUSD,CostINR,LatencyMs,Outcome,Prompt\n";
-    const rows = activeLogs.map(l =>
-      `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
-    ).join("\n");
+    let rows = "";
+
+    if (activeLogs.length > 0) {
+      rows = activeLogs.map(l =>
+        `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
+      ).join("\n");
+    } else {
+      // Sample export row
+      rows = `"${new Date().toISOString()}","req_sample_01","DeepSeek-V3","DeepSeek",450,120,0.00042,0.0363,64,Win,"Analyze token spend trajectory"`;
+    }
+
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -329,7 +338,7 @@ export default function DashboardPage() {
             {/* Export CSV */}
             <button
               onClick={handleExportCSV}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
             >
               <Download className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Export CSV</span>
@@ -536,22 +545,27 @@ export default function DashboardPage() {
 
             {/* Strategy & Budget Slider Controls */}
             <div className="flex flex-wrap items-center gap-3">
-              {/* Quick Budget Adjust Buttons */}
+              {/* Quick Budget Adjust Buttons with Dynamic Currency */}
               <div className="flex items-center gap-1.5 bg-[#F5F5F7] dark:bg-[#242428] px-3 py-1.5 rounded-full border border-black/[0.04] dark:border-white/[0.06]">
                 <span className="text-[11px] text-[#86868B] font-medium">Budget:</span>
-                {[500, 1500, 3000, 5000].map((amt) => (
-                  <button
-                    key={amt}
-                    onClick={() => handleBudgetChange(amt)}
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-mono transition-all ${
-                      customBudget === amt
-                        ? "bg-[#0050FF] text-white shadow-xs"
-                        : "text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F]"
-                    }`}
-                  >
-                    ${amt}
-                  </button>
-                ))}
+                {[500, 1500, 3000, 5000].map((amt) => {
+                  const displayAmt = activeCurrency === "INR" 
+                    ? `₹${Math.round((amt * 86.5) / 1000)}k` 
+                    : `$${amt}`;
+                  return (
+                    <button
+                      key={amt}
+                      onClick={() => handleBudgetChange(amt)}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono transition-all ${
+                        customBudget === amt
+                          ? "bg-[#0050FF] text-white shadow-xs"
+                          : "text-[#515154] dark:text-[#A1A1A6] hover:text-[#1D1D1F]"
+                      }`}
+                    >
+                      {displayAmt}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Strategy Capsule */}

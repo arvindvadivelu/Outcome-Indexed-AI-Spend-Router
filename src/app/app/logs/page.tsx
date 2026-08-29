@@ -90,7 +90,7 @@ export default function LogsPage() {
   };
 
   const handleCopyCurl = (log: LogItem) => {
-    const snippet = `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview.replace(/"/g, '\\"')}"}]}'`;
+    const snippet = `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -H "X-Task-Type: ${log.task_type}" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview.replace(/"/g, '\\"')}"}]}'`;
     navigator.clipboard.writeText(snippet);
     setCopiedId(log.id);
     setTimeout(() => setCopiedId(null), 2000);
@@ -134,7 +134,7 @@ export default function LogsPage() {
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               onClick={handleExportCSV}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
             >
               <Download className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Export Audit CSV</span>
@@ -153,7 +153,7 @@ export default function LogsPage() {
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Recorded Traces</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">{activeLogs.length}</div>
@@ -162,7 +162,7 @@ export default function LogsPage() {
           <span className="text-[11px] text-white/80">Sliding 1,000 trace buffer active</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Latency</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -173,7 +173,7 @@ export default function LogsPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-100ms P50</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Contracts</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -184,7 +184,7 @@ export default function LogsPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">100% SLA Fulfillment</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Logged Outcome Wins</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
@@ -209,7 +209,7 @@ export default function LogsPage() {
               <button
                 key={t.id}
                 onClick={() => setSelectedTaskFilter(t.id)}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap hover:scale-105 active:scale-95 ${
                   selectedTaskFilter === t.id
                     ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -241,7 +241,7 @@ export default function LogsPage() {
                 <button
                   key={s.id}
                   onClick={() => setSelectedStatusFilter(s.id)}
-                  className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all ${
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-full transition-all hover:scale-105 active:scale-95 ${
                     selectedStatusFilter === s.id
                       ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -258,16 +258,24 @@ export default function LogsPage() {
         {filteredLogs.length === 0 ? (
           <div className="p-10 text-center space-y-3 rounded-2xl bg-[#F7F7F9] dark:bg-[#1B1B1E] border border-black/[0.04] dark:border-white/[0.06]">
             <p className="text-xs text-[#86868B]">No gateway traces matched your current search filters.</p>
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedTaskFilter("all");
-                setSelectedStatusFilter("all");
-              }}
-              className="px-4 py-1.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold"
-            >
-              Reset Filters
-            </button>
+            <div className="flex justify-center gap-2">
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedTaskFilter("all");
+                  setSelectedStatusFilter("all");
+                }}
+                className="px-4 py-1.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
+              >
+                Reset Filters
+              </button>
+              <button
+                onClick={() => setShowSimulate(true)}
+                className="px-4 py-1.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:scale-105 active:scale-95 transition-all"
+              >
+                Simulate New Request
+              </button>
+            </div>
           </div>
         ) : (
           <div className="rounded-[26px] border border-black/[0.05] dark:border-white/[0.08] overflow-x-auto">
@@ -318,23 +326,23 @@ export default function LogsPage() {
                       <div className="flex items-center justify-center gap-1.5">
                         <button
                           onClick={() => recordOutcome(log.id, true)}
-                          className={`p-1.5 rounded-full transition-all ${
+                          className={`p-1.5 rounded-full transition-all hover:scale-110 active:scale-95 ${
                             log.outcome_success === true
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold scale-110"
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold scale-110 shadow-2xs"
                               : "text-[#86868B] hover:text-[#0050FF]"
                           }`}
-                          title="Mark Win"
+                          title="Mark Win (Thompson Prior Upvote)"
                         >
                           <ThumbsUp className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => recordOutcome(log.id, false)}
-                          className={`p-1.5 rounded-full transition-all ${
+                          className={`p-1.5 rounded-full transition-all hover:scale-110 active:scale-95 ${
                             log.outcome_success === false
-                              ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold scale-110"
+                              ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold scale-110 shadow-2xs"
                               : "text-[#86868B] hover:text-red-600"
                           }`}
-                          title="Mark Loss"
+                          title="Mark Loss (Thompson Prior Downvote)"
                         >
                           <ThumbsDown className="h-3.5 w-3.5" />
                         </button>
@@ -344,7 +352,7 @@ export default function LogsPage() {
                     <td className="py-3.5 px-5 text-right space-x-2">
                       <button
                         onClick={() => handleExplainWithAI(log)}
-                        className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 hover:scale-105"
+                        className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95 shadow-2xs"
                       >
                         <Bot className="h-3 w-3" />
                         <span>Inspect</span>
@@ -352,7 +360,7 @@ export default function LogsPage() {
 
                       <button
                         onClick={() => handleCopyCurl(log)}
-                        className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
+                        className="px-3 py-1 rounded-full bg-white dark:bg-[#242428] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] text-[#515154] dark:text-[#A1A1A6] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
                       >
                         {copiedId === log.id ? (
                           <>
@@ -428,10 +436,21 @@ export default function LogsPage() {
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-between items-center pt-2">
+              <button
+                onClick={() => {
+                  setSelectedLog(null);
+                  setShowSimulate(true);
+                }}
+                className="px-4 h-10 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                <Play className="h-3 w-3 fill-current" />
+                <span>Replay in Simulator</span>
+              </button>
+
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs"
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs hover:scale-105 active:scale-95 transition-all"
               >
                 Done
               </button>

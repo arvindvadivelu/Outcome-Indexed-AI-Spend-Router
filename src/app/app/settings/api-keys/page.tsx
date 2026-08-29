@@ -20,7 +20,8 @@ import {
   ChevronRight,
   ShieldAlert,
   Shield,
-  Layers
+  Layers,
+  Code2
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 
@@ -130,7 +131,7 @@ export default function ApiKeysPage() {
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Active Credentials</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">{apiKeys.length}</div>
@@ -139,7 +140,7 @@ export default function ApiKeysPage() {
           <span className="text-[11px] text-white/80">SHA-256 Digest Protected</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Global Rate Limit</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">600 RPM</div>
@@ -148,7 +149,7 @@ export default function ApiKeysPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Leaky Bucket Protected</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Security Score</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">A+ Verified</div>
@@ -157,7 +158,7 @@ export default function ApiKeysPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">TLS 1.3 Cipher Enforced</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Key Rotation SLA</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">Instant</div>
@@ -217,7 +218,7 @@ export default function ApiKeysPage() {
             </code>
             <button
               onClick={() => handleCopy("revealed", revealedKey)}
-              className="px-5 h-11 rounded-full bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs"
+              className="px-5 h-11 rounded-full bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 transition-all flex items-center justify-center gap-1.5 shrink-0 shadow-xs hover:scale-105 active:scale-95"
             >
               {copiedId === "revealed" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               <span>{copiedId === "revealed" ? "Copied!" : "Copy Key"}</span>
@@ -235,6 +236,29 @@ export default function ApiKeysPage() {
           <p className="text-xs text-[#86868B]">
             Creates an edge-authenticated SHA-256 token for SDKs, curl endpoints, and backend microservices
           </p>
+        </div>
+
+        {/* Quick Preset Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] text-[#86868B] font-medium">Quick Presets:</span>
+          {[
+            { label: "Production Node Gateway", name: "Production Node Gateway", env: "live" as const, rpm: 1200 },
+            { label: "Staging CI/CD Pipeline", name: "Staging CI/CD Pipeline", env: "test" as const, rpm: 300 },
+            { label: "Python Analytics Worker", name: "Python Analytics Worker", env: "live" as const, rpm: 600 }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setNewKeyName(preset.name);
+                setNewKeyEnv(preset.env);
+                setNewKeyRpm(preset.rpm);
+              }}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleCreate} className="space-y-4">
@@ -259,7 +283,7 @@ export default function ApiKeysPage() {
                     type="button"
                     key={env}
                     onClick={() => setNewKeyEnv(env)}
-                    className={`flex-1 py-2 text-xs font-semibold rounded-full capitalize transition-all ${
+                    className={`flex-1 py-2 text-xs font-semibold rounded-full capitalize transition-all hover:scale-105 active:scale-95 ${
                       newKeyEnv === env
                         ? "bg-[#0050FF] text-white shadow-xs"
                         : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -299,7 +323,7 @@ export default function ApiKeysPage() {
           <button
             type="submit"
             disabled={!newKeyName.trim()}
-            className="h-11 px-7 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center gap-2"
+            className="h-11 px-7 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Generate Secret Key</span>
@@ -348,8 +372,15 @@ export default function ApiKeysPage() {
                       </span>
                     </td>
 
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF]">
-                      {key.key_prefix}••••••••
+                    <td className="py-3.5 px-4">
+                      <button
+                        onClick={() => handleCopy(key.id, `${key.key_prefix}••••••••`)}
+                        className="font-mono text-[11px] text-[#0050FF] dark:text-[#3374FF] hover:underline flex items-center gap-1"
+                        title="Copy Key Prefix"
+                      >
+                        <span>{key.key_prefix}••••••••</span>
+                        {copiedId === key.id && <Check className="h-3 w-3 text-emerald-600" />}
+                      </button>
                     </td>
 
                     <td className="py-3.5 px-4 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
@@ -363,7 +394,7 @@ export default function ApiKeysPage() {
                     <td className="py-3.5 px-5 text-right space-x-2">
                       <button
                         onClick={() => handleRotateKey(key)}
-                        className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 hover:scale-105"
+                        className="px-3 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95 shadow-2xs"
                         title="Rotate Secret Key"
                       >
                         <RotateCw className="h-3 w-3" />
@@ -372,7 +403,7 @@ export default function ApiKeysPage() {
 
                       <button
                         onClick={() => handleDeleteKey(key.id)}
-                        className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors hover:scale-105 active:scale-95"
                         title="Revoke Key"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -384,6 +415,22 @@ export default function ApiKeysPage() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* 5. Quick-Start Gateway Integration Box */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4" suppressHydrationWarning>
+        <div className="flex items-center gap-2.5">
+          <Code2 className="h-4 w-4 text-[#0050FF]" />
+          <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+            Drop-In Gateway Authentication Snippet
+          </h3>
+        </div>
+        <p className="text-xs text-[#86868B]">Use standard OpenAI-compatible SDK clients by pointing your base URL to the OutcomeRouter Anycast edge gateway.</p>
+        <div className="p-4 rounded-2xl bg-[#0F0F12] text-white font-mono text-xs overflow-x-auto">
+          <code>
+            {`import OpenAI from 'openai';\n\nconst client = new OpenAI({\n  apiKey: process.env.OUTCOME_ROUTER_API_KEY, // oir_live_...\n  baseURL: 'https://gateway.outcomerouter.ai/v1'\n});`}
+          </code>
+        </div>
       </div>
     </div>
   );

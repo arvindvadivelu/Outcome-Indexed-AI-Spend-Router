@@ -19,8 +19,10 @@ import {
   ChevronRight,
   Terminal,
   Cpu,
-  Globe
+  Globe,
+  Play
 } from "lucide-react";
+import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function IntegrationsPage() {
   const [mounted, setMounted] = useState(false);
@@ -35,7 +37,8 @@ export default function IntegrationsPage() {
       category: "Framework",
       connected: true,
       latency: "14ms",
-      desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers."
+      desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers.",
+      docsUrl: "https://python.langchain.com/docs/"
     },
     {
       id: "llamaindex",
@@ -43,7 +46,8 @@ export default function IntegrationsPage() {
       category: "Framework",
       connected: true,
       latency: "18ms",
-      desc: "Query router for document retrieval & semantic synthesis pipelines."
+      desc: "Query router for document retrieval & semantic synthesis pipelines.",
+      docsUrl: "https://docs.llamaindex.ai/"
     },
     {
       id: "litellm",
@@ -51,7 +55,8 @@ export default function IntegrationsPage() {
       category: "Proxy",
       connected: true,
       latency: "11ms",
-      desc: "Universal OpenAI-compatible reverse proxy with Bayesian Thompson routing."
+      desc: "Universal OpenAI-compatible reverse proxy with Bayesian Thompson routing.",
+      docsUrl: "https://docs.litellm.ai/"
     },
     {
       id: "vercel",
@@ -59,7 +64,8 @@ export default function IntegrationsPage() {
       category: "Framework",
       connected: true,
       latency: "8ms",
-      desc: "Next.js edge runtime streaming with speculative pre-warmed TTFT."
+      desc: "Next.js edge runtime streaming with speculative pre-warmed TTFT.",
+      docsUrl: "https://sdk.vercel.ai/docs"
     },
     {
       id: "crewai",
@@ -67,7 +73,8 @@ export default function IntegrationsPage() {
       category: "Agents",
       connected: false,
       latency: "—",
-      desc: "Cost & outcome optimizer for autonomous multi-agent task execution."
+      desc: "Cost & outcome optimizer for autonomous multi-agent task execution.",
+      docsUrl: "https://docs.crewai.com/"
     },
     {
       id: "deepseek",
@@ -75,7 +82,8 @@ export default function IntegrationsPage() {
       category: "Provider",
       connected: true,
       latency: "95ms",
-      desc: "Direct integration with DeepSeek-V3 & DeepSeek-Coder at $0.0006/req."
+      desc: "Direct integration with DeepSeek-V3 & DeepSeek-Coder at $0.0006/req.",
+      docsUrl: "https://api-docs.deepseek.com/"
     },
     {
       id: "groq",
@@ -83,7 +91,8 @@ export default function IntegrationsPage() {
       category: "Provider",
       connected: true,
       latency: "84ms",
-      desc: "Sub-100ms ultra-low latency inference for customer support FAQ."
+      desc: "Sub-100ms ultra-low latency inference for customer support FAQ.",
+      docsUrl: "https://console.groq.com/docs/quickstart"
     },
     {
       id: "anthropic",
@@ -91,7 +100,8 @@ export default function IntegrationsPage() {
       category: "Provider",
       connected: true,
       latency: "140ms",
-      desc: "Frontier reasoning and code generation with cryptographic SLA escrow."
+      desc: "Frontier reasoning and code generation with cryptographic SLA escrow.",
+      docsUrl: "https://docs.anthropic.com/"
     }
   ]);
 
@@ -99,6 +109,7 @@ export default function IntegrationsPage() {
   const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
   const [activeSnippetTab, setActiveSnippetTab] = useState<"python" | "typescript" | "curl">("python");
   const [copiedCode, setCopiedCode] = useState(false);
+  const [showSimulate, setShowSimulate] = useState(false);
 
   // Connection Dialog
   const [connectingItem, setConnectingItem] = useState<any>(null);
@@ -215,7 +226,7 @@ export default function IntegrationsPage() {
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Connected Bridges</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">
@@ -226,7 +237,7 @@ export default function IntegrationsPage() {
           <span className="text-[11px] text-white/80">Active Edge Proxy</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Gateway Overhead</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">12.4ms</div>
@@ -235,7 +246,7 @@ export default function IntegrationsPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-15ms Wire Latency</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">SDK Compatibility</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">100% Drop-In</div>
@@ -244,7 +255,7 @@ export default function IntegrationsPage() {
           <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Change 1 base_url parameter</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Security Architecture</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">Encrypted</div>
@@ -296,7 +307,7 @@ export default function IntegrationsPage() {
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+            className={`px-4 py-2 text-xs font-semibold rounded-full transition-all whitespace-nowrap hover:scale-105 active:scale-95 ${
               selectedCategory === cat.id
                 ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                 : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -346,7 +357,7 @@ export default function IntegrationsPage() {
                     setConnectingItem(item);
                   }
                 }}
-                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs"
+                className="px-3 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
               >
                 <Code2 className="h-3 w-3" />
                 <span>{item.connected ? "Snippet" : "Connect"}</span>
@@ -386,7 +397,7 @@ export default function IntegrationsPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveSnippetTab(tab)}
-                  className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all hover:scale-105 active:scale-95 ${
                     activeSnippetTab === tab
                       ? "bg-[#0050FF] text-white shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -404,17 +415,28 @@ export default function IntegrationsPage() {
               </pre>
               <button
                 onClick={() => handleCopyCode(getSnippets(selectedIntegration)[activeSnippetTab])}
-                className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs"
+                className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs hover:scale-105 active:scale-95"
               >
                 {copiedCode ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                 <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
               </button>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-between items-center pt-2">
+              <button
+                onClick={() => {
+                  setSelectedIntegration(null);
+                  setShowSimulate(true);
+                }}
+                className="px-4 h-10 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"
+              >
+                <Play className="h-3 w-3 fill-current" />
+                <span>Test in Simulator</span>
+              </button>
+
               <button
                 onClick={() => setSelectedIntegration(null)}
-                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs"
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs hover:scale-105 active:scale-95 transition-all"
               >
                 Done
               </button>
@@ -439,6 +461,17 @@ export default function IntegrationsPage() {
               </button>
             </div>
 
+            {/* Quick Test Key Preset */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setProviderKey(`sk_live_${connectingItem.id}_mock_vault_token_99`)}
+                className="text-[11px] font-semibold text-[#0050FF] dark:text-[#3374FF] hover:underline"
+              >
+                + Auto-fill Sandbox Secret Key
+              </button>
+            </div>
+
             <form onSubmit={handleConnect} className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-[#86868B]">API Secret Key</label>
@@ -456,14 +489,14 @@ export default function IntegrationsPage() {
                 <button
                   type="button"
                   onClick={() => setConnectingItem(null)}
-                  className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold"
+                  className="px-5 h-10 rounded-full bg-[#F5F5F7] dark:bg-[#242428] text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isVerifying || !providerKey.trim()}
-                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 shadow-xs"
+                  className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] disabled:opacity-40 shadow-xs hover:scale-105 active:scale-95 transition-all"
                 >
                   {isVerifying ? "Verifying..." : "Verify & Save Bridge"}
                 </button>
@@ -471,6 +504,11 @@ export default function IntegrationsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Simulator Modal */}
+      {showSimulate && (
+        <SimulateRequestModal onClose={() => setShowSimulate(false)} />
       )}
     </div>
   );

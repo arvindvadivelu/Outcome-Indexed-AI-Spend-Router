@@ -17,8 +17,11 @@ import {
   ChevronRight,
   ShieldAlert,
   Sliders,
-  Send
+  Send,
+  RotateCw,
+  Check
 } from "lucide-react";
+import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 
 export default function TeamPage() {
   const [mounted, setMounted] = useState(false);
@@ -38,6 +41,7 @@ export default function TeamPage() {
   const [inviteQuota, setInviteQuota] = useState("100,000 / mo");
   const [isInviting, setIsInviting] = useState(false);
   const [inviteNotice, setInviteNotice] = useState<string | null>(null);
+  const [resentMfaId, setResentMfaId] = useState<number | null>(null);
 
   const [isAuditing, setIsAuditing] = useState(false);
   const [rbacResult, setRbacResult] = useState<any>(null);
@@ -74,6 +78,18 @@ export default function TeamPage() {
             lastActive: "Invited"
           }
         ]);
+
+        await syncAuthUserToGoogleSheets({
+          action: "TEAM_INVITE",
+          name: inviteEmail.split("@")[0],
+          email: inviteEmail.trim(),
+          workspace: "Acme AI Lab",
+          plan_tier: "Growth",
+          monthly_token_quota: 100000,
+          currency: "USD",
+          auth_method: "INVITE_LINK"
+        });
+
         setInviteEmail("");
         setInviteNotice(`Invitation link dispatched to ${inviteEmail}!`);
         setTimeout(() => setInviteNotice(null), 3000);
@@ -99,6 +115,11 @@ export default function TeamPage() {
 
   const handleRemoveMember = (id: number) => {
     setMembers((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleResendMfa = (id: number) => {
+    setResentMfaId(id);
+    setTimeout(() => setResentMfaId(null), 2000);
   };
 
   const handleAuditRBAC = async () => {
@@ -160,7 +181,7 @@ export default function TeamPage() {
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Active Workspace Seats</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">{members.length} / 10</div>
@@ -169,7 +190,7 @@ export default function TeamPage() {
           <span className="text-[11px] text-white/80">Pro Tier Allocation</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">MFA Passkey Enforce</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{mfaPct}% Enrolled</div>
@@ -178,7 +199,7 @@ export default function TeamPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Zero password vulnerabilities</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Role Permissions</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">Least-Privilege</div>
@@ -187,7 +208,7 @@ export default function TeamPage() {
           <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Per-seat token budgets</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Audit Trail Status</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">100% Logged</div>
@@ -242,6 +263,28 @@ export default function TeamPage() {
           </p>
         </div>
 
+        {/* Quick Sample Presets */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] text-[#86868B] font-medium">Quick Presets:</span>
+          {[
+            { email: "lead.dev@company.com", role: "Engineer" },
+            { email: "finops.analyst@company.com", role: "FinOps" },
+            { email: "security.admin@company.com", role: "Admin" }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setInviteEmail(preset.email);
+                setInviteRole(preset.role);
+              }}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
+            >
+              {preset.email} ({preset.role})
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleInvite} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <div className="sm:col-span-2">
             <input
@@ -260,7 +303,7 @@ export default function TeamPage() {
                 type="button"
                 key={r}
                 onClick={() => setInviteRole(r)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 ${
                   inviteRole === r
                     ? "bg-[#0050FF] text-white shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -274,7 +317,7 @@ export default function TeamPage() {
           <button
             type="submit"
             disabled={!inviteEmail.trim() || isInviting}
-            className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0"
+            className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
           >
             <Send className="h-3.5 w-3.5" />
             <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
@@ -319,7 +362,7 @@ export default function TeamPage() {
                       value={m.role}
                       onChange={(e) => handleRoleChange(m.id, e.target.value)}
                       disabled={m.role === "Owner"}
-                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none disabled:opacity-60"
+                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none disabled:opacity-60 cursor-pointer"
                     >
                       <option value="Owner">Owner</option>
                       <option value="Admin">Admin</option>
@@ -333,7 +376,7 @@ export default function TeamPage() {
                       value={m.tokenQuota}
                       onChange={(e) => handleQuotaChange(m.id, e.target.value)}
                       disabled={m.role === "Owner"}
-                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#515154] dark:text-[#A1A1A6] focus:outline-none disabled:opacity-60"
+                      className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#515154] dark:text-[#A1A1A6] focus:outline-none disabled:opacity-60 cursor-pointer"
                     >
                       <option value="50,000 / mo">50,000 / mo</option>
                       <option value="100,000 / mo">100,000 / mo</option>
@@ -356,11 +399,31 @@ export default function TeamPage() {
                     {m.lastActive}
                   </td>
 
-                  <td className="py-3.5 px-5 text-right">
+                  <td className="py-3.5 px-5 text-right space-x-2">
+                    {!m.mfaActive && (
+                      <button
+                        onClick={() => handleResendMfa(m.id)}
+                        className="px-2.5 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[10px] font-semibold hover:scale-105 active:scale-95 transition-all inline-flex items-center gap-1"
+                        title="Resend MFA Enrollment Link"
+                      >
+                        {resentMfaId === m.id ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-600" />
+                            <span>Link Sent!</span>
+                          </>
+                        ) : (
+                          <>
+                            <RotateCw className="h-3 w-3" />
+                            <span>Enforce MFA</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
                     {m.role !== "Owner" && (
                       <button
                         onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
+                        className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors hover:scale-105 active:scale-95"
                         title="Remove Member"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

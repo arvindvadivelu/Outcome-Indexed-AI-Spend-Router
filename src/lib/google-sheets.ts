@@ -5,14 +5,14 @@
 
 export interface AuthSyncPayload {
   timestamp?: string;
-  action: "SIGNUP" | "SIGNIN" | "PASSWORD_RESET" | "PLAN_UPGRADE";
+  action: "SIGNUP" | "SIGNIN" | "PASSWORD_RESET" | "PLAN_UPGRADE" | "TEAM_INVITE" | "CONTACT_INQUIRY";
   name: string;
   email: string;
   workspace: string;
   plan_tier: string;
   monthly_token_quota: number;
   currency: string;
-  auth_method?: "PIN_PASSWORD" | "EMAIL_OTP" | "BIOMETRIC_PASSKEY" | "MANUAL";
+  auth_method?: "PIN_PASSWORD" | "EMAIL_OTP" | "BIOMETRIC_PASSKEY" | "MANUAL" | "INVITE_LINK";
   device_info?: string;
   ip_address?: string;
 }

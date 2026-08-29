@@ -22,7 +22,8 @@ import {
   Shield,
   Layers,
   Cpu,
-  Globe
+  Globe,
+  FileText
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
@@ -73,6 +74,7 @@ export default function BillingPage() {
   const [disputeExported, setDisputeExported] = useState(false);
   const [showPlanMatrix, setShowPlanMatrix] = useState(false);
   const [planSwitchNotice, setPlanSwitchNotice] = useState<string | null>(null);
+  const [invoiceDownloading, setInvoiceDownloading] = useState<string | null>(null);
 
   const handleForecast = async () => {
     setIsForecasting(true);
@@ -118,6 +120,21 @@ export default function BillingPage() {
     a.download = `sla_escrow_vendor_dispute_audit_${Date.now()}.csv`;
     a.click();
     setTimeout(() => setDisputeExported(false), 3000);
+  };
+
+  const handleDownloadInvoice = (invId: string) => {
+    setInvoiceDownloading(invId);
+    setTimeout(() => {
+      const headers = "Invoice ID,Billing Period,Amount,Status,Payment Method\n";
+      const row = `"${invId}","Current Billing Cycle","${formatCurrency(monthlySpendUSD * rate, activeCurrency)}","PAID","Stripe (Visa ending in 4242)"\n`;
+      const blob = new Blob([headers + row], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${invId}.csv`;
+      a.click();
+      setInvoiceDownloading(null);
+    }, 800);
   };
 
   const handleSelectPlan = async (tierId: "free" | "starter" | "growth" | "enterprise") => {
@@ -242,10 +259,10 @@ export default function BillingPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               onClick={() => setShowPlanMatrix(true)}
-              className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.35)] transition-all flex items-center gap-1.5"
+              className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.35)] transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Upgrade Plan</span>
@@ -254,7 +271,7 @@ export default function BillingPage() {
             <button
               onClick={handleForecast}
               disabled={isForecasting}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95 disabled:opacity-50"
             >
               <Bot className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>{isForecasting ? "Forecasting..." : "AI Bill Forecast"}</span>
@@ -265,7 +282,7 @@ export default function BillingPage() {
 
       {/* 2. Top Bento Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all">
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-[#86868B]">Current Plan Tier</span>
             <div className="text-2xl font-extrabold text-[#1D1D1F] dark:text-[#F5F5F7] capitalize">
@@ -282,7 +299,7 @@ export default function BillingPage() {
           </button>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all">
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-[#86868B]">Token Utilization</span>
             <div className="text-2xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
@@ -293,7 +310,7 @@ export default function BillingPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Healthy Pacing Velocity</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all">
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-[#86868B]">Monthly Budget Ceiling</span>
             <div className="text-2xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -304,7 +321,7 @@ export default function BillingPage() {
           <span className="text-[11px] text-[#86868B] font-medium">Automatic throttling on breach</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all">
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between space-y-4 hover:scale-[1.02] transition-all group">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-[#86868B]">SLA Escrow Recovered</span>
             <div className="text-2xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
@@ -382,7 +399,7 @@ export default function BillingPage() {
             {!isQuotaExceeded ? (
               <button
                 onClick={fillQuotaToLimit}
-                className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-[11px] transition-all"
+                className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-[11px] transition-all hover:scale-105 active:scale-95"
                 title="Simulate 100% full quota to test execution block"
               >
                 Test Fill Quota (100%)
@@ -390,7 +407,7 @@ export default function BillingPage() {
             ) : (
               <button
                 onClick={resetTokenQuota}
-                className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 font-semibold text-[11px] transition-all"
+                className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 font-semibold text-[11px] transition-all hover:scale-105 active:scale-95"
                 title="Reset token quota to 0 for demo"
               >
                 Reset Cycle Tokens (0%)
@@ -399,7 +416,7 @@ export default function BillingPage() {
 
             <button
               onClick={() => setShowPlanMatrix(true)}
-              className="px-4 py-1 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white font-semibold text-[11px] transition-all shadow-xs"
+              className="px-4 py-1 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white font-semibold text-[11px] transition-all shadow-xs hover:scale-105 active:scale-95"
             >
               Upgrade Plan
             </button>
@@ -407,7 +424,81 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* 4. Micro-SLA Vendor Escrow Claims Table */}
+      {/* 4. Payment Method & Invoices Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Payment Method Card */}
+        <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-[#0050FF]" />
+              <span>Payment Method</span>
+            </h3>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]">
+              DEFAULT
+            </span>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">Visa ending in 4242</span>
+              <span className="text-[11px] font-mono text-[#86868B]">12/28</span>
+            </div>
+            <p className="text-[11px] text-[#86868B]">Auto-debit for overages and monthly plan tier renewals.</p>
+          </div>
+        </div>
+
+        {/* Invoice Receipts Table */}
+        <div className="lg:col-span-2 rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight flex items-center gap-2">
+              <Receipt className="h-4 w-4 text-[#0050FF]" />
+              <span>Recent Invoices & Receipts</span>
+            </h3>
+          </div>
+
+          <div className="rounded-[22px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden text-xs">
+            <table className="w-full text-left">
+              <thead className="bg-[#F7F7F9]/80 dark:bg-[#1B1B1E]/80 text-[#86868B] border-b border-black/[0.04] dark:border-white/[0.06]">
+                <tr>
+                  <th className="py-2.5 px-4 font-semibold">Invoice ID</th>
+                  <th className="py-2.5 px-4 font-semibold">Billing Date</th>
+                  <th className="py-2.5 px-4 font-semibold">Amount</th>
+                  <th className="py-2.5 px-4 font-semibold">Status</th>
+                  <th className="py-2.5 px-4 font-semibold text-right">Download</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]">
+                {[
+                  { id: "INV-2026-08", date: "Aug 01, 2026", amount: formatCurrency(84.20 * rate, activeCurrency), status: "PAID" },
+                  { id: "INV-2026-07", date: "Jul 01, 2026", amount: formatCurrency(99.00 * rate, activeCurrency), status: "PAID" }
+                ].map((inv) => (
+                  <tr key={inv.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50">
+                    <td className="py-2.5 px-4 font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">{inv.id}</td>
+                    <td className="py-2.5 px-4 text-[#86868B]">{inv.date}</td>
+                    <td className="py-2.5 px-4 font-mono font-bold">{inv.amount}</td>
+                    <td className="py-2.5 px-4">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-4 text-right">
+                      <button
+                        onClick={() => handleDownloadInvoice(inv.id)}
+                        className="p-1 rounded-full text-[#86868B] hover:text-[#0050FF] transition-colors"
+                        title="Download CSV Receipt"
+                      >
+                        <Download className={`h-3.5 w-3.5 ${invoiceDownloading === inv.id ? "animate-spin" : ""}`} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Micro-SLA Vendor Escrow Claims Table */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-5" suppressHydrationWarning>
         <div className="flex items-center justify-between">
           <div>
@@ -421,7 +512,7 @@ export default function BillingPage() {
 
           <button
             onClick={handleExportDisputeFile}
-            className="px-4 py-1.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs"
+            className="px-4 py-1.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
           >
             <Download className="h-3 w-3" />
             <span>{disputeExported ? "Manifest Exported!" : "Export SLA Dispute CSV"}</span>
@@ -474,7 +565,7 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* 5. Complete 4-Tier Plan Upgrade Modal (Matching User Image) */}
+      {/* 6. Complete 4-Tier Plan Upgrade Modal (Matching User Image) */}
       {showPlanMatrix && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-md animate-in fade-in overflow-y-auto">
           <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[36px] p-6 sm:p-10 max-w-6xl w-full shadow-2xl space-y-6 my-8">
@@ -553,7 +644,7 @@ export default function BillingPage() {
                       type="button"
                       onClick={() => handleSelectPlan(tier.id)}
                       disabled={isCurrent}
-                      className={`w-full h-11 rounded-full font-semibold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                      className={`w-full h-11 rounded-full font-semibold text-xs transition-all flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95 ${
                         isCurrent
                           ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 cursor-default"
                           : tier.highlighted

@@ -20,10 +20,12 @@ import {
   ChevronRight,
   Download,
   Flame,
-  AlertTriangle
+  AlertTriangle,
+  Play
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 const TokenBarChart = dynamic(
   () => import("@/components/TokenBarChart").then((mod) => mod.TokenBarChart),
@@ -52,6 +54,7 @@ export default function TokenAnalyticsPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [auditResult, setAuditResult] = useState<any>(null);
   const [cacheApplied, setCacheApplied] = useState(false);
+  const [showSimulate, setShowSimulate] = useState(false);
 
   // Live Prompt Diff Tester State
   const [customDiffPrompt, setCustomDiffPrompt] = useState(
@@ -65,7 +68,6 @@ export default function TokenAnalyticsPage() {
   }, [customDiffPrompt]);
 
   const compressionRatio = useMemo(() => {
-    // Dynamic compression percentage based on threshold (e.g. 0.92 -> 60%)
     return Math.min(85, Math.max(30, Math.round(cosineThreshold * 65)));
   }, [cosineThreshold]);
 
@@ -173,6 +175,14 @@ export default function TokenAnalyticsPage() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
+              onClick={() => setShowSimulate(true)}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+            >
+              <Play className="h-3 w-3 fill-current" />
+              <span>Simulate Token Delta</span>
+            </button>
+
+            <button
               onClick={handleRunAiAudit}
               disabled={isAuditing}
               className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
@@ -183,7 +193,7 @@ export default function TokenAnalyticsPage() {
 
             <button
               onClick={handleExportCSV}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
             >
               <Download className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Export CSV</span>
@@ -194,7 +204,7 @@ export default function TokenAnalyticsPage() {
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Processed Ingestion</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">{formatNumber(currentTokens)}</div>
@@ -205,7 +215,7 @@ export default function TokenAnalyticsPage() {
           </div>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Avoided Token Waste</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -216,7 +226,7 @@ export default function TokenAnalyticsPage() {
           <span className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold">60.3% payload reduction</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Semantic Cache Hits</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
@@ -227,7 +237,7 @@ export default function TokenAnalyticsPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-10ms cache reply</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Blended Cost / 1M</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
@@ -276,7 +286,7 @@ export default function TokenAnalyticsPage() {
             <button
               onClick={handleApplyCacheRule}
               disabled={cacheApplied}
-              className="px-5 py-2 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:bg-emerald-600"
+              className="px-5 py-2 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:bg-emerald-600 hover:scale-105 active:scale-95"
             >
               {cacheApplied ? (
                 <>
@@ -345,6 +355,34 @@ export default function TokenAnalyticsPage() {
           </div>
         </div>
 
+        {/* Quick Sample Prompt Presets */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] text-[#86868B] font-medium">Prompt Presets:</span>
+          {[
+            {
+              label: "TypeScript FullStack Engineer",
+              text: "You are an expert full-stack TypeScript engineer specializing in Next.js 14, React 18, Tailwind CSS, and shadcn/ui. Return clean, accessible, production-ready code with no placeholders.\n\nTask: Refactor the auth middleware to check Redis JWT tokens."
+            },
+            {
+              label: "Support Agent Persona",
+              text: "You are a customer satisfaction specialist at OutcomeRouter. Resolve issues with empathetic tone and step-by-step guidance.\n\nUser Question: How do I configure my Anycast latency thresholds?"
+            },
+            {
+              label: "Legal Compliance Auditor",
+              text: "You are a DPA and SOC-2 data privacy compliance officer. Review standard contractual clauses for GDPR Article 28 alignment.\n\nInstruction: Validate zero disk retention telemetry."
+            }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setCustomDiffPrompt(preset.text)}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
           <div className="p-4 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-2">
             <div className="flex items-center justify-between text-[#86868B] font-semibold">
@@ -373,6 +411,11 @@ export default function TokenAnalyticsPage() {
           </div>
         </div>
       </div>
+
+      {/* Simulator Modal */}
+      {showSimulate && (
+        <SimulateRequestModal onClose={() => setShowSimulate(false)} />
+      )}
     </div>
   );
 }

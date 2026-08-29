@@ -27,6 +27,7 @@ import {
   DollarSign
 } from "lucide-react";
 import Link from "next/link";
+import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function BenchmarksPage() {
   const { benchmarks, currency, federationSettings, addRule } = useAppStore();
@@ -35,6 +36,7 @@ export default function BenchmarksPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"win_rate" | "cost" | "latency" | "thompson">("win_rate");
   const [deployedModel, setDeployedModel] = useState<string | null>(null);
+  const [showSimulate, setShowSimulate] = useState(false);
   
   // Synthetic Batch Test State
   const [isRunningBatch, setIsRunningBatch] = useState(false);
@@ -157,6 +159,14 @@ export default function BenchmarksPage() {
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
+              onClick={() => setShowSimulate(true)}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+            >
+              <Play className="h-3 w-3 fill-current" />
+              <span>Simulate Model</span>
+            </button>
+
+            <button
               onClick={handleRunSyntheticBatch}
               disabled={isRunningBatch}
               className="h-10 px-5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50"
@@ -167,7 +177,7 @@ export default function BenchmarksPage() {
 
             <button
               onClick={handleExportCSV}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs"
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] dark:hover:bg-[#323236] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
             >
               <Download className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Export CSV</span>
@@ -178,7 +188,7 @@ export default function BenchmarksPage() {
 
       {/* 2. Top Metric Glass Bento Grid (3 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Pareto Frontier Top Pick</span>
           <div className="my-4">
             <div className="text-3xl font-extrabold font-mono">DeepSeek-V3</div>
@@ -187,7 +197,7 @@ export default function BenchmarksPage() {
           <span className="text-[11px] text-white/80">Cuts 88% cost vs baseline with zero quality drop</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Ultra-Low Latency Leader</span>
           <div className="my-4">
             <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">Groq Llama 3.3</div>
@@ -196,7 +206,7 @@ export default function BenchmarksPage() {
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">96.0% First-Contact Resolution</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Federated Prior Sharing</span>
           <div className="my-4">
             <div className="text-3xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">480+ Workloads</div>
@@ -332,7 +342,7 @@ export default function BenchmarksPage() {
               <button
                 key={t.id}
                 onClick={() => setSelectedTask(t.id)}
-                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap hover:scale-105 active:scale-95 ${
                   selectedTask === t.id
                     ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -361,7 +371,7 @@ export default function BenchmarksPage() {
                 <button
                   key={s}
                   onClick={() => setSortBy(s)}
-                  className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize transition-all ${
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-full capitalize transition-all hover:scale-105 active:scale-95 ${
                     sortBy === s
                       ? "bg-white dark:bg-[#343438] text-[#1D1D1F] dark:text-[#F5F5F7] shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -385,7 +395,7 @@ export default function BenchmarksPage() {
                 <th className="py-3.5 px-4 font-semibold text-right">Cost / 1M Tokens</th>
                 <th className="py-3.5 px-4 font-semibold text-center">Avg TTFT</th>
                 <th className="py-3.5 px-4 font-semibold text-center">Pareto Tier</th>
-                <th className="py-3.5 px-5 font-semibold text-right">Action</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
@@ -425,22 +435,33 @@ export default function BenchmarksPage() {
                   </td>
 
                   <td className="py-3.5 px-5 text-right">
-                    <button
-                      onClick={() => handleSetPrimary(b)}
-                      className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs"
-                    >
-                      {deployedModel === b.model_name ? (
-                        <>
-                          <Check className="h-3 w-3 text-emerald-600" />
-                          <span>Policy Created!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="h-3 w-3 text-[#0050FF]" />
-                          <span>Set Primary</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => setShowSimulate(true)}
+                        className="px-3 py-1.5 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
+                        title="Simulate prompt with this model"
+                      >
+                        <Play className="h-3 w-3 fill-current" />
+                        <span>Simulate</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleSetPrimary(b)}
+                        className="px-3.5 py-1.5 rounded-full bg-white dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 shadow-2xs hover:scale-105 active:scale-95"
+                      >
+                        {deployedModel === b.model_name ? (
+                          <>
+                            <Check className="h-3 w-3 text-emerald-600" />
+                            <span>Policy Created!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="h-3 w-3 text-[#0050FF]" />
+                            <span>Set Primary</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -448,6 +469,11 @@ export default function BenchmarksPage() {
           </table>
         </div>
       </div>
+
+      {/* Simulator Modal */}
+      {showSimulate && (
+        <SimulateRequestModal onClose={() => setShowSimulate(false)} />
+      )}
     </div>
   );
 }

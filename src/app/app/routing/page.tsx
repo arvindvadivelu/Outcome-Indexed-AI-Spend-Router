@@ -26,8 +26,10 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Play
 } from "lucide-react";
+import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function RoutingRulesPage() {
   const {
@@ -66,6 +68,9 @@ export default function RoutingRulesPage() {
   const [dryRunPrompt, setDryRunPrompt] = useState("Refactor this Python FastAPI endpoint to use async Redis connection pools");
   const [isDryRunning, setIsDryRunning] = useState(false);
   const [dryRunData, setDryRunData] = useState<any>(null);
+
+  // In-Page Simulation Modal Trigger
+  const [showSimulate, setShowSimulate] = useState(false);
 
   // Default initial rules restore if list is emptied
   const handleRestoreDefaults = () => {
@@ -193,8 +198,8 @@ export default function RoutingRulesPage() {
     setManualName("");
   };
 
-  const handleTestDryRun = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleTestDryRun = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!dryRunPrompt.trim()) return;
 
     setIsDryRunning(true);
@@ -218,7 +223,7 @@ export default function RoutingRulesPage() {
   // Run dry run on mount
   useEffect(() => {
     if (routingRules.length > 0) {
-      handleTestDryRun({ preventDefault: () => {} } as any);
+      handleTestDryRun();
     }
   }, [routingRules.length]);
 
@@ -244,11 +249,19 @@ export default function RoutingRulesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              onClick={() => setShowSimulate(true)}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+            >
+              <Play className="h-3 w-3 fill-current" />
+              <span>Simulate Gateway</span>
+            </button>
+
             {routingRules.length === 0 && (
               <button
                 onClick={handleRestoreDefaults}
-                className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] transition-all flex items-center gap-2 shadow-xs"
+                className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] transition-all flex items-center gap-2 shadow-xs hover:scale-105 active:scale-95"
               >
                 <RotateCcw className="h-3.5 w-3.5 text-[#0050FF]" />
                 <span>Restore Defaults</span>
@@ -288,6 +301,25 @@ export default function RoutingRulesPage() {
           )}
         </div>
 
+        {/* Quick Suggestion Pills */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] text-[#86868B] font-medium">Quick Synthesize:</span>
+          {[
+            { label: "Sales SDR High-Intent", prompt: "Route sales outreach emails to Claude 3.5 Sonnet to maximize booked demos with <350ms SLA" },
+            { label: "Code Review PRs", prompt: "Route code generation tasks to DeepSeek Coder to optimize code merged rate with <200ms latency" },
+            { label: "Support FAQ Bot", prompt: "Route customer support queries to Groq Llama 3.3 for sub-100ms instant ticket resolution" }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setAiPrompt(preset.prompt)}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-white/70 dark:bg-[#242428]/70 border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleSynthesize} className="flex gap-2.5">
           <input
             type="text"
@@ -299,7 +331,7 @@ export default function RoutingRulesPage() {
           <button
             type="submit"
             disabled={isSynthesizing || !aiPrompt.trim()}
-            className="px-6 h-11 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-[0_4px_14px_rgba(0,80,255,0.3)] shrink-0 flex items-center gap-2"
+            className="px-6 h-11 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-[0_4px_14px_rgba(0,80,255,0.3)] shrink-0 flex items-center gap-2 hover:scale-105 active:scale-95"
           >
             {isSynthesizing ? (
               <span>Synthesizing...</span>
@@ -316,12 +348,12 @@ export default function RoutingRulesPage() {
       {/* 3. Strategic Subsystems Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
         {/* Card 1: Thompson Auto-Pilot */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Thompson Sampling</span>
             <button
               onClick={toggleAutopilot}
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                 autopilot.enabled
                   ? "bg-[#E6F4EA] dark:bg-[#1E3A2F] text-[#137333] dark:text-[#81C995]"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
@@ -342,7 +374,7 @@ export default function RoutingRulesPage() {
         </div>
 
         {/* Card 2: Keystroke Pre-Warming */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Speculative Prewarm</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] text-[#137333] dark:bg-[#1E3A2F] dark:text-[#81C995]">
@@ -361,12 +393,12 @@ export default function RoutingRulesPage() {
         </div>
 
         {/* Card 3: Federated Thompson Priors */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Federated Priors</span>
             <button
               onClick={toggleFederation}
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                 federationSettings.enabled
                   ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF]"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
@@ -387,7 +419,7 @@ export default function RoutingRulesPage() {
         </div>
 
         {/* Card 4: Micro-SLA Cryptographic Fallback */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm space-y-3 flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Fallback</span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E6F4EA] text-[#137333] dark:bg-[#1E3A2F] dark:text-[#81C995]">
@@ -418,6 +450,27 @@ export default function RoutingRulesPage() {
           <span className="text-xs text-[#86868B] font-mono">&lt;2ms Pattern Matching</span>
         </div>
 
+        {/* Quick Dry-Run Preset Pills */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[11px] text-[#86868B] font-medium">Test Prompt Samples:</span>
+          {[
+            { label: "FastAPI Redis Refactor", text: "Refactor this Python FastAPI endpoint to use async Redis connection pools" },
+            { label: "Executive Cold Outreach", text: "Draft personalized cold outreach to VP of Engineering introducing AI cost optimization" },
+            { label: "Reset Password FAQ", text: "How do I reset my security PIN and configure multi-factor authentication?" }
+          ].map((sample, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => {
+                setDryRunPrompt(sample.text);
+              }}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all"
+            >
+              {sample.label}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleTestDryRun} className="flex gap-2.5">
           <input
             type="text"
@@ -429,7 +482,7 @@ export default function RoutingRulesPage() {
           <button
             type="submit"
             disabled={isDryRunning || !dryRunPrompt.trim()}
-            className="px-6 h-11 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-[0_4px_14px_rgba(0,80,255,0.3)] shrink-0 flex items-center gap-1.5"
+            className="px-6 h-11 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] disabled:opacity-40 transition-all shadow-[0_4px_14px_rgba(0,80,255,0.3)] shrink-0 flex items-center gap-1.5 hover:scale-105 active:scale-95"
           >
             <span>{isDryRunning ? "Evaluating..." : "Dry-Run Test"}</span>
           </button>
@@ -496,7 +549,7 @@ export default function RoutingRulesPage() {
             <p className="text-xs text-[#86868B]">No active routing policies configured.</p>
             <button
               onClick={handleRestoreDefaults}
-              className="px-5 h-9 rounded-full bg-[#0050FF] text-white text-xs font-semibold"
+              className="px-5 h-9 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:scale-105 active:scale-95 transition-all"
             >
               Restore Production Defaults
             </button>
@@ -552,7 +605,7 @@ export default function RoutingRulesPage() {
                     <td className="py-3.5 px-4 text-center">
                       <button
                         onClick={() => toggleRule(rule.id)}
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                           rule.is_active || rule.enabled
                             ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
                             : "bg-neutral-100 dark:bg-neutral-800 text-neutral-500"
@@ -563,13 +616,22 @@ export default function RoutingRulesPage() {
                     </td>
 
                     <td className="py-3.5 px-5 text-right">
-                      <button
-                        onClick={() => deleteRule(rule.id)}
-                        className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
-                        title="Delete Policy"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setShowSimulate(true)}
+                          className="p-1.5 rounded-full hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#86868B] hover:text-[#0050FF] transition-colors"
+                          title="Simulate this policy live"
+                        >
+                          <Play className="h-3.5 w-3.5 fill-current" />
+                        </button>
+                        <button
+                          onClick={() => deleteRule(rule.id)}
+                          className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
+                          title="Delete Policy"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -651,6 +713,11 @@ export default function RoutingRulesPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Simulator Modal */}
+      {showSimulate && (
+        <SimulateRequestModal onClose={() => setShowSimulate(false)} />
       )}
     </div>
   );

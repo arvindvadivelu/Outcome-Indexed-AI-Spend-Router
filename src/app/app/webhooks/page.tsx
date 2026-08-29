@@ -20,7 +20,10 @@ import {
   ChevronRight,
   Code2,
   Radio,
-  FileCode
+  FileCode,
+  RotateCw,
+  Eye,
+  X
 } from "lucide-react";
 import { useAppStore, WebhookLogItem } from "@/lib/store";
 
@@ -39,6 +42,8 @@ export default function WebhooksPage() {
   const [selectedEvent, setSelectedEvent] = useState("outcome.indexed.success");
   const [snippetLanguage, setSnippetLanguage] = useState<"node" | "python">("node");
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [inspectingLog, setInspectingLog] = useState<WebhookLogItem | null>(null);
+  const [redeliveringId, setRedeliveringId] = useState<string | null>(null);
 
   const eventTopics = [
     { id: "outcome.indexed.success", label: "outcome.indexed.success", desc: "Model conversion outcome achieved" },
@@ -70,7 +75,8 @@ export default function WebhooksPage() {
     setWebhookConfig({ secretKey: randomSecret });
   };
 
-  const handleSimulateWebhook = async () => {
+  const handleSimulateWebhook = async (customEvent?: string) => {
+    const eventToSend = customEvent || selectedEvent;
     setIsSimulating(true);
     setSimResult(null);
 
@@ -81,7 +87,7 @@ export default function WebhooksPage() {
         body: JSON.stringify({
           endpointUrl: webhookConfig.endpointUrl,
           secretKey: webhookConfig.secretKey,
-          eventType: selectedEvent
+          eventType: eventToSend
         })
       });
       const data = await res.json();
@@ -92,7 +98,7 @@ export default function WebhooksPage() {
         const logEntry: WebhookLogItem = {
           id: `wh_dlv_${Date.now() % 100000}`,
           timestamp: "Just now",
-          event: selectedEvent,
+          event: eventToSend,
           targetUrl: webhookConfig.endpointUrl,
           httpStatus: data.http_status,
           latencyMs: data.latency_ms,
@@ -105,6 +111,12 @@ export default function WebhooksPage() {
     } finally {
       setIsSimulating(false);
     }
+  };
+
+  const handleRedeliver = async (log: WebhookLogItem) => {
+    setRedeliveringId(log.id);
+    await handleSimulateWebhook(log.event);
+    setTimeout(() => setRedeliveringId(null), 1200);
   };
 
   const nodeVerificationCode = `// Verify incoming X-Outcome-Signature header
@@ -163,7 +175,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           </div>
 
           <button
-            onClick={handleSimulateWebhook}
+            onClick={() => handleSimulateWebhook()}
             disabled={isSimulating}
             className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
           >
@@ -175,7 +187,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
 
       {/* 2. Top Metric Glass Bento Grid (4 Cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Delivery Rate</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono">99.98%</div>
@@ -184,7 +196,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           <span className="text-[11px] text-white/80">0 Dropped Payloads</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Dispatch Latency</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">34ms</div>
@@ -193,7 +205,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Real-time HTTP Push</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Signature Verification</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">HMAC-SHA256</div>
@@ -202,7 +214,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           <span className="text-[11px] text-[#0050FF] dark:text-[#3374FF] font-semibold">Anti-Tamper Enforced</span>
         </div>
 
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Total Dispatches</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#0050FF] dark:text-[#3374FF]">
@@ -256,6 +268,25 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           )}
         </div>
 
+        {/* Quick URL Presets */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[11px] text-[#86868B] font-medium">Quick Presets:</span>
+          {[
+            { label: "Webhook.site Test Bucket", url: "https://webhook.site/spend-router-demo" },
+            { label: "Pipedream Ingestion Edge", url: "https://eok7b12.m.pipedream.net" },
+            { label: "Localhost:8080 /events", url: "http://localhost:8080/api/v1/events" }
+          ].map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleUrlChange(preset.url)}
+              className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
         {/* Event Topic Selector Pills */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-[#86868B]">Select Test Event Topic</label>
@@ -265,7 +296,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
                 key={t.id}
                 type="button"
                 onClick={() => setSelectedEvent(t.id)}
-                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                className={`p-3.5 rounded-2xl border text-left transition-all hover:scale-[1.02] active:scale-95 ${
                   selectedEvent === t.id
                     ? "bg-[#EEF4FF] dark:bg-[#0050FF]/20 border-[#0050FF] text-[#0050FF] dark:text-[#3374FF] shadow-xs"
                     : "bg-white/80 dark:bg-[#1E1E22] border-black/[0.06] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:border-[#0050FF]/40"
@@ -302,7 +333,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
               <button
                 type="button"
                 onClick={handleCopySecret}
-                className="px-4 h-11 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs"
+                className="px-4 h-11 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95"
               >
                 {copiedSecret ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
                 <span>{copiedSecret ? "Copied" : "Copy"}</span>
@@ -310,7 +341,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
               <button
                 type="button"
                 onClick={handleGenerateSecret}
-                className="px-4 h-11 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1.5"
+                className="px-4 h-11 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-xs font-semibold hover:bg-[#0050FF] hover:text-white transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
               >
                 <RotateCcw className="h-3 w-3" />
                 <span>Regenerate</span>
@@ -338,7 +369,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
                 key={lang}
                 type="button"
                 onClick={() => setSnippetLanguage(lang)}
-                className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all ${
+                className={`px-4 py-1.5 text-xs font-semibold rounded-full capitalize transition-all hover:scale-105 active:scale-95 ${
                   snippetLanguage === lang
                     ? "bg-[#0050FF] text-white shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -360,7 +391,7 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
               setCopiedSnippet(true);
               setTimeout(() => setCopiedSnippet(false), 2000);
             }}
-            className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs"
+            className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold flex items-center gap-1 transition-all border border-slate-700 shadow-xs hover:scale-105 active:scale-95"
           >
             {copiedSnippet ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
             <span>{copiedSnippet ? "Copied!" : "Copy Code"}</span>
@@ -383,7 +414,8 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
                 <th className="py-3.5 px-4 font-semibold">Endpoint URL</th>
                 <th className="py-3.5 px-4 font-semibold text-center">Status</th>
                 <th className="py-3.5 px-4 font-semibold text-center">Latency</th>
-                <th className="py-3.5 px-5 font-semibold text-right">Timestamp</th>
+                <th className="py-3.5 px-4 font-semibold">Timestamp</th>
+                <th className="py-3.5 px-5 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
@@ -406,8 +438,28 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
                   <td className="py-3.5 px-4 text-center font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
                     {log.latencyMs}ms
                   </td>
-                  <td className="py-3.5 px-5 text-right text-[#86868B] font-mono text-[11px]">
+                  <td className="py-3.5 px-4 text-[#86868B] font-mono text-[11px]">
                     {log.timestamp}
+                  </td>
+                  <td className="py-3.5 px-5 text-right space-x-2">
+                    <button
+                      onClick={() => setInspectingLog(log)}
+                      className="px-2.5 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#242428] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] text-[11px] font-semibold transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95"
+                      title="Inspect Payload"
+                    >
+                      <Eye className="h-3 w-3" />
+                      <span>Inspect</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleRedeliver(log)}
+                      disabled={redeliveringId === log.id}
+                      className="px-2.5 py-1 rounded-full bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] text-[11px] font-semibold hover:bg-[#0050FF] hover:text-white transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95 disabled:opacity-50"
+                      title="Redeliver Event"
+                    >
+                      <RotateCw className={`h-3 w-3 ${redeliveringId === log.id ? "animate-spin" : ""}`} />
+                      <span>{redeliveringId === log.id ? "Sending..." : "Redeliver"}</span>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -415,6 +467,59 @@ def verify_outcome_webhook(payload: str, signature_header: str, secret: str) -> 
           </table>
         </div>
       </div>
+
+      {/* Inspect Webhook Modal */}
+      {inspectingLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-md animate-in fade-in">
+          <div className="bg-white dark:bg-[#161618] border border-black/[0.08] dark:border-white/[0.1] rounded-[32px] p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-extrabold text-base text-[#1D1D1F] dark:text-[#F5F5F7]">
+                  Webhook Dispatch Audit — {inspectingLog.id}
+                </h3>
+                <span className="text-[11px] text-[#86868B] font-mono">{inspectingLog.event}</span>
+              </div>
+              <button
+                onClick={() => setInspectingLog(null)}
+                className="h-8 w-8 rounded-full bg-[#F5F5F7] dark:bg-[#242428] flex items-center justify-center text-[#86868B] hover:text-[#1D1D1F]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="p-3 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-xs font-mono space-y-1">
+                <div><span className="text-[#86868B]">Endpoint:</span> {inspectingLog.targetUrl}</div>
+                <div><span className="text-[#86868B]">HTTP Response:</span> {inspectingLog.httpStatus} OK</div>
+                <div><span className="text-[#86868B]">Dispatch Latency:</span> {inspectingLog.latencyMs}ms</div>
+                <div><span className="text-[#86868B]">HMAC Signature:</span> SHA-256 Verified ✓</div>
+              </div>
+
+              <div className="rounded-2xl bg-[#0F172A] p-4 font-mono text-xs text-emerald-400 overflow-x-auto">
+                <pre>{JSON.stringify({
+                  event_id: inspectingLog.id,
+                  event_type: inspectingLog.event,
+                  timestamp: new Date().toISOString(),
+                  data: {
+                    status: "delivered",
+                    target: inspectingLog.targetUrl,
+                    latency_ms: inspectingLog.latencyMs
+                  }
+                }, null, 2)}</pre>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setInspectingLog(null)}
+                className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
