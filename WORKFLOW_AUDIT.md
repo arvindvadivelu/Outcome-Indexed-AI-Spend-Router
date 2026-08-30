@@ -43,6 +43,21 @@ This document serves as the persistent audit ledger and memory for continuous fu
 | **WF-033** | `/api/logs/inspect` | Detailed Request Trace & Micro-SLA Waterfall Analysis | Deconstructs request into 4-stage audit trace with Thompson priors and escrow nonces | Evaluated and passed | Verified log inspection waterfall evaluator | [`src/app/api/logs/inspect/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/logs/inspect/route.ts) | **FIXED** | Run 07 |
 | **WF-034** | `/api/auth/sync-sheet` | Direct Google Sheets Audit Ledger Synchronization | Dispatches auth and billing events to Google Apps Script webhook with schema validation | Evaluated and passed | Verified direct webhook event formatting | [`src/app/api/auth/sync-sheet/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/sync-sheet/route.ts) | **FIXED** | Run 07 |
 | **WF-035** | `/contact` | Enterprise Contact Lead Ingestion & Queue | Captures enterprise inquiries, binds custom monthly quota tier, and persists to Google Sheets | Evaluated and passed | Verified enterprise contact lead workflow | [`src/app/contact/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/contact/page.tsx), [`src/app/api/auth/sync-sheet/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/sync-sheet/route.ts) | **FIXED** | Run 07 |
+| **WF-036** | `/api/billing/forecast` | Billing Forecast Safe Budget Boundary Guard | Safely handles zero or missing monthly budget ceilings without divide-by-zero errors | Division by zero caused `NaN%` or `Infinity%` in recommendation message | Calculation did not guard against `monthly_budget === 0` | [`src/app/api/billing/forecast/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/billing/forecast/route.ts) | **FIXED** | Run 08 |
+| **WF-037** | `/api/auth/session` | Nested Updates Payload Object Flattening | Supports both flat and nested `{ email, updates: { ... } }` payload shapes in session POST | Updates nested inside `updates` key were ignored | Session POST only destructured top-level properties from `body` | [`src/app/api/auth/session/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/session/route.ts) | **FIXED** | Run 08 |
+| **WF-038** | `/app/dashboard` | Manual Dashboard Refresh Telemetry Sync | Instant refresh of telemetry charts and quota counters on button click | Button only displayed 500ms spinner without triggering backend sync | `handleRefresh` lacked call to `fetchSessionTelemetry()` | [`src/app/app/dashboard/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/app/dashboard/page.tsx) | **FIXED** | Run 09 |
+| **WF-039** | `/api/routing/synthesize` | Policy Model Ordering & SLA Parsing | Automatically ranks speed-optimized models (e.g. Groq Llama 3.3) for low-latency FAQ rules | Evaluated and passed | Verified prompt parsing and model priority ordering | [`src/app/api/routing/synthesize/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/routing/synthesize/route.ts) | **FIXED** | Run 09 |
+| **WF-040** | `/api/v1/chat/completions` | Micro-SLA Latency Verification & Ledger Nonce | Calculates SHA-256 nonces and evaluates SLA compliance bounds | Evaluated and passed | Verified cryptographic nonce generator | [`src/app/api/v1/chat/completions/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/v1/chat/completions/route.ts) | **FIXED** | Run 09 |
+| **WF-041** | `/api/v1/chat/completions` | Free Tier Feature Isolation & Gated Flags | Provides clear `GATED_FREE_TIER` status metadata when free tier calls enterprise extensions | Free tier users attempting paid extensions had ambiguous flag responses | Free tier isolation flag did not propagate to `_router_metadata` | [`src/app/api/v1/chat/completions/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/v1/chat/completions/route.ts) | **FIXED** | Run 10 |
+| **WF-042** | Global State | Real-Time USD to INR Currency Multiplier Stability | Guarantees exact 86.5 multiplier across logs, invoices, and charts | Evaluated and passed | Verified currency conversion calculations across routes | [`src/app/api/v1/chat/completions/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/v1/chat/completions/route.ts), [`src/lib/utils.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/lib/utils.ts) | **FIXED** | Run 10 |
+| **WF-043** | `/api/v1/chat/completions` | Semantic Diff Prompt Cache Avoidance Calculation | Deducts 60% of redundant prompt tokens for cached inputs on paid tiers | Prompts with `semantic_delta: true` did not compute avoided token deductions | Cache hit branch lacked effective prompt token calculation | [`src/app/api/v1/chat/completions/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/v1/chat/completions/route.ts) | **FIXED** | Run 11 |
+| **WF-044** | `/api/v1/chat/completions` | Speculative Pre-warming 1.82x TTFT Acceleration | Accelerates time-to-first-token for Enterprise speculative pre-warmed requests | TTFT did not reflect speculative speedup factor | Speedup calculation omitted `ttft_speedup_factor` in metadata | [`src/app/api/v1/chat/completions/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/v1/chat/completions/route.ts) | **FIXED** | Run 11 |
+| **WF-045** | `/api/auth/*` | Empty & Malformed JSON Request Fallback Resilience | Safely returns HTTP 400 with validation errors on empty or non-JSON request bodies | `req.json()` threw unhandled JSON syntax exception resulting in HTTP 500 | Handlers called `req.json()` without `.catch(() => ({}))` fallback | [`src/app/api/auth/register/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/register/route.ts), [`src/app/api/auth/verify-pin/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/verify-pin/route.ts), [`src/app/api/auth/verify-otp/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/verify-otp/route.ts) | **FIXED** | Run 12 |
+| **WF-046** | `/privacy`, `/terms`, `/dpa` | Public Compliance Navigation & Content Resolution | Renders legal terms, zero-retention privacy standards, and DPA addenda | Evaluated and passed | Verified compliance page links and badge layouts | [`src/app/privacy/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/privacy/page.tsx), [`src/app/terms/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/terms/page.tsx), [`src/app/dpa/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/dpa/page.tsx) | **FIXED** | Run 12 |
+| **WF-047** | `/api/team/invite` | Team Invite Token & Shareable Deep Link Generation | Generates cryptographic invitation token and onboarding URL for team members | Invite route did not return a shareable URL string | Route response lacked `inviteLink` field construction | [`src/app/api/team/invite/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/team/invite/route.ts) | **FIXED** | Run 13 |
+| **WF-048** | `/api/routing/synthesize` | Routing Synthesizer Empty Payload Resilience | Safely handles empty POST bodies with HTTP 400 validation error | Empty POST body crashed route with uncaught 500 JSON error | Missing `catch(() => ({}))` fallback on `req.json()` | [`src/app/api/routing/synthesize/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/routing/synthesize/route.ts) | **FIXED** | Run 13 |
+| **WF-049** | `/api/auth/session` | Session POST Safe Payload & User Profile Mutation | Allows safe partial updates for display name and workspace with empty-body protection | Empty payload to session route threw unhandled 500 JSON error | Missing `catch(() => ({}))` fallback on `req.json()` | [`src/app/api/auth/session/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/session/route.ts) | **FIXED** | Run 14 |
+| **WF-050** | `/api/benchmarks/eval` | Multi-Domain Parallel Benchmark Evaluation | Evaluates frontier models across `code_generation`, `sales_email`, `customer_support`, `complex_reasoning` | Evaluated and passed | Verified batch latency and frontier model score matrix | [`src/app/api/benchmarks/eval/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/benchmarks/eval/route.ts) | **FIXED** | Run 14 |
 
 ---
 
@@ -117,4 +132,54 @@ This document serves as the persistent audit ledger and memory for continuous fu
   - **WF-035**: Verified enterprise lead capture and spend tier routing in `/contact`.
 - **Verified**:
   - Automated test suite `stress-test/verify_run07_workflows.mjs` (6/6 tests passed - 100%).
-  - Total combined test suites: **94 / 94 Tests Passed (100.0%)**.
+
+### Run 08 — Billing Forecast Zero-Ceiling Boundaries & Session Nested Updates Flattening
+- **Fixed**:
+  - **WF-036**: Guarded against divide-by-zero `NaN%` formatting in `/api/billing/forecast` when `monthly_budget` is passed as `0`.
+  - **WF-037**: Flattened `body.updates` in `/api/auth/session` POST handler to support nested mutation payloads.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run08_workflows.mjs` (7/7 tests passed - 100%).
+
+### Run 09 — Dashboard Instant Telemetry Refresh, Synthesized Model Order & Micro-SLA Validation
+- **Fixed**:
+  - **WF-038**: Added `fetchSessionTelemetry()` call to `handleRefresh` in `/app/dashboard` for instant rehydration on click.
+  - **WF-039**: Verified policy synthesis priority ordering for customer support FAQs.
+  - **WF-040**: Verified micro-SLA cryptographic nonces and compliance tracking in inference routes.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run09_workflows.mjs` (8/8 tests passed - 100%).
+
+### Run 10 — Free Tier Feature Isolation & Currency Conversion Multiplier Integrity
+- **Fixed**:
+  - **WF-041**: Added structured feature gate status metadata (`GATED_FREE_TIER` vs `BASIC_FREE_TIER` vs `ENTERPRISE_ENABLED`) in `/api/v1/chat/completions` `_router_metadata`.
+  - **WF-042**: Verified real-time USD to INR (₹, rate = 86.5) multiplier stability across database logs and calculation routes.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run10_workflows.mjs` (7/7 tests passed - 100%).
+
+### Run 11 — Semantic Diff Cache Token Avoidance & Speculative Pre-warming Acceleration
+- **Fixed**:
+  - **WF-043**: Implemented prompt token avoidance deduction (40% effective prompt tokens, 60% avoided) on semantic diff cache hits.
+  - **WF-044**: Implemented 1.82x TTFT acceleration (`0.55x` latency) and metadata flags for speculative pre-warmed inference requests.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run11_workflows.mjs` (9/9 tests passed - 100%).
+
+### Run 12 — Empty Request Body Parsing Resilience & Compliance Routes Resolution
+- **Fixed**:
+  - **WF-045**: Added safe body parsing `req.json().catch(() => ({}))` across authentication routes (`register`, `verify-pin`, `verify-otp`), converting unhandled syntax 500 errors into clean 400 validation responses.
+  - **WF-046**: Verified route resolution, links, and SLA commitments on `/privacy`, `/terms`, and `/dpa`.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run12_workflows.mjs` (8/8 tests passed - 100%).
+
+### Run 13 — Team Invitation Deep Links & Routing Synthesizer Resilience
+- **Fixed**:
+  - **WF-047**: Added `inviteLink` field generation in `/api/team/invite` to produce pre-configured onboarding links.
+  - **WF-048**: Added safe JSON parsing fallback in `/api/routing/synthesize` to guard against empty POST requests.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run13_workflows.mjs` (9/9 tests passed - 100%).
+
+### Run 14 — Session Partial Profile Updates & Benchmark Multi-Domain Batch Matrix
+- **Fixed**:
+  - **WF-049**: Added safe parsing on `POST /api/auth/session` and verified dynamic display name and workspace mutations.
+  - **WF-050**: Verified parallel benchmark evaluation across 4 frontier domains (`code_generation`, `sales_email`, `customer_support`, `complex_reasoning`).
+- **Verified**:
+  - Automated test suite `stress-test/verify_run14_workflows.mjs` (12/12 tests passed - 100%).
+  - Total combined test suites: **154 / 154 Tests Passed (100.0%)**.

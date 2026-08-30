@@ -3,7 +3,7 @@ import { findUserByEmail, verifyEmailOtp, deleteUser } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { email, otp } = body;
 
     if (!email || !otp) {

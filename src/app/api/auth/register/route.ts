@@ -3,7 +3,7 @@ import { registerUser, findUserByEmail } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { name, email, workspace, plan_tier, pin, currency } = body;
 
     if (!name || !email || !pin || pin.length !== 6) {

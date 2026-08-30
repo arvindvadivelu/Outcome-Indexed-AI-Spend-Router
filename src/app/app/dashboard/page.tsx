@@ -249,6 +249,7 @@ export default function DashboardPage() {
 
   const handleRefresh = () => {
     setIsRefreshing(true);
+    fetchSessionTelemetry();
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
