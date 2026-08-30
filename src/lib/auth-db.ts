@@ -15,6 +15,9 @@ export interface UserAccount {
   apiKeys?: any[];
   logs?: any[];
   slaEscrowContracts?: any[];
+  webhookConfig?: any;
+  teamMembers?: any[];
+  federationSettings?: any;
   pin: string;
   currency: "USD" | "INR";
   created_at: string;
@@ -121,6 +124,26 @@ export function findUserByEmail(email: string): UserAccount | null {
   const users = ensureStorage();
   const normalized = email.trim().toLowerCase();
   return users.find((u) => u.email.trim().toLowerCase() === normalized) || null;
+}
+
+export function findUserByApiKey(apiKey: string): { user: UserAccount; key: any } | null {
+  if (!apiKey) return null;
+  const users = ensureStorage();
+  const trimmed = apiKey.trim();
+  for (const u of users) {
+    if (u.apiKeys && Array.isArray(u.apiKeys)) {
+      const foundKey = u.apiKeys.find(
+        (k: any) =>
+          (k.full_key && k.full_key === trimmed) ||
+          (k.key_prefix && trimmed.startsWith(k.key_prefix)) ||
+          (k.id && k.id === trimmed)
+      );
+      if (foundKey) {
+        return { user: u, key: foundKey };
+      }
+    }
+  }
+  return null;
 }
 
 export function registerUser(user: Omit<UserAccount, "id" | "created_at">): UserAccount {

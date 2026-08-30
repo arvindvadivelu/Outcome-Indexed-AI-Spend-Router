@@ -45,6 +45,9 @@ export async function GET(req: Request) {
         apiKeys: user.apiKeys || [],
         logs: user.logs || [],
         slaEscrowContracts: user.slaEscrowContracts || [],
+        webhookConfig: user.webhookConfig || null,
+        teamMembers: user.teamMembers || [],
+        federationSettings: user.federationSettings || null,
         thompson_win_rate: tokensUsed > 0 ? 94.6 : 0,
         semantic_delta_avoided: tokensUsed > 0 ? Math.round(tokensUsed * 0.58) : 0,
         contracts_count: tokensUsed > 0 ? Math.max(1, Math.round(tokensUsed / 285)) : 0
@@ -58,6 +61,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const payload = body.updates ? { ...body, ...body.updates } : body;
     const {
       email,
       name,
@@ -72,8 +76,11 @@ export async function POST(req: Request) {
       rules,
       apiKeys,
       logs,
-      slaEscrowContracts
-    } = body;
+      slaEscrowContracts,
+      webhookConfig,
+      teamMembers,
+      federationSettings
+    } = payload;
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
@@ -93,6 +100,9 @@ export async function POST(req: Request) {
     if (apiKeys !== undefined) updates.apiKeys = apiKeys;
     if (logs !== undefined) updates.logs = logs;
     if (slaEscrowContracts !== undefined) updates.slaEscrowContracts = slaEscrowContracts;
+    if (webhookConfig !== undefined) updates.webhookConfig = webhookConfig;
+    if (teamMembers !== undefined) updates.teamMembers = teamMembers;
+    if (federationSettings !== undefined) updates.federationSettings = federationSettings;
 
     const updated = updateUserAccountState(email, updates);
 

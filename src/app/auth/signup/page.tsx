@@ -21,6 +21,14 @@ export default function SignUpPage() {
       if (qPlan && ["free", "starter", "growth", "enterprise"].includes(qPlan.toLowerCase())) {
         setSelectedPlan(qPlan.toLowerCase() as any);
       }
+      const qEmail = params.get("email");
+      if (qEmail) {
+        setEmail(qEmail);
+      }
+      const qWorkspace = params.get("workspace") || params.get("org");
+      if (qWorkspace) {
+        setWorkspace(qWorkspace);
+      }
     }
   }, []);
 

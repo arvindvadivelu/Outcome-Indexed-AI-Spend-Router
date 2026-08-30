@@ -26,7 +26,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 
 export default function ApiKeysPage() {
-  const { apiKeys, createApiKey, deleteApiKey, updateApiKeyRateLimit } = useAppStore();
+  const { apiKeys, createApiKey, deleteApiKey, updateApiKeyRateLimit, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -46,6 +46,16 @@ export default function ApiKeysPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [securityVerdict, setSecurityVerdict] = useState<any>(null);
 
+  const syncKeysToSession = (updatedKeys: ApiKeyItem[]) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, apiKeys: updatedKeys })
+      }).catch((err) => console.warn("API Keys session sync notice:", err));
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeyName.trim()) return;
@@ -56,17 +66,20 @@ export default function ApiKeysPage() {
     setNewKeyName("");
     setNewKeyIp("");
     setNewKeyRpm(600);
+    syncKeysToSession(useAppStore.getState().apiKeys);
   };
 
   const handleDeleteKey = async (id: string) => {
     await apiClient.deleteApiKey(id);
     deleteApiKey(id);
+    syncKeysToSession(useAppStore.getState().apiKeys);
   };
 
   const handleRotateKey = (key: ApiKeyItem) => {
     deleteApiKey(key.id);
     const fullKey = createApiKey(key.name, key.environment, key.ip_restrictions);
     setRevealedKey(fullKey);
+    syncKeysToSession(useAppStore.getState().apiKeys);
   };
 
   const handleCopy = (id: string, text: string) => {

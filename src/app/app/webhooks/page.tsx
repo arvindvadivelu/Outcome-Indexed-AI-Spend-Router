@@ -28,7 +28,7 @@ import {
 import { useAppStore, WebhookLogItem } from "@/lib/store";
 
 export default function WebhooksPage() {
-  const { webhookConfig, setWebhookConfig, webhookLogs, addWebhookLog } = useAppStore();
+  const { webhookConfig, setWebhookConfig, webhookLogs, addWebhookLog, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -45,6 +45,16 @@ export default function WebhooksPage() {
   const [inspectingLog, setInspectingLog] = useState<WebhookLogItem | null>(null);
   const [redeliveringId, setRedeliveringId] = useState<string | null>(null);
 
+  const syncWebhookToSession = (config: any) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, webhookConfig: config })
+      }).catch((err) => console.warn("Webhook session sync notice:", err));
+    }
+  };
+
   const eventTopics = [
     { id: "outcome.indexed.success", label: "outcome.indexed.success", desc: "Model conversion outcome achieved" },
     { id: "sla.escrow.refund", label: "sla.escrow.refund", desc: "Latency breach refund credited" },
@@ -59,20 +69,26 @@ export default function WebhooksPage() {
   };
 
   const handleUrlChange = (newUrl: string) => {
+    const updated = { ...webhookConfig, endpointUrl: newUrl };
     setWebhookConfig({ endpointUrl: newUrl });
+    syncWebhookToSession(updated);
     setSavedStatus(true);
     setTimeout(() => setSavedStatus(false), 2000);
   };
 
   const handleSecretChange = (newSecret: string) => {
+    const updated = { ...webhookConfig, secretKey: newSecret };
     setWebhookConfig({ secretKey: newSecret });
+    syncWebhookToSession(updated);
     setSavedStatus(true);
     setTimeout(() => setSavedStatus(false), 2000);
   };
 
   const handleGenerateSecret = () => {
     const randomSecret = `whsec_${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+    const updated = { ...webhookConfig, secretKey: randomSecret };
     setWebhookConfig({ secretKey: randomSecret });
+    syncWebhookToSession(updated);
   };
 
   const handleSimulateWebhook = async (customEvent?: string) => {

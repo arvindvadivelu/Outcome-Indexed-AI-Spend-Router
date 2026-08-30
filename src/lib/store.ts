@@ -132,6 +132,16 @@ export interface WebhookConfig {
   retryPolicy: "exponential_backoff" | "linear" | "immediate";
 }
 
+export interface IntegrationItem {
+  id: string;
+  name: string;
+  category: string;
+  connected: boolean;
+  latency: string;
+  desc: string;
+  docsUrl: string;
+}
+
 export interface WebhookLogItem {
   id: string;
   timestamp: string;
@@ -207,6 +217,11 @@ interface AppState {
   rules: RoutingRule[];
   routingRules: RoutingRule[];
   apiKeys: ApiKeyItem[];
+
+  integrations: IntegrationItem[];
+  setIntegrations: (integrations: IntegrationItem[] | ((prev: IntegrationItem[]) => IntegrationItem[])) => void;
+  connectIntegration: (id: string, latency?: string) => void;
+  addCustomIntegration: (integration: IntegrationItem) => void;
 
   // Actions
   recordOutcome: (requestId: string, success: boolean) => void;
@@ -321,6 +336,81 @@ const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
 const DEFAULT_RULES: RoutingRule[] = [];
 
 const DEFAULT_KEYS: ApiKeyItem[] = [];
+
+const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
+  {
+    id: "langchain",
+    name: "LangChain & LangGraph",
+    category: "Framework",
+    connected: true,
+    latency: "14ms",
+    desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers.",
+    docsUrl: "https://python.langchain.com/docs/"
+  },
+  {
+    id: "llamaindex",
+    name: "LlamaIndex RAG",
+    category: "Framework",
+    connected: true,
+    latency: "18ms",
+    desc: "Query router for document retrieval & semantic synthesis pipelines.",
+    docsUrl: "https://docs.llamaindex.ai/"
+  },
+  {
+    id: "litellm",
+    name: "LiteLLM Gateway Proxy",
+    category: "Proxy",
+    connected: true,
+    latency: "11ms",
+    desc: "Universal OpenAI-compatible reverse proxy with Bayesian Thompson routing.",
+    docsUrl: "https://docs.litellm.ai/"
+  },
+  {
+    id: "vercel",
+    name: "Vercel AI SDK",
+    category: "Framework",
+    connected: true,
+    latency: "8ms",
+    desc: "Next.js edge runtime streaming with speculative pre-warmed TTFT.",
+    docsUrl: "https://sdk.vercel.ai/docs"
+  },
+  {
+    id: "crewai",
+    name: "CrewAI Multi-Agent",
+    category: "Agents",
+    connected: false,
+    latency: "—",
+    desc: "Cost & outcome optimizer for autonomous multi-agent task execution.",
+    docsUrl: "https://docs.crewai.com/"
+  },
+  {
+    id: "deepseek",
+    name: "DeepSeek Native API",
+    category: "Provider",
+    connected: true,
+    latency: "95ms",
+    desc: "Direct integration with DeepSeek-V3 & DeepSeek-Coder at $0.0006/req.",
+    docsUrl: "https://api-docs.deepseek.com/"
+  },
+  {
+    id: "groq",
+    name: "Groq LPU Acceleration",
+    category: "Provider",
+    connected: true,
+    latency: "84ms",
+    desc: "Sub-100ms ultra-low latency inference for customer support FAQ.",
+    docsUrl: "https://console.groq.com/docs/quickstart"
+  },
+  {
+    id: "anthropic",
+    name: "Anthropic Claude 3.5",
+    category: "Provider",
+    connected: true,
+    latency: "140ms",
+    desc: "Frontier reasoning and code generation with cryptographic SLA escrow.",
+    docsUrl: "https://docs.anthropic.com/"
+  }
+];
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -521,6 +611,24 @@ export const useAppStore = create<AppState>()(
       rules: DEFAULT_RULES,
       routingRules: DEFAULT_RULES,
       apiKeys: DEFAULT_KEYS,
+      integrations: DEFAULT_INTEGRATIONS,
+
+      setIntegrations: (integrationsOrFn) =>
+        set((state) => ({
+          integrations: typeof integrationsOrFn === "function" ? integrationsOrFn(state.integrations) : integrationsOrFn
+        })),
+
+      connectIntegration: (id: string, latency = "14ms") =>
+        set((state) => ({
+          integrations: state.integrations.map((item) =>
+            item.id === id ? { ...item, connected: true, latency } : item
+          )
+        })),
+
+      addCustomIntegration: (integration: IntegrationItem) =>
+        set((state) => ({
+          integrations: [integration, ...state.integrations]
+        })),
 
       recordOutcome: (requestId: string, success: boolean) =>
         set((state) => {
@@ -825,7 +933,8 @@ export const useAppStore = create<AppState>()(
         federationSettings: state.federationSettings,
         autopilot: state.autopilot,
         webhookConfig: state.webhookConfig,
-        webhookLogs: state.webhookLogs
+        webhookLogs: state.webhookLogs,
+        integrations: state.integrations
       })
     }
   )

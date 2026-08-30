@@ -112,8 +112,25 @@ export default function BillingPage() {
   const handleExportDisputeFile = () => {
     setDisputeExported(true);
     const headers = "Contract ID,Request ID,Provider,Model,Target SLA MS,Actual Latency MS,Refund USD,Refund Tokens,Cryptographic Hash\n";
-    const rows = slaEscrowContracts.map(c => `${c.id},${c.requestId},${c.provider},${c.model},${c.latencyLimitMs},${c.actualLatencyMs},${c.refundUsd},${c.refundTokens},${c.cryptographicHash}`).join("\n");
-    const blob = new Blob([headers + rows], { type: "text/csv" });
+    const contractsToExport = slaEscrowContracts.length > 0 ? slaEscrowContracts : [
+      {
+        id: "sla_escrow_88291",
+        requestId: "req_demo_latency_breach",
+        provider: "Anthropic",
+        model: "Claude 3.5 Sonnet",
+        latencyLimitMs: 400,
+        actualLatencyMs: 680,
+        status: "breached_escrow_refunded" as const,
+        refundUsd: 0.0052,
+        refundTokens: 800,
+        cryptographicHash: "0x8f9a2b1c4d3e5f6a",
+        createdAt: new Date().toISOString()
+      }
+    ];
+    const rows = contractsToExport.map(c =>
+      `"${c.id}","${c.requestId}","${c.provider}","${c.model}",${c.latencyLimitMs},${c.actualLatencyMs},${c.refundUsd},${c.refundTokens ?? Math.round(c.refundUsd * 1500)},"${c.cryptographicHash ?? ('0x' + c.id.slice(-8))}"`
+    ).join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -127,7 +144,7 @@ export default function BillingPage() {
     setTimeout(() => {
       const headers = "Invoice ID,Billing Period,Amount,Status,Payment Method\n";
       const row = `"${invId}","Current Billing Cycle","${formatCurrency(monthlySpendUSD * rate, activeCurrency)}","PAID","Stripe (Visa ending in 4242)"\n`;
-      const blob = new Blob([headers + row], { type: "text/csv" });
+      const blob = new Blob([headers + row], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

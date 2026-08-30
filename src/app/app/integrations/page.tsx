@@ -31,7 +31,7 @@ import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 import { getPlanFeatures, isConnectorAllowed } from "@/lib/plan-gates";
 
 export default function IntegrationsPage() {
-  const { planTier } = useAppStore();
+  const { planTier, integrations, setIntegrations, connectIntegration, addCustomIntegration } = useAppStore();
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -41,81 +41,6 @@ export default function IntegrationsPage() {
 
   // Upgrade Requirement Modal State
   const [upgradeModalInfo, setUpgradeModalInfo] = useState<{ title: string; desc: string; targetPlan: string } | null>(null);
-
-  const [integrations, setIntegrations] = useState([
-    {
-      id: "langchain",
-      name: "LangChain & LangGraph",
-      category: "Framework",
-      connected: true,
-      latency: "14ms",
-      desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers.",
-      docsUrl: "https://python.langchain.com/docs/"
-    },
-    {
-      id: "llamaindex",
-      name: "LlamaIndex RAG",
-      category: "Framework",
-      connected: true,
-      latency: "18ms",
-      desc: "Query router for document retrieval & semantic synthesis pipelines.",
-      docsUrl: "https://docs.llamaindex.ai/"
-    },
-    {
-      id: "litellm",
-      name: "LiteLLM Gateway Proxy",
-      category: "Proxy",
-      connected: true,
-      latency: "11ms",
-      desc: "Universal OpenAI-compatible reverse proxy with Bayesian Thompson routing.",
-      docsUrl: "https://docs.litellm.ai/"
-    },
-    {
-      id: "vercel",
-      name: "Vercel AI SDK",
-      category: "Framework",
-      connected: true,
-      latency: "8ms",
-      desc: "Next.js edge runtime streaming with speculative pre-warmed TTFT.",
-      docsUrl: "https://sdk.vercel.ai/docs"
-    },
-    {
-      id: "crewai",
-      name: "CrewAI Multi-Agent",
-      category: "Agents",
-      connected: false,
-      latency: "—",
-      desc: "Cost & outcome optimizer for autonomous multi-agent task execution.",
-      docsUrl: "https://docs.crewai.com/"
-    },
-    {
-      id: "deepseek",
-      name: "DeepSeek Native API",
-      category: "Provider",
-      connected: true,
-      latency: "95ms",
-      desc: "Direct integration with DeepSeek-V3 & DeepSeek-Coder at $0.0006/req.",
-      docsUrl: "https://api-docs.deepseek.com/"
-    },
-    {
-      id: "groq",
-      name: "Groq LPU Acceleration",
-      category: "Provider",
-      connected: true,
-      latency: "84ms",
-      desc: "Sub-100ms ultra-low latency inference for customer support FAQ.",
-      docsUrl: "https://console.groq.com/docs/quickstart"
-    },
-    {
-      id: "anthropic",
-      name: "Anthropic Claude 3.5",
-      category: "Provider",
-      connected: true,
-      latency: "140ms",
-      desc: "Frontier reasoning and code generation with cryptographic SLA escrow.",
-      docsUrl: "https://docs.anthropic.com/"
-    }
-  ]);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedIntegration, setSelectedIntegration] = useState<any>(null);
@@ -179,13 +104,7 @@ export default function IntegrationsPage() {
       const data = await res.json();
 
       if (data.success) {
-        setIntegrations((prev) =>
-          prev.map((item) =>
-            item.id === connectingItem.id
-              ? { ...item, connected: true, latency: "24ms" }
-              : item
-          )
-        );
+        connectIntegration(connectingItem.id, "24ms");
         setConnectingItem(null);
         setProviderKey("");
       }
@@ -211,7 +130,7 @@ export default function IntegrationsPage() {
       docsUrl: customBaseUrl.trim()
     };
 
-    setIntegrations((prev) => [newIntegration, ...prev]);
+    addCustomIntegration(newIntegration);
     setShowCustomModal(false);
     setCustomName("");
     setCustomBaseUrl("");

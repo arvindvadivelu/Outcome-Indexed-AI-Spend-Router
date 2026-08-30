@@ -30,7 +30,7 @@ import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function BenchmarksPage() {
-  const { benchmarks, currency, federationSettings, addRule } = useAppStore();
+  const { benchmarks, currency, federationSettings, addRule, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,6 +52,16 @@ export default function BenchmarksPage() {
 
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
+
+  const syncRulesToSession = (updatedRules: any[]) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, rules: updatedRules })
+      }).catch((err) => console.warn("Benchmarks rule session sync notice:", err));
+    }
+  };
 
   const filteredBenchmarks = useMemo(() => {
     return benchmarks
@@ -94,6 +104,7 @@ export default function BenchmarksPage() {
       trigger_count: 0,
       total_saved_usd: 0.0
     });
+    syncRulesToSession(useAppStore.getState().routingRules);
     setDeployedModel(b.model_name);
     setTimeout(() => setDeployedModel(null), 3000);
   };

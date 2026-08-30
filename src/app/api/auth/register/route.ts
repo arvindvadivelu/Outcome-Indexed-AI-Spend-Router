@@ -15,14 +15,30 @@ export async function POST(req: Request) {
 
     const quota = plan_tier === "starter" ? 100000 : (plan_tier === "growth" ? 500000 : (plan_tier === "enterprise" ? 2000000 : 10000));
 
+    const defaultPrefix = `oir_live_${Math.random().toString(36).slice(2, 8)}`;
+    const defaultFullKey = `${defaultPrefix}${Math.random().toString(36).slice(2, 12)}`;
+    const initialKey = {
+      id: `key_${Date.now()}`,
+      name: "Default Live Gateway Key",
+      key_prefix: defaultPrefix,
+      full_key: defaultFullKey,
+      environment: "live",
+      rate_limit: 600,
+      rate_limit_rpm: 600,
+      created_at: "Just now",
+      last_used_at: "Never",
+      is_active: true
+    };
+
     const user = registerUser({
       name: name.trim(),
       email: email.trim().toLowerCase(),
-      workspace: workspace?.trim() || "Acme AI Lab",
+      workspace: workspace?.trim() || `${name.trim()}'s Workspace`,
       plan_tier: plan_tier || "free",
       monthly_token_quota: quota,
       pin: pin.trim(),
-      currency: currency || "USD"
+      currency: currency || "USD",
+      apiKeys: [initialKey]
     });
 
     // Dispatch directly to Google Apps Script Webhook

@@ -24,12 +24,15 @@ export async function POST(req: Request) {
 
     const otp = generateEmailOtp(email);
 
-    // Also sync OTP generation event
+    // Also sync OTP generation event to Google Sheet webhook
+    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
     try {
-      await fetch("http://127.0.0.1:8000/api/v1/auth/google-sheet-sync", {
+      await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          timestamp: new Date().toISOString(),
+          localTime: new Date().toLocaleString(),
           action: "SIGNIN_OTP_DISPATCHED",
           name: user.name,
           email: user.email,
@@ -39,7 +42,8 @@ export async function POST(req: Request) {
           currency: user.currency,
           auth_method: "EMAIL_OTP"
         }),
-        signal: AbortSignal.timeout(2000)
+        redirect: "follow",
+        signal: AbortSignal.timeout(3000)
       });
     } catch (e) {
       // ignore

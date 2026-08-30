@@ -99,7 +99,9 @@ export default function DashboardPage() {
             routingRules: data.user.rules?.length ? data.user.rules : currentStore.routingRules,
             apiKeys: (data.user.apiKeys && data.user.apiKeys.length > 0) ? data.user.apiKeys : currentStore.apiKeys,
             logs: (data.user.logs && data.user.logs.length > 0) ? data.user.logs : currentStore.logs,
-            slaEscrowContracts: (data.user.slaEscrowContracts && data.user.slaEscrowContracts.length > 0) ? data.user.slaEscrowContracts : currentStore.slaEscrowContracts
+            slaEscrowContracts: (data.user.slaEscrowContracts && data.user.slaEscrowContracts.length > 0) ? data.user.slaEscrowContracts : currentStore.slaEscrowContracts,
+            webhookConfig: data.user.webhookConfig || currentStore.webhookConfig,
+            federationSettings: data.user.federationSettings || currentStore.federationSettings
           });
         }
       })

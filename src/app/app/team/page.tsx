@@ -40,15 +40,34 @@ export default function TeamPage() {
     { id: 4, name: "Priya Patel", email: "priya@company.com", role: "FinOps", tokenQuota: "50,000 / mo", mfaActive: false, lastActive: "Yesterday" }
   ]);
 
+  const syncTeamToSession = (updatedMembers: any[]) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, teamMembers: updatedMembers })
+      }).catch((err) => console.warn("Team session sync notice:", err));
+    }
+  };
+
   useEffect(() => {
     if (user?.email) {
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.role === "Owner"
-            ? { ...m, name: user.name || m.name, email: user.email }
-            : m
-        )
-      );
+      fetch(`/api/auth/session?email=${encodeURIComponent(user.email)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.user?.teamMembers && data.user.teamMembers.length > 0) {
+            setMembers(data.user.teamMembers);
+          } else {
+            setMembers((prev) =>
+              prev.map((m) =>
+                m.role === "Owner"
+                  ? { ...m, name: user.name || m.name, email: user.email }
+                  : m
+              )
+            );
+          }
+        })
+        .catch(() => {});
     }
   }, [user]);
 
@@ -90,8 +109,8 @@ export default function TeamPage() {
       const data = await res.json();
 
       if (data.success) {
-        setMembers((prev) => [
-          ...prev,
+        const updated = [
+          ...members,
           {
             id: Date.now(),
             name: inviteEmail.split("@")[0],
@@ -101,7 +120,9 @@ export default function TeamPage() {
             mfaActive: true,
             lastActive: "Invited"
           }
-        ]);
+        ];
+        setMembers(updated);
+        syncTeamToSession(updated);
 
         await syncAuthUserToGoogleSheets({
           action: "TEAM_INVITE",
@@ -128,19 +149,21 @@ export default function TeamPage() {
   };
 
   const handleRoleChange = (id: number, newRole: string) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id && m.role !== "Owner" ? { ...m, role: newRole } : m))
-    );
+    const updated = members.map((m) => (m.id === id && m.role !== "Owner" ? { ...m, role: newRole } : m));
+    setMembers(updated);
+    syncTeamToSession(updated);
   };
 
   const handleQuotaChange = (id: number, newQuota: string) => {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, tokenQuota: newQuota } : m))
-    );
+    const updated = members.map((m) => (m.id === id ? { ...m, tokenQuota: newQuota } : m));
+    setMembers(updated);
+    syncTeamToSession(updated);
   };
 
   const handleRemoveMember = (id: number) => {
-    setMembers((prev) => prev.filter((m) => m.id !== id || m.role === "Owner"));
+    const updated = members.filter((m) => m.id !== id || m.role === "Owner");
+    setMembers(updated);
+    syncTeamToSession(updated);
   };
 
   const handleResendMfa = (id: number) => {

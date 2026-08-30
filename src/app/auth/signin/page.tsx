@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Zap, ArrowRight, Mail, KeyRound, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawRedirect = searchParams.get("redirectUrl");
+  const targetDestination = (rawRedirect && rawRedirect.startsWith("/app")) ? rawRedirect : "/app/dashboard";
+
   const { setAuthUser, setOrgName, setPlanTier, clearUserData } = useAppStore();
 
   const [authMode, setAuthMode] = useState<"pin" | "otp">("pin");
@@ -116,12 +120,15 @@ export default function SignInPage() {
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],
-        logs: data.user.logs || []
+        logs: data.user.logs || [],
+        slaEscrowContracts: data.user.slaEscrowContracts || [],
+        webhookConfig: data.user.webhookConfig || useAppStore.getState().webhookConfig,
+        federationSettings: data.user.federationSettings || useAppStore.getState().federationSettings
       });
 
       setSuccessMessage("Security PIN verified! Redirecting to Console...");
       setTimeout(() => {
-        router.push("/app/dashboard");
+        router.push(targetDestination);
       }, 700);
     } catch (err: any) {
       setErrorMessage(err.message || "Network error communicating with authentication gateway.");
@@ -215,12 +222,15 @@ export default function SignInPage() {
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],
-        logs: data.user.logs || []
+        logs: data.user.logs || [],
+        slaEscrowContracts: data.user.slaEscrowContracts || [],
+        webhookConfig: data.user.webhookConfig || useAppStore.getState().webhookConfig,
+        federationSettings: data.user.federationSettings || useAppStore.getState().federationSettings
       });
 
       setSuccessMessage("OTP verified successfully! Access granted.");
       setTimeout(() => {
-        router.push("/app/dashboard");
+        router.push(targetDestination);
       }, 700);
     } catch (err: any) {
       setErrorMessage(err.message || "OTP verification error.");
@@ -441,5 +451,19 @@ export default function SignInPage() {
         Outcome-Indexed AI Spend Router · 256-bit TLS Gateway
       </footer>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#FBFBFD] dark:bg-[#0A0A0C] flex items-center justify-center">
+          <div className="text-xs text-[#86868B] animate-pulse">Loading sign in...</div>
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }

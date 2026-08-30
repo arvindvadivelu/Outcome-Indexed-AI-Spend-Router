@@ -9,6 +9,9 @@ export async function POST(req: Request) {
     const projectedInvoice = parseFloat((currentSpend * 1.15).toFixed(2));
     const projectedSavings = parseFloat((currentSpend * 0.76).toFixed(2));
 
+    const safeBudget = Math.max(1, currentBudget);
+    const pacingPct = Math.round((1 - currentSpend / safeBudget) * 100);
+
     return NextResponse.json({
       success: true,
       evaluatedAt: new Date().toISOString(),
@@ -17,7 +20,7 @@ export async function POST(req: Request) {
       projected_invoice_usd: projectedInvoice,
       projected_savings_usd: projectedSavings,
       pacing_status: currentSpend < currentBudget ? "OPTIMAL_PACING" : "OVER_BUDGET_WARNING",
-      recommendation: `Pacing is ${Math.round((1 - currentSpend / currentBudget) * 100)}% within your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $${(projectedSavings * 0.28).toFixed(2)}/mo without impacting conversion rates.`
+      recommendation: `Pacing is ${pacingPct}% within your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $${(projectedSavings * 0.28).toFixed(2)}/mo without impacting conversion rates.`
     });
   } catch (error: any) {
     return NextResponse.json(

@@ -23,7 +23,11 @@ export default function AppLayout({
 
   useEffect(() => {
     if (hydrated && !user) {
-      router.replace("/auth/signin");
+      const currentPath = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      const query = currentPath && currentPath !== "/app/dashboard" && currentPath !== "/app"
+        ? `?redirectUrl=${encodeURIComponent(currentPath)}`
+        : "";
+      router.replace(`/auth/signin${query}`);
     }
   }, [hydrated, user, router]);
 

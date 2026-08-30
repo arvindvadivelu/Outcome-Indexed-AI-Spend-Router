@@ -48,7 +48,8 @@ export default function RoutingRulesPage() {
     setFederationWeight,
     toggleFederation,
     prewarmMetrics,
-    planTier
+    planTier,
+    user
   } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
@@ -82,6 +83,16 @@ export default function RoutingRulesPage() {
   // In-Page Simulation Modal Trigger
   const [showSimulate, setShowSimulate] = useState(false);
 
+  const syncRulesToSession = (updatedRules: RoutingRule[]) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, rules: updatedRules })
+      }).catch((err) => console.warn("Routing rules session sync notice:", err));
+    }
+  };
+
   const handleSynthesize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiPrompt.trim()) return;
@@ -108,6 +119,7 @@ export default function RoutingRulesPage() {
 
       if (data.success && data.rule) {
         addRule(data.rule);
+        syncRulesToSession(useAppStore.getState().routingRules);
         setSynthesizedSuccess(true);
         setAiPrompt("");
         setTimeout(() => setSynthesizedSuccess(false), 3000);
@@ -158,6 +170,7 @@ export default function RoutingRulesPage() {
     };
 
     addRule(newRule);
+    syncRulesToSession(useAppStore.getState().routingRules);
     setShowManualModal(false);
     setManualName("");
   };
@@ -434,6 +447,13 @@ export default function RoutingRulesPage() {
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleFederation();
+                  if (user?.email) {
+                    fetch("/api/auth/session", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email: user.email, federationSettings: { ...federationSettings, enabled: !federationSettings.enabled } })
+                    }).catch(() => {});
+                  }
                 }}
                 className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                   federationSettings.enabled
@@ -667,7 +687,10 @@ export default function RoutingRulesPage() {
 
                     <td className="py-3.5 px-4 text-center">
                       <button
-                        onClick={() => toggleRule(rule.id)}
+                        onClick={() => {
+                          toggleRule(rule.id);
+                          syncRulesToSession(useAppStore.getState().routingRules);
+                        }}
                         className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all hover:scale-105 active:scale-95 ${
                           rule.is_active || rule.enabled
                             ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300"
@@ -688,7 +711,10 @@ export default function RoutingRulesPage() {
                           <Play className="h-3.5 w-3.5 fill-current" />
                         </button>
                         <button
-                          onClick={() => deleteRule(rule.id)}
+                          onClick={() => {
+                            deleteRule(rule.id);
+                            syncRulesToSession(useAppStore.getState().routingRules);
+                          }}
                           className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors"
                           title="Delete Policy"
                         >

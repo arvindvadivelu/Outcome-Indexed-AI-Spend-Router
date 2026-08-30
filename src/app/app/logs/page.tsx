@@ -32,7 +32,7 @@ import Link from "next/link";
 import { getPlanFeatures } from "@/lib/plan-gates";
 
 export default function LogsPage() {
-  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome, planTier } = useAppStore();
+  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome, planTier, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -54,6 +54,17 @@ export default function LogsPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const activeLogs = logs.length > 0 ? logs : telemetryLogs;
+
+  const handleRecordOutcome = (id: string, success: boolean) => {
+    recordOutcome(id, success);
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, logs: useAppStore.getState().logs })
+      }).catch((err) => console.warn("Logs outcome session sync notice:", err));
+    }
+  };
 
   const filteredLogs = useMemo(() => {
     return activeLogs.filter((log) => {
@@ -102,7 +113,7 @@ export default function LogsPage() {
   const handleExportCSV = () => {
     const headers = "Timestamp,RequestID,Model,Provider,Task,TokensIn,TokensOut,CostUSD,CostINR,LatencyMs,Outcome,Prompt\n";
     const rows = filteredLogs.map(l =>
-      `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}","${l.task_type}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
+      `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}","${l.task_type}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success === true ? "Win" : (l.outcome_success === false ? "Loss" : "Pending")},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
     ).join("\n");
     const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -334,7 +345,7 @@ export default function LogsPage() {
                     <td className="py-3.5 px-4 text-center">
                       <div className="flex items-center justify-center gap-1.5">
                         <button
-                          onClick={() => recordOutcome(log.id, true)}
+                          onClick={() => handleRecordOutcome(log.id, true)}
                           className={`p-1.5 rounded-full transition-all hover:scale-110 active:scale-95 ${
                             log.outcome_success === true
                               ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold scale-110 shadow-2xs"
@@ -345,7 +356,7 @@ export default function LogsPage() {
                           <ThumbsUp className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={() => recordOutcome(log.id, false)}
+                          onClick={() => handleRecordOutcome(log.id, false)}
                           className={`p-1.5 rounded-full transition-all hover:scale-110 active:scale-95 ${
                             log.outcome_success === false
                               ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold scale-110 shadow-2xs"

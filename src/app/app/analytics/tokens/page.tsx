@@ -40,7 +40,7 @@ const TokenBarChart = dynamic(
 );
 
 export default function TokenAnalyticsPage() {
-  const { currentTokens, monthlyQuota, currency, deltaStats, logs, addRule } = useAppStore();
+  const { currentTokens, monthlyQuota, currency, deltaStats, logs, addRule, user } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -56,6 +56,16 @@ export default function TokenAnalyticsPage() {
   const [auditResult, setAuditResult] = useState<any>(null);
   const [cacheApplied, setCacheApplied] = useState(false);
   const [showSimulate, setShowSimulate] = useState(false);
+
+  const syncRulesToSession = (updatedRules: any[]) => {
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, rules: updatedRules })
+      }).catch((err) => console.warn("Tokens rule session sync notice:", err));
+    }
+  };
 
   // Live Prompt Diff Tester State
   const [customDiffPrompt, setCustomDiffPrompt] = useState(
@@ -119,6 +129,7 @@ export default function TokenAnalyticsPage() {
       trigger_count: 0,
       total_saved_usd: 0.0
     });
+    syncRulesToSession(useAppStore.getState().routingRules);
     setCacheApplied(true);
     setTimeout(() => setCacheApplied(false), 3000);
   };

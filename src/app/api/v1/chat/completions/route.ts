@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { findUserByEmail, consumeUserTokens } from "@/lib/auth-db";
+import { findUserByEmail, findUserByApiKey, consumeUserTokens, updateUserAccountState } from "@/lib/auth-db";
 
 // Live Model Cost Matrix (per 1K tokens - USD)
 const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCostPer1K: number; outputCostPer1K: number; avgTtftMs: number; winRate: number }> = {
@@ -52,9 +52,35 @@ export async function POST(req: Request) {
     const body = await req.json();
     const headers = req.headers;
 
-    // Identify user email
-    const userEmail = headers.get("x-user-email") || body.user_email || "";
-    const user = userEmail ? findUserByEmail(userEmail) : null;
+    // Identify user email via API key or direct header
+    const authHeader = headers.get("authorization") || "";
+    const apiKeyHeader = headers.get("x-api-key") || "";
+    const rawApiKey = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7).trim()
+      : (apiKeyHeader || authHeader).trim();
+
+    let user = null;
+    let apiKeyItem = null;
+
+    if (rawApiKey) {
+      const authResult = findUserByApiKey(rawApiKey);
+      if (authResult) {
+        user = authResult.user;
+        apiKeyItem = authResult.key;
+      } else if (!rawApiKey.startsWith("oir_live_") && !rawApiKey.startsWith("oir_test_") && !rawApiKey.startsWith("sk-")) {
+        // If rawApiKey is not an API key prefix format, check if it's an email
+        user = findUserByEmail(rawApiKey);
+      }
+    }
+
+    if (!user) {
+      const userEmail = headers.get("x-user-email") || body.user_email || "";
+      if (userEmail) {
+        user = findUserByEmail(userEmail);
+      }
+    }
+
+    const userEmail = user?.email || headers.get("x-user-email") || body.user_email || "varvind2004@gmail.com";
     const planTier = user?.plan_tier || "free";
     const monthlyQuota = user?.monthly_token_quota || 10000;
 
@@ -239,6 +265,48 @@ export async function POST(req: Request) {
         gateway_execution_ms: Number(elapsedMs.toFixed(2))
       }
     };
+
+    if (user) {
+      const freshUser = findUserByEmail(user.email);
+      if (freshUser) {
+        const newLogEntry = {
+          id: responsePayload.id,
+          created_at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          model_used: selectedModel.name,
+          provider: selectedModel.provider.toLowerCase(),
+          task_type: taskType,
+          tokens_in: promptTokens,
+          tokens_out: completionTokens,
+          cost_usd: Number(actualCost.toFixed(6)),
+          cost_inr: Number((actualCost * 86.5).toFixed(4)),
+          latency_ms: ttftMs,
+          outcome_success: true,
+          outcome_metric: targetMetric,
+          prompt_preview: promptText.slice(0, 90),
+          cached_hit: false,
+          fallback_triggered: false,
+          status: "success"
+        };
+        const updatedLogs = [newLogEntry, ...(freshUser.logs || [])].slice(0, 100);
+
+        let updatedKeys = freshUser.apiKeys || [];
+        if (apiKeyItem) {
+          updatedKeys = updatedKeys.map((k: any) =>
+            k.id === apiKeyItem.id ? { ...k, last_used_at: "Just now" } : k
+          );
+        }
+
+        const currentMonthlySpend = (freshUser.monthlySpendUSD ?? 0) + actualCost;
+        const currentBaselineSpend = (freshUser.baselineSpendUSD ?? 0) + baselineCost;
+
+        updateUserAccountState(user.email, {
+          logs: updatedLogs,
+          apiKeys: updatedKeys,
+          monthlySpendUSD: Number(currentMonthlySpend.toFixed(6)),
+          baselineSpendUSD: Number(currentBaselineSpend.toFixed(6))
+        });
+      }
+    }
 
     return NextResponse.json(responsePayload, {
       status: 200,
