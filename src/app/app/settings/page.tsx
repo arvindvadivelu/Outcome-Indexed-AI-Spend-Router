@@ -62,7 +62,7 @@ export default function SettingsPage() {
   // Form states
   const [workspaceName, setWorkspaceName] = useState(orgName || "Acme AI Lab");
   const [workspaceSlug, setWorkspaceSlug] = useState("acme-ai-lab");
-  const [contactEmail, setContactEmail] = useState(user?.email || "alex@company.com");
+  const [contactEmail, setContactEmail] = useState(user?.email || "");
   const [defaultStrategy, setDefaultStrategy] = useState("outcome_optimized");
   const [defaultFallback, setDefaultFallback] = useState("GPT-4o");
   const [monthlyBudgetLimit, setMonthlyBudgetLimit] = useState(autopilot.monthly_budget_usd || 1500);
@@ -97,14 +97,35 @@ export default function SettingsPage() {
     }
     setMonthlyBudget(monthlyBudgetLimit);
 
-    // Sync to Google Sheet
+    // 1. Persist workspace and user profile to database
+    const targetEmail = user?.email || contactEmail;
+    if (targetEmail) {
+      try {
+        await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: targetEmail,
+            workspace: workspaceName,
+            name: user?.name,
+            currency: activeCurrency
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to persist workspace settings to database:", err);
+      }
+    }
+
+    // 2. Sync to Google Sheet with correct plan quota
+    const planQuotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
+    const currentQuota = planQuotaMap[planTier || "free"] || 10000;
     await syncAuthUserToGoogleSheets({
       action: "PLAN_UPGRADE",
-      name: user?.name || "Alex Vance",
+      name: user?.name || "",
       email: contactEmail,
       workspace: workspaceName,
-      plan_tier: planTier || "Growth",
-      monthly_token_quota: 500000,
+      plan_tier: planTier || "free",
+      monthly_token_quota: currentQuota,
       currency: activeCurrency,
       auth_method: "MANUAL"
     });
@@ -163,7 +184,12 @@ export default function SettingsPage() {
     setDeleteError(null);
 
     try {
-      const userEmail = user?.email || contactEmail || "varvind2004@gmail.com";
+      const userEmail = user?.email || contactEmail;
+      if (!userEmail) {
+        setDeleteError("Cannot determine account email. Please refresh and try again.");
+        setIsDeleting(false);
+        return;
+      }
       const res = await fetch("/api/auth/delete-account", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -34,11 +34,23 @@ export default function TeamPage() {
   }, []);
 
   const [members, setMembers] = useState([
-    { id: 1, name: user?.name || "Alex Vance", email: user?.email || "alex@company.com", role: "Owner", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" },
+    { id: 1, name: user?.name || "User", email: user?.email || "user@example.com", role: "Owner", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" },
     { id: 2, name: "Sarah Chen", email: "sarah@company.com", role: "Admin", tokenQuota: "200,000 / mo", mfaActive: true, lastActive: "15 min ago" },
     { id: 3, name: "Marcus Rossi", email: "marcus@company.com", role: "Engineer", tokenQuota: "100,000 / mo", mfaActive: true, lastActive: "1 hour ago" },
     { id: 4, name: "Priya Patel", email: "priya@company.com", role: "FinOps", tokenQuota: "50,000 / mo", mfaActive: false, lastActive: "Yesterday" }
   ]);
+
+  useEffect(() => {
+    if (user?.email) {
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.role === "Owner"
+            ? { ...m, name: user.name || m.name, email: user.email }
+            : m
+        )
+      );
+    }
+  }, [user]);
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Engineer");
@@ -95,8 +107,8 @@ export default function TeamPage() {
           action: "TEAM_INVITE",
           name: inviteEmail.split("@")[0],
           email: inviteEmail.trim(),
-          workspace: orgName || "Acme AI Lab",
-          plan_tier: planTier || "Growth",
+          workspace: orgName || "",
+          plan_tier: planTier || "free",
           monthly_token_quota: 100000,
           currency: "USD",
           auth_method: "INVITE_LINK"

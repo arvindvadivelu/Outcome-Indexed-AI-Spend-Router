@@ -46,9 +46,9 @@ export function AppHeader() {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   // Edit Profile Form State
-  const [editName, setEditName] = useState(user?.name || "Alex Vance");
-  const [editEmail, setEditEmail] = useState(user?.email || "alex@company.com");
-  const [editPin, setEditPin] = useState("123456");
+  const [editName, setEditName] = useState(user?.name || "");
+  const [editEmail, setEditEmail] = useState(user?.email || "");
+  const [editPin, setEditPin] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -82,8 +82,8 @@ export function AppHeader() {
   const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
   const savedPercent = baselineSpend > 0 ? Math.round((savedAmount / baselineSpend) * 100) : 0;
 
-  const userName = mounted && user?.name ? user.name : "Alex Vance";
-  const userEmail = mounted && user?.email ? user.email : "alex@company.com";
+  const userName = mounted && user?.name ? user.name : "User";
+  const userEmail = mounted && user?.email ? user.email : "user@example.com";
   const activePlan = mounted && planTier ? planTier : "free";
 
   // Derive initials
@@ -94,9 +94,23 @@ export function AppHeader() {
     .toUpperCase()
     .slice(0, 2) || "AR";
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     updateUserProfile(editName.trim(), editEmail.trim());
+    if (user?.email) {
+      try {
+        await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            name: editName.trim()
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to persist user profile update:", err);
+      }
+    }
     setProfileSaved(true);
     setTimeout(() => {
       setProfileSaved(false);

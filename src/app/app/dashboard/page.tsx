@@ -78,7 +78,10 @@ export default function DashboardPage() {
   }, []);
 
   const fetchSessionTelemetry = () => {
-    const userEmail = useAppStore.getState().user?.email || "varvind2004@gmail.com";
+    const userEmail = useAppStore.getState().user?.email;
+    // Guard: only sync if we have a real authenticated user email
+    if (!userEmail) return;
+
     fetch(`/api/auth/session?email=${encodeURIComponent(userEmail)}`)
       .then((res) => res.json())
       .then((data) => {
@@ -90,10 +93,10 @@ export default function DashboardPage() {
             monthlySpendUSD: data.user.monthlySpendUSD ?? currentStore.monthlySpendUSD ?? 0,
             baselineSpendUSD: data.user.baselineSpendUSD ?? currentStore.baselineSpendUSD ?? 0,
             planTier: data.user.plan_tier || currentStore.planTier || "free",
-            orgName: data.user.workspace || currentStore.orgName || "Arvind's Workspace",
-            currency: data.user.currency || currentStore.currency || "INR",
-            rules: data.user.rules || currentStore.rules || [],
-            routingRules: data.user.rules || currentStore.routingRules || [],
+            orgName: data.user.workspace || currentStore.orgName || "",
+            currency: data.user.currency || currentStore.currency || "USD",
+            rules: data.user.rules?.length ? data.user.rules : currentStore.rules,
+            routingRules: data.user.rules?.length ? data.user.rules : currentStore.routingRules,
             apiKeys: (data.user.apiKeys && data.user.apiKeys.length > 0) ? data.user.apiKeys : currentStore.apiKeys,
             logs: (data.user.logs && data.user.logs.length > 0) ? data.user.logs : currentStore.logs,
             slaEscrowContracts: (data.user.slaEscrowContracts && data.user.slaEscrowContracts.length > 0) ? data.user.slaEscrowContracts : currentStore.slaEscrowContracts
@@ -102,6 +105,7 @@ export default function DashboardPage() {
       })
       .catch((err) => console.warn("Session sync notice:", err));
   };
+
 
   useEffect(() => {
     if (autopilot.monthly_budget_usd) {

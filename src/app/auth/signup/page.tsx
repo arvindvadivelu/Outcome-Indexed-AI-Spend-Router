@@ -11,9 +11,17 @@ export default function SignUpPage() {
   const router = useRouter();
   const { setAuthUser, setOrgName, setPlanTier, currency } = useAppStore();
   const [mounted, setMounted] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"free" | "starter" | "growth" | "enterprise">("free");
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const qPlan = params.get("plan");
+      if (qPlan && ["free", "starter", "growth", "enterprise"].includes(qPlan.toLowerCase())) {
+        setSelectedPlan(qPlan.toLowerCase() as any);
+      }
+    }
   }, []);
 
   const [name, setName] = useState("");
@@ -64,7 +72,7 @@ export default function SignUpPage() {
     const org = workspace.trim() || `${name.split(" ")[0]}'s Workspace`;
 
     try {
-      // Call register API which persists in database & triggers Google Sheets real-time sync with Free Tier default
+      // Call register API which persists in database & triggers Google Sheets real-time sync
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,7 +80,7 @@ export default function SignUpPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           workspace: org,
-          plan_tier: "free",
+          plan_tier: selectedPlan,
           pin: pinCode,
           currency: activeCurrency
         })
@@ -94,7 +102,7 @@ export default function SignUpPage() {
         hasBiometrics: true
       });
       setOrgName(data.user.workspace);
-      setPlanTier("free");
+      setPlanTier(data.user.plan_tier || selectedPlan);
 
       setRegisteredSuccess(true);
       setTimeout(() => {

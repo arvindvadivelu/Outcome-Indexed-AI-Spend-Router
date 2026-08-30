@@ -82,9 +82,6 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     setFeedbackGiven(null);
     setQuotaBlocked(false);
 
-    // Consume 500 tokens for this request
-    consumeTokens(500);
-
     // 1. Call live pre-warming API
     await apiClient.predictPrewarm(promptText);
 
@@ -186,24 +183,28 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     // Persist updated metrics and logs to server disk for account continuity across logouts
     try {
       const state = useAppStore.getState();
-      const userEmail = state.user?.email || "varvind2004@gmail.com";
-      fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: userEmail,
-          tokens_used: state.currentTokens,
-          monthlySpendUSD: state.monthlySpendUSD,
-          baselineSpendUSD: state.baselineSpendUSD,
-          rules: state.rules,
-          apiKeys: state.apiKeys,
-          logs: [logEntry, ...state.logs].slice(0, 100),
-          slaEscrowContracts: [slaContract, ...state.slaEscrowContracts].slice(0, 100)
-        })
-      }).catch(() => {});
+      const userEmail = state.user?.email;
+      // Only persist to server if we have a real authenticated user
+      if (userEmail) {
+        fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: userEmail,
+            tokens_used: state.currentTokens,
+            monthlySpendUSD: state.monthlySpendUSD,
+            baselineSpendUSD: state.baselineSpendUSD,
+            rules: state.rules,
+            apiKeys: state.apiKeys,
+            logs: [logEntry, ...state.logs].slice(0, 100),
+            slaEscrowContracts: [slaContract, ...state.slaEscrowContracts].slice(0, 100)
+          })
+        }).catch(() => {});
+      }
     } catch (e) {
       // ignore
     }
+
   };
 
   const handleFeedback = (success: boolean) => {

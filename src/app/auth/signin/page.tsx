@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { setAuthUser, setOrgName, setPlanTier } = useAppStore();
+  const { setAuthUser, setOrgName, setPlanTier, clearUserData } = useAppStore();
 
   const [authMode, setAuthMode] = useState<"pin" | "otp">("pin");
   const [email, setEmail] = useState("");
@@ -97,7 +97,8 @@ export default function SignInPage() {
         return;
       }
 
-      // Success: Apply verified user details & active plan tier to global store
+      // Success: Clear any prior user's data, then load new user's state
+      clearUserData();
       useAppStore.setState({
         user: {
           name: data.user.name,
@@ -105,13 +106,13 @@ export default function SignInPage() {
           hasPin: true,
           hasBiometrics: true
         },
-        orgName: data.user.workspace || "Arvind's Workspace",
+        orgName: data.user.workspace || "",
         planTier: data.user.plan_tier || "free",
         monthlyQuota: data.user.monthly_token_quota || 10000,
         currentTokens: data.user.tokens_used ?? 0,
         monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
         baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
-        currency: data.user.currency || "INR",
+        currency: data.user.currency || "USD",
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],
@@ -195,7 +196,8 @@ export default function SignInPage() {
         return;
       }
 
-      // Success
+      // Success: Clear any prior user's data, then load new user's state
+      clearUserData();
       useAppStore.setState({
         user: {
           name: data.user.name,
@@ -203,13 +205,13 @@ export default function SignInPage() {
           hasPin: true,
           hasBiometrics: true
         },
-        orgName: data.user.workspace || "Arvind's Workspace",
+        orgName: data.user.workspace || "",
         planTier: data.user.plan_tier || "free",
         monthlyQuota: data.user.monthly_token_quota || 10000,
         currentTokens: data.user.tokens_used ?? 0,
         monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
         baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
-        currency: data.user.currency || "INR",
+        currency: data.user.currency || "USD",
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],

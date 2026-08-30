@@ -85,12 +85,28 @@ export default function ResetPasswordPage() {
     setSubmitting(true);
 
     try {
+      // 1. Update PIN in backend database
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          pin: p1
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update security PIN in database.");
+      }
+
+      // 2. Sync audit event to Google Sheet
       await syncAuthUserToGoogleSheets({
         action: "PASSWORD_RESET",
-        name: email.split("@")[0] || "Alex Vance",
-        email: email,
-        workspace: "Acme AI Lab",
-        plan_tier: "Free",
+        name: email.split("@")[0] || "User",
+        email: email.trim().toLowerCase(),
+        workspace: "Workspace",
+        plan_tier: "free",
         monthly_token_quota: 10000,
         currency: "USD",
         auth_method: "PIN_PASSWORD"

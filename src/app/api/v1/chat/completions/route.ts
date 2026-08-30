@@ -53,8 +53,8 @@ export async function POST(req: Request) {
     const headers = req.headers;
 
     // Identify user email
-    const userEmail = headers.get("x-user-email") || body.user_email || "varvind2004@gmail.com";
-    const user = findUserByEmail(userEmail);
+    const userEmail = headers.get("x-user-email") || body.user_email || "";
+    const user = userEmail ? findUserByEmail(userEmail) : null;
     const planTier = user?.plan_tier || "free";
     const monthlyQuota = user?.monthly_token_quota || 10000;
 

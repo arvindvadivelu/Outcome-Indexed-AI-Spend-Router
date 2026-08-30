@@ -139,16 +139,35 @@ export default function BillingPage() {
 
   const handleSelectPlan = async (tierId: "free" | "starter" | "growth" | "enterprise") => {
     setPlanTier(tierId);
+    const quotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
+    const newQuota = quotaMap[tierId] || 10000;
     setPlanSwitchNotice(`Subscribed to ${tierId.toUpperCase()} tier! Quota updated.`);
     
-    // Sync plan upgrade to Google Sheet
+    // 1. Persist plan upgrade to database so it survives page reloads and re-logins
+    if (user?.email) {
+      try {
+        await fetch("/api/auth/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user.email,
+            plan_tier: tierId,
+            monthly_token_quota: newQuota
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to persist plan upgrade to database:", err);
+      }
+    }
+
+    // 2. Sync plan upgrade to Google Sheet ledger
     await syncAuthUserToGoogleSheets({
       action: "PLAN_UPGRADE",
-      name: user?.name || "Alex Vance",
-      email: user?.email || "alex@company.com",
-      workspace: orgName || "Acme AI Lab",
+      name: user?.name || "",
+      email: user?.email || "",
+      workspace: orgName || "",
       plan_tier: tierId.charAt(0).toUpperCase() + tierId.slice(1),
-      monthly_token_quota: tierId === "free" ? 10000 : (tierId === "starter" ? 100000 : (tierId === "growth" ? 500000 : 2000000)),
+      monthly_token_quota: newQuota,
       currency: activeCurrency,
       auth_method: "MANUAL"
     });

@@ -320,21 +320,7 @@ const DEFAULT_BENCHMARKS: BenchmarkItem[] = [
 
 const DEFAULT_RULES: RoutingRule[] = [];
 
-const DEFAULT_KEYS: ApiKeyItem[] = [
-  {
-    id: "key_1",
-    name: "Production Gateway Key",
-    key_prefix: "oir_live_8f9a2b",
-    environment: "live",
-    rate_limit: 600,
-    rate_limit_rpm: 600,
-    created_at: "Aug 20, 2026",
-    last_used_at: "Just now",
-    is_active: true,
-    scopes: ["read:telemetry", "execute:chat"],
-    expires_at: "Never"
-  }
-];
+const DEFAULT_KEYS: ApiKeyItem[] = [];
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -376,7 +362,20 @@ export const useAppStore = create<AppState>()(
             ? { ...state.user, name, email }
             : { name, email, hasPin: true, hasBiometrics: true }
         })),
-      logout: () => set({ user: null }),
+      logout: () => set({
+        user: null,
+        // Clear all user-specific telemetry on logout to prevent cross-user contamination
+        logs: [],
+        telemetryLogs: [],
+        currentTokens: 0,
+        monthlySpendUSD: 0,
+        baselineSpendUSD: 0,
+        slaEscrowContracts: [],
+        rules: DEFAULT_RULES,
+        routingRules: DEFAULT_RULES,
+        deltaStats: { totalTokensAvoided: 0, compressionRatioPct: 0, costSavedUsd: 0 },
+        prewarmMetrics: { totalEvents: 0, speculativeHits: 0, hitRatePct: 0, baselineTtftMs: 280, acceleratedTtftMs: 68.4, reductionPct: 0, activeHotSlots: 4 }
+      }),
 
       orgName: "Acme AI Lab",
       setOrgName: (orgName: string) => set({ orgName }),
@@ -478,17 +477,7 @@ export const useAppStore = create<AppState>()(
           webhookConfig: { ...state.webhookConfig, ...config }
         })),
 
-      webhookLogs: [
-        {
-          id: "wh_log_001",
-          timestamp: "5 min ago",
-          event: "outcome.indexed.success",
-          targetUrl: "https://api.acme.ai/webhooks/outcome-events",
-          httpStatus: 200,
-          latencyMs: 42,
-          verified: true
-        }
-      ],
+      webhookLogs: [],
 
       addWebhookLog: (log: WebhookLogItem) =>
         set((state) => ({
@@ -648,9 +637,9 @@ export const useAppStore = create<AppState>()(
       addLog: (log: LogItem) =>
         set((state) => {
           const currentSpend = state.monthlySpendUSD + log.cost_usd;
-          const baselineCost = log.cost_usd * 1.74; // vs GPT-4o unrouted
+          const baselineCost = 0.0052; // standard unrouted GPT-4o baseline per request
           const currentBaseline = state.baselineSpendUSD + baselineCost;
-          const totalTokens = state.currentTokens + log.tokens_in + log.tokens_out;
+          const totalTokens = Math.min(state.monthlyQuota, state.currentTokens + (log.tokens_in || 320) + (log.tokens_out || 180));
           const updatedLogs = [log, ...state.logs].slice(0, 1000); // capped at 1000 to prevent quota bloat
           const avoidedDelta = Math.round((log.tokens_in || 200) * 0.58);
 
@@ -823,6 +812,7 @@ export const useAppStore = create<AppState>()(
         currentTokens: state.currentTokens,
         cycleStartDate: state.cycleStartDate,
         monthlySpendUSD: state.monthlySpendUSD,
+        baselineSpendUSD: state.baselineSpendUSD,
         logs: state.logs,
         telemetryLogs: state.telemetryLogs,
         benchmarks: state.benchmarks,
