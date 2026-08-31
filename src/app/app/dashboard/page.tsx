@@ -34,7 +34,7 @@ import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 const SpendAreaChart = dynamic(
-  () => import("@/components/SpendAreaChart").then((mod) => mod.SpendAreaChart),
+  () => import("@/components/SpendAreaChart"),
   {
     ssr: false,
     loading: () => (

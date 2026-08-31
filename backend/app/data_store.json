@@ -63,5 +63,33 @@
     }
   ],
   "contracts": [],
-  "logs": []
+  "logs": [],
+  "auth_records": [
+    {
+      "id": "auth_1788149757259",
+      "timestamp": "2026-08-31T04:15:55.047Z",
+      "action": "CONTACT_INQUIRY",
+      "name": "Prospective Enterprise Client",
+      "email": "cto@globalscale.co",
+      "workspace": "Global Scale Co",
+      "plan_tier": "Enterprise Custom",
+      "monthly_token_quota": 10000000,
+      "currency": "USD",
+      "auth_method": "SPEND_TIER_100K+",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
+    {
+      "id": "auth_1788149755026",
+      "timestamp": "2026-08-31T04:15:52.924Z",
+      "action": "AUDIT_VERIFICATION_TEST",
+      "name": "FinOps Officer",
+      "email": "finops_lead@outcomerouter.ai",
+      "workspace": "Audit Production Lab",
+      "plan_tier": "Enterprise",
+      "monthly_token_quota": 2000000,
+      "currency": "USD",
+      "auth_method": "INTEGRATION_TEST",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    }
+  ]
 }
