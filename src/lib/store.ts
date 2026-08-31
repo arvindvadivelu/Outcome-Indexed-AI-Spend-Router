@@ -342,8 +342,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "langchain",
     name: "LangChain & LangGraph",
     category: "Framework",
-    connected: true,
-    latency: "14ms",
+    connected: false,
+    latency: "—",
     desc: "Drop-in LLM router wrapper for LangChain chains, multi-agent graphs, and memory buffers.",
     docsUrl: "https://python.langchain.com/docs/"
   },
@@ -351,8 +351,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "llamaindex",
     name: "LlamaIndex RAG",
     category: "Framework",
-    connected: true,
-    latency: "18ms",
+    connected: false,
+    latency: "—",
     desc: "Query router for document retrieval & semantic synthesis pipelines.",
     docsUrl: "https://docs.llamaindex.ai/"
   },
@@ -360,8 +360,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "litellm",
     name: "LiteLLM Gateway Proxy",
     category: "Proxy",
-    connected: true,
-    latency: "11ms",
+    connected: false,
+    latency: "—",
     desc: "Universal OpenAI-compatible reverse proxy with Bayesian Thompson routing.",
     docsUrl: "https://docs.litellm.ai/"
   },
@@ -369,8 +369,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "vercel",
     name: "Vercel AI SDK",
     category: "Framework",
-    connected: true,
-    latency: "8ms",
+    connected: false,
+    latency: "—",
     desc: "Next.js edge runtime streaming with speculative pre-warmed TTFT.",
     docsUrl: "https://sdk.vercel.ai/docs"
   },
@@ -387,8 +387,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "deepseek",
     name: "DeepSeek Native API",
     category: "Provider",
-    connected: true,
-    latency: "95ms",
+    connected: false,
+    latency: "—",
     desc: "Direct integration with DeepSeek-V3 & DeepSeek-Coder at $0.0006/req.",
     docsUrl: "https://api-docs.deepseek.com/"
   },
@@ -396,8 +396,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "groq",
     name: "Groq LPU Acceleration",
     category: "Provider",
-    connected: true,
-    latency: "84ms",
+    connected: false,
+    latency: "—",
     desc: "Sub-100ms ultra-low latency inference for customer support FAQ.",
     docsUrl: "https://console.groq.com/docs/quickstart"
   },
@@ -405,8 +405,8 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
     id: "anthropic",
     name: "Anthropic Claude 3.5",
     category: "Provider",
-    connected: true,
-    latency: "140ms",
+    connected: false,
+    latency: "—",
     desc: "Frontier reasoning and code generation with cryptographic SLA escrow.",
     docsUrl: "https://docs.anthropic.com/"
   }

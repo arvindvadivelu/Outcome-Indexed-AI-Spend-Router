@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { findUserByEmail, findUserByApiKey, consumeUserTokens, updateUserAccountState } from "@/lib/auth-db";
+import { generateIntelligentPromptResponse } from "@/lib/dynamic-prompt-answering";
 
 // Live Model Cost Matrix (per 1K tokens - USD)
 const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCostPer1K: number; outputCostPer1K: number; avgTtftMs: number; winRate: number }> = {
@@ -143,47 +144,19 @@ export async function POST(req: Request) {
     // -------------------------------------------------------------
     // REAL-TIME BAYESIAN INTENT & PARETO ROUTING ARBITRATION
     // -------------------------------------------------------------
+    const intelligentResult = generateIntelligentPromptResponse(promptText);
     let selectedModelKey = "groq-llama-3-3-70b";
-    let taskType = "general_conversation";
-    let simulatedResponseContent = "";
+    let taskType = intelligentResult.taskDomain;
+    let simulatedResponseContent = intelligentResult.content;
 
-    if (
-      lowerPrompt.includes("code") ||
-      lowerPrompt.includes("refactor") ||
-      lowerPrompt.includes("typescript") ||
-      lowerPrompt.includes("python") ||
-      lowerPrompt.includes("sql") ||
-      lowerPrompt.includes("bug") ||
-      lowerPrompt.includes("function")
-    ) {
-      taskType = "code_generation";
+    if (intelligentResult.modelUsed.includes("DeepSeek Coder")) {
       selectedModelKey = "deepseek-coder-v2";
-      simulatedResponseContent = `// Optimized & Refactored Solution (Outcome-Routed via DeepSeek Coder V2)\nexport async function handleOptimizedOperation() {\n  // Zero race condition execution with pgvector indexed query\n  return { success: true, latency: "sub-10ms", outcome: "code_merged" };\n}`;
-    } else if (
-      lowerPrompt.includes("sales") ||
-      lowerPrompt.includes("email") ||
-      lowerPrompt.includes("outreach") ||
-      lowerPrompt.includes("prospect") ||
-      lowerPrompt.includes("pitch") ||
-      lowerPrompt.includes("demo")
-    ) {
-      taskType = "sales_outreach";
-      selectedModelKey = strategy === "quality_boost" ? "claude-3-5-sonnet" : "deepseek-v3";
-      simulatedResponseContent = `Hi [Executive],\n\nI noticed your engineering team is scaling LLM applications. OutcomeRouter dynamically arbitrates prompts to cut token bills by 42%+ under cryptographic Micro-SLA escrow.\n\nWould you have 10 minutes this Thursday for a brief benchmark walkthrough?\n\nBest,\n[Your Name]`;
-    } else if (
-      lowerPrompt.includes("support") ||
-      lowerPrompt.includes("ticket") ||
-      lowerPrompt.includes("faq") ||
-      lowerPrompt.includes("help") ||
-      lowerPrompt.includes("issue")
-    ) {
-      taskType = "customer_support";
-      selectedModelKey = "groq-llama-3-3-70b";
-      simulatedResponseContent = `To configure custom latency SLA bounds in OutcomeRouter, pass the 'X-Outcome-SLA-Threshold-Ms' header (e.g. 120ms) with your request. If upstream latency breaches this limit, zero-cost auto-refund failover triggers immediately.`;
-    } else {
-      taskType = "complex_reasoning";
+    } else if (intelligentResult.modelUsed.includes("Claude")) {
+      selectedModelKey = "claude-3-5-sonnet";
+    } else if (intelligentResult.modelUsed.includes("DeepSeek-V3")) {
       selectedModelKey = "deepseek-v3";
-      simulatedResponseContent = `Here is the structured analysis based on your requirements:\n1. Key Findings: Bayesian prior optimization delivers equal outcome parity.\n2. Economic Delta: Avoided 60%+ raw token expenditure.\n3. SLA Nonce: Validated against ledger.`;
+    } else {
+      selectedModelKey = "groq-llama-3-3-70b";
     }
 
     const selectedModel = MODEL_REGISTRY[selectedModelKey];

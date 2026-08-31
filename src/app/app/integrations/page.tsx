@@ -65,8 +65,8 @@ export default function IntegrationsPage() {
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
 
-  // Capacity Limits
-  const bridgeLimit = planTier === "starter" ? 10 : (planTier === "growth" ? 20 : (planTier === "enterprise" ? 100 : 5));
+  // Capacity Limits based on plan (Free: 2, Starter: 5, Growth: 15, Enterprise: 100)
+  const bridgeLimit = planTier === "starter" ? 5 : (planTier === "growth" ? 15 : (planTier === "enterprise" ? 100 : 2));
   const connectedCount = integrations.filter((i) => i.connected).length;
   const isBridgeLimitReached = connectedCount >= bridgeLimit;
 
@@ -146,6 +146,7 @@ export default function IntegrationsPage() {
 
   const filteredIntegrations = integrations.filter((item) => {
     if (selectedCategory === "all") return true;
+    if (selectedCategory === "custom") return item.id.startsWith("custom_") || item.category.toLowerCase() === "custom";
     return item.category.toLowerCase() === selectedCategory.toLowerCase();
   });
 
@@ -179,28 +180,17 @@ export default function IntegrationsPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Connect LangChain, LlamaIndex, LiteLLM, and upstream model providers with zero configuration changes and 1-line baseURL swaps.
+              Connect external LLM SDKs, frameworks, proxies, and custom enterprise endpoints with 1-line baseURL redirect.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Custom Integration Button */}
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                if (!plan.canUseCustomIntegrations) {
-                  setUpgradeModalInfo({
-                    title: "Custom Ecosystem Integrations (Starter+ Feature)",
-                    desc: "Custom private VPC, local Ollama nodes, and dedicated vLLM cluster endpoints are unlocked on Starter & Growth tiers. Free tier includes OpenAI, Anthropic, and Groq standard connectors.",
-                    targetPlan: "Starter"
-                  });
-                } else {
-                  setShowCustomModal(true);
-                }
-              }}
-              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#0050FF] dark:text-[#3374FF] hover:bg-[#F5F5F7] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+              onClick={() => setShowCustomModal(true)}
+              className="h-10 px-5 rounded-full bg-white/80 dark:bg-[#242428]/80 border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F5F5F7] transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Custom Integration</span>
+              <Plus className="h-3.5 w-3.5 text-[#0050FF]" />
+              <span>Add Custom Bridge</span>
             </button>
 
             <button
@@ -209,7 +199,7 @@ export default function IntegrationsPage() {
               className="h-10 px-6 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)] hover:scale-105 active:scale-95 transition-all flex items-center gap-2 self-start lg:self-auto shrink-0 disabled:opacity-50"
             >
               <Activity className={`h-3.5 w-3.5 ${isDiagnosing ? "animate-spin" : ""}`} />
-              <span>{isDiagnosing ? "Pinging Bridges..." : "Ping Health Diagnostics"}</span>
+              <span>{isDiagnosing ? "Pinging Bridges..." : "Run Bridge Diagnostics"}</span>
             </button>
           </div>
         </div>
@@ -220,21 +210,19 @@ export default function IntegrationsPage() {
         <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Connected Bridges</span>
           <div className="my-4">
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono">
-              {connectedCount} / {bridgeLimit}
-            </div>
-            <div className="text-xs text-white/70 mt-1">{isBridgeLimitReached ? "Bridge limit reached" : `${bridgeLimit - connectedCount} bridges available`}</div>
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono">{connectedCount} / {bridgeLimit}</div>
+            <div className="text-xs text-white/70 mt-1">{bridgeLimit - connectedCount > 0 ? `${bridgeLimit - connectedCount} bridge slots open` : "Bridge limit reached"}</div>
           </div>
           <span className="text-[11px] text-white/80 capitalize">{planTier || "Free"} Plan Allocation</span>
         </div>
 
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
-          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Average Gateway Overhead</span>
+          <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Wire Protocol</span>
           <div className="my-4">
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">12.4ms</div>
-            <div className="text-xs text-[#86868B] mt-1">Zero-copy streaming pipeline</div>
+            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">OpenAI API</div>
+            <div className="text-xs text-[#86868B] mt-1">100% Wire Compatible</div>
           </div>
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Sub-15ms Wire Latency</span>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Zero code refactoring needed</span>
         </div>
 
         <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
@@ -309,7 +297,8 @@ export default function IntegrationsPage() {
           { id: "framework", label: "Frameworks" },
           { id: "provider", label: "Providers" },
           { id: "proxy", label: "Proxies" },
-          { id: "agents", label: "Agents" }
+          { id: "agents", label: "Agents" },
+          { id: "custom", label: "Custom" }
         ].map((cat) => (
           <button
             key={cat.id}

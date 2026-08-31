@@ -1,12 +1,65 @@
 [
   {
+    "name": "Sam",
+    "email": "sam@gmail.com",
+    "workspace": "Sol",
+    "plan_tier": "starter",
+    "monthly_token_quota": 100000,
+    "pin": "333333",
+    "currency": "INR",
+    "apiKeys": [
+      {
+        "id": "key_1788169127736",
+        "name": "Demo",
+        "key_prefix": "oir_live_vf7hml",
+        "full_key": "oir_live_vf7hmlsdrac8krjwc9fsfy0b",
+        "environment": "live",
+        "rate_limit": 600,
+        "rate_limit_rpm": 600,
+        "created_at": "Just now",
+        "last_used_at": "Never",
+        "is_active": true,
+        "ip_restrictions": "0.0.0.0/0",
+        "scopes": [
+          "read:telemetry",
+          "execute:chat"
+        ],
+        "expires_at": "Never"
+      }
+    ],
+    "tokens_used": 0,
+    "id": "usr_1788168927457_ph5uz",
+    "created_at": "2026-08-31T09:35:27.457Z",
+    "teamMembers": [
+      {
+        "id": 1,
+        "name": "Sam",
+        "email": "sam@gmail.com",
+        "role": "Owner",
+        "tokenQuota": "Unlimited",
+        "mfaActive": true,
+        "lastActive": "Just now"
+      }
+    ],
+    "webhookConfig": {
+      "endpointUrl": "http://localhost:8080/api/v1/events",
+      "secretKey": "whsec_91f6qymhxy1k5x4n",
+      "events": [
+        "outcome.indexed.success",
+        "sla.breach.escrow_refunded",
+        "autopilot.weight_adjusted"
+      ],
+      "retryPolicy": "exponential_backoff"
+    }
+  },
+  {
     "name": "Arvind V",
     "email": "varvind2004@gmail.com",
     "workspace": "College",
-    "plan_tier": "growth",
-    "monthly_token_quota": 500000,
-    "pin": "222222",
-    "currency": "INR",
+    "plan_tier": "enterprise",
+    "monthly_token_quota": 2000000,
+    "pin": "333333",
+    "currency": "USD",
     "apiKeys": [
       {
         "id": "key_1788072881695",
@@ -21,10 +74,93 @@
         "is_active": true
       }
     ],
-    "tokens_used": 267,
-    "id": "usr_1788072881696_op7b9",
-    "created_at": "2026-08-30T06:54:41.696Z",
+    "tokens_used": 2576,
+    "id": "usr_1788168079667_66wum",
+    "created_at": "2026-08-31T09:21:19.667Z",
+    "monthlySpendUSD": 0.0109,
+    "baselineSpendUSD": 0.0212,
+    "rules": [],
     "logs": [
+      {
+        "id": "chatcmpl-oir-2b2d7366d50ae78d",
+        "created_at": "Just now",
+        "model_used": "Claude 3.5 Sonnet",
+        "provider": "Anthropic",
+        "task_type": "sales_email",
+        "tokens_in": 320,
+        "tokens_out": 180,
+        "cost_usd": 0.0034,
+        "cost_inr": 0.2941,
+        "latency_ms": 140,
+        "outcome_success": true,
+        "outcome_metric": "demo_booked",
+        "prompt_preview": "what is the meaning of MERN stack in 10 words...",
+        "cached_hit": false,
+        "fallback_triggered": false,
+        "speculative_win": true,
+        "critic_escalated": false,
+        "status": "success"
+      },
+      {
+        "id": "chatcmpl-oir-2b2d7366d50ae78d",
+        "created_at": "Just now",
+        "model_used": "Claude 3.5 Sonnet",
+        "provider": "Anthropic",
+        "task_type": "sales_email",
+        "tokens_in": 320,
+        "tokens_out": 180,
+        "cost_usd": 0.0034,
+        "cost_inr": 0.2941,
+        "latency_ms": 140,
+        "outcome_success": true,
+        "outcome_metric": "demo_booked",
+        "prompt_preview": "what is the meaning of MERN stack in 10 words...",
+        "cached_hit": false,
+        "fallback_triggered": false,
+        "speculative_win": true,
+        "critic_escalated": false,
+        "status": "success"
+      },
+      {
+        "id": "chatcmpl-oir-8979ea429f16ee17",
+        "created_at": "Just now",
+        "model_used": "Claude 3.5 Sonnet",
+        "provider": "Groq",
+        "task_type": "sales_email",
+        "tokens_in": 320,
+        "tokens_out": 180,
+        "cost_usd": 0.0034,
+        "cost_inr": 0.2941,
+        "latency_ms": 140,
+        "outcome_success": false,
+        "outcome_metric": "demo_booked",
+        "prompt_preview": "give me top 10 ai trends topic in points\n\n...",
+        "cached_hit": false,
+        "fallback_triggered": false,
+        "speculative_win": true,
+        "critic_escalated": false,
+        "status": "success"
+      },
+      {
+        "id": "chatcmpl-oir-db77ce7a259ceb82",
+        "created_at": "Just now",
+        "model_used": "Claude 3.5 Sonnet",
+        "provider": "DeepSeek",
+        "task_type": "sales_email",
+        "tokens_in": 320,
+        "tokens_out": 180,
+        "cost_usd": 0.0034,
+        "cost_inr": 0.2941,
+        "latency_ms": 140,
+        "outcome_success": true,
+        "outcome_metric": "demo_booked",
+        "prompt_preview": "give me a simple python code for print hello\n...",
+        "cached_hit": false,
+        "fallback_triggered": false,
+        "speculative_win": true,
+        "critic_escalated": false,
+        "status": "success"
+      },
       {
         "id": "chatcmpl-oir-ec89da5431cb0d4a",
         "created_at": "07:50:39 AM",
@@ -44,25 +180,58 @@
         "status": "success"
       }
     ],
-    "monthlySpendUSD": 0.000285,
-    "baselineSpendUSD": 0.002588,
-    "rules": [
+    "slaEscrowContracts": [
       {
-        "id": "rule_sales_auto",
-        "name": "High-Converting Sales Pitch Routing",
-        "task_type": "sales_email",
-        "condition_pattern": "outreach",
-        "target_metric": "reply_rate",
-        "priority_models": [
-          "Claude 3.5 Sonnet",
-          "DeepSeek-V3",
-          "GPT-4o Mini"
-        ],
-        "fallback_model": "GPT-4o",
-        "cost_ceiling_usd": 0.0045,
-        "max_latency_ms": 350,
-        "is_active": true,
-        "enabled": true
+        "id": "sla_cnt_601118",
+        "requestId": "chatcmpl-oir-2b2d7366d50ae78d",
+        "createdAt": "Just now",
+        "provider": "Anthropic",
+        "model": "Claude 3.5 Sonnet",
+        "latencyLimitMs": 800,
+        "actualLatencyMs": 140,
+        "status": "settled_fulfilled",
+        "refundUsd": 0,
+        "refundTokens": 0,
+        "cryptographicHash": "0x6r87mf3tddyuk69p8ytol"
+      },
+      {
+        "id": "sla_cnt_601118",
+        "requestId": "chatcmpl-oir-2b2d7366d50ae78d",
+        "createdAt": "Just now",
+        "provider": "Anthropic",
+        "model": "Claude 3.5 Sonnet",
+        "latencyLimitMs": 800,
+        "actualLatencyMs": 140,
+        "status": "settled_fulfilled",
+        "refundUsd": 0,
+        "refundTokens": 0,
+        "cryptographicHash": "0x6r87mf3tddyuk69p8ytol"
+      },
+      {
+        "id": "sla_cnt_550960",
+        "requestId": "chatcmpl-oir-8979ea429f16ee17",
+        "createdAt": "Just now",
+        "provider": "Groq",
+        "model": "Claude 3.5 Sonnet",
+        "latencyLimitMs": 400,
+        "actualLatencyMs": 140,
+        "status": "settled_fulfilled",
+        "refundUsd": 0,
+        "refundTokens": 0,
+        "cryptographicHash": "0x27yod3dzl8qupv3g1lx4v"
+      },
+      {
+        "id": "sla_cnt_513958",
+        "requestId": "chatcmpl-oir-db77ce7a259ceb82",
+        "createdAt": "Just now",
+        "provider": "DeepSeek",
+        "model": "Claude 3.5 Sonnet",
+        "latencyLimitMs": 400,
+        "actualLatencyMs": 140,
+        "status": "settled_fulfilled",
+        "refundUsd": 0,
+        "refundTokens": 0,
+        "cryptographicHash": "0xjjrmn3pyoqg8chw1g4s8pq"
       }
     ]
   },

@@ -76,7 +76,7 @@ export default function RoutingRulesPage() {
   const [manualMaxCost, setManualMaxCost] = useState(0.0035);
 
   // Live Rule Dry-Run Test State
-  const [dryRunPrompt, setDryRunPrompt] = useState("Refactor this Python FastAPI endpoint to use async Redis connection pools");
+  const [dryRunPrompt, setDryRunPrompt] = useState("");
   const [isDryRunning, setIsDryRunning] = useState(false);
   const [dryRunData, setDryRunData] = useState<any>(null);
 
@@ -197,9 +197,9 @@ export default function RoutingRulesPage() {
     }
   };
 
-  // Run dry run on mount
+  // Run dry run on mount only if prompt is populated
   useEffect(() => {
-    if (routingRules.length > 0) {
+    if (routingRules.length > 0 && dryRunPrompt.trim()) {
       handleTestDryRun();
     }
   }, [routingRules.length]);
@@ -547,7 +547,7 @@ export default function RoutingRulesPage() {
         <form onSubmit={handleTestDryRun} className="flex gap-2.5">
           <input
             type="text"
-            placeholder="Test a mock prompt: 'Refactor this Python FastAPI endpoint to use async Redis connection pools'"
+            placeholder="Enter a prompt to simulate policy routing (e.g. Write a Python script, draft email, etc)..."
             value={dryRunPrompt}
             onChange={(e) => setDryRunPrompt(e.target.value)}
             className="flex-1 h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none focus:border-[#0050FF]/40 shadow-xs transition-all"

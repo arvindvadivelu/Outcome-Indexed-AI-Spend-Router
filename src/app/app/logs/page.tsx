@@ -197,7 +197,7 @@ export default function LogsPage() {
           <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Contracts</span>
           <div className="my-4">
             <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">
-              {slaEscrowContracts.length || 14}
+              {slaEscrowContracts.length}
             </div>
             <div className="text-xs text-[#86868B] mt-1">0 Breach Penalties</div>
           </div>

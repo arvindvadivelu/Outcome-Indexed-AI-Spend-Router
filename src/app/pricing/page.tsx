@@ -26,17 +26,39 @@ import Link from "next/link";
 import PaymentCheckoutModal from "@/components/PaymentCheckoutModal";
 
 export default function PricingPage() {
-  const { currency, toggleCurrency } = useAppStore();
+  const { currency, toggleCurrency, setPlanTier, user, orgName } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [annualBilling, setAnnualBilling] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [showComparison, setShowComparison] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<"starter" | "growth" | "enterprise">("growth");
+  const [demoUnlockedToast, setDemoUnlockedToast] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleActivateDemoPlan = async (tierId: "free" | "starter" | "growth" | "enterprise") => {
+    setPlanTier(tierId);
+    const quotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
+    const newQuota = quotaMap[tierId] || 10000;
+
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          plan_tier: tierId,
+          monthly_token_quota: newQuota
+        })
+      }).catch((e) => console.warn("Plan session sync notice:", e));
+    }
+
+    setDemoUnlockedToast(`🧪 ${tierId.toUpperCase()} Plan Unlocked! (${newQuota.toLocaleString()} tokens & full features enabled)`);
+    setTimeout(() => setDemoUnlockedToast(null), 6000);
+  };
 
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
@@ -178,6 +200,22 @@ export default function PricingPage() {
       <Navbar />
 
       <main className="flex-1 pt-12 sm:pt-20 pb-28 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full space-y-24 sm:space-y-32">
+        {/* Demo Mode Activated Toast Banner */}
+        {demoUnlockedToast && (
+          <div className="p-4 rounded-2xl bg-emerald-500 text-white shadow-xl flex items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              <span className="font-bold text-xs sm:text-sm">{demoUnlockedToast}</span>
+            </div>
+            <Link
+              href="/app/dashboard"
+              className="px-4 py-1.5 rounded-full bg-white text-emerald-800 text-xs font-extrabold hover:bg-emerald-50 transition-all shrink-0 shadow-xs hover:scale-105"
+            >
+              Go to Dashboard →
+            </Link>
+          </div>
+        )}
+
         {/* 1. Hero Header & Billing Controls */}
         <section className="text-center space-y-8 max-w-3xl mx-auto pt-4 sm:pt-6" suppressHydrationWarning>
           <div className="space-y-4">
@@ -279,29 +317,41 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                {tier.id === "free" ? (
-                  <Link
-                    href={tier.ctaHref}
-                    className="w-full py-3.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
-                  >
-                    {tier.ctaText}
-                  </Link>
-                ) : (
+                <div className="space-y-2 pt-2">
+                  {tier.id === "free" ? (
+                    <Link
+                      href={tier.ctaHref}
+                      className="w-full py-3 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF] block"
+                    >
+                      {tier.ctaText}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCheckoutPlan(tier.id as "starter" | "growth" | "enterprise");
+                        setCheckoutModalOpen(true);
+                      }}
+                      className={`w-full py-3 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
+                        tier.highlighted
+                          ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)]"
+                          : "bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
+                      }`}
+                    >
+                      {activeCurrency === "INR" ? `Pay via GPay / UPI (${tier.name})` : `Pay via ICICI Wire (${tier.name})`}
+                    </button>
+                  )}
+
+                  {/* Development Demo Mode Direct Activation Button */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setCheckoutPlan(tier.id as "starter" | "growth" | "enterprise");
-                      setCheckoutModalOpen(true);
-                    }}
-                    className={`w-full py-3.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
-                      tier.highlighted
-                        ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)]"
-                        : "bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
-                    }`}
+                    onClick={() => handleActivateDemoPlan(tier.id as any)}
+                    className="w-full py-2 rounded-full text-[11px] font-semibold text-center transition-all bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-400/40 hover:bg-emerald-100 dark:hover:bg-emerald-950 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-2xs"
                   >
-                    {activeCurrency === "INR" ? `Pay via GPay / UPI (${tier.name})` : `Pay via ICICI Wire (${tier.name})`}
+                    <Sparkles className="h-3 w-3 text-emerald-600" />
+                    <span>🧪 Try Demo Mode (Instant {tier.name} Unlock)</span>
                   </button>
-                )}
+                </div>
               </div>
             );
           })}

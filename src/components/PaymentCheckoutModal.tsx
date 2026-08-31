@@ -49,6 +49,32 @@ export default function PaymentCheckoutModal({
 
   useEffect(() => {
     if (initialPlan) setSelectedPlan(initialPlan);
+  }, [initialPlan]);
+
+  const handleDemoActivation = async () => {
+    setPlanTier(selectedPlan);
+    const quotaMap: Record<string, number> = { starter: 100000, growth: 500000, enterprise: 2000000 };
+    const newQuota = quotaMap[selectedPlan] || 100000;
+
+    if (user?.email) {
+      fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user.email,
+          plan_tier: selectedPlan,
+          monthly_token_quota: newQuota
+        })
+      }).catch((e) => console.warn("Demo plan session sync notice:", e));
+    }
+
+    setIsSuccess(true);
+    setSuccessMessage(`🧪 Demo Mode Active: ${selectedPlan.toUpperCase()} Plan Unlocked! (${newQuota.toLocaleString()} tokens & full features enabled for testing)`);
+    if (onSuccess) onSuccess();
+  };
+
+  useEffect(() => {
+    if (initialPlan) setSelectedPlan(initialPlan);
     if (initialCurrency) setSelectedCurrency(initialCurrency);
     else setSelectedCurrency(currency === "INR" ? "INR" : "USD");
     setIsSuccess(false);
@@ -481,13 +507,20 @@ export default function PaymentCheckoutModal({
               </div>
             )}
 
-            {/* Footer Trust Guarantee */}
-            <div className="mt-6 pt-4 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-between text-xs text-[#86868B]">
+            {/* Footer Trust Guarantee & Development Demo Button */}
+            <div className="mt-6 pt-4 border-t border-black/[0.06] dark:border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#86868B]">
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>100% Tax Compliant with GST Invoices & Zero Prompt Retention</span>
+                <span>100% Tax Compliant with GST Invoices & Zero Retention</span>
               </div>
-              <span>Instant Automated Activation</span>
+              <button
+                type="button"
+                onClick={handleDemoActivation}
+                className="px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-400/50 hover:bg-emerald-100 hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>🧪 Activate Demo Mode (Instant Unlock)</span>
+              </button>
             </div>
           </div>
         )}

@@ -21,6 +21,7 @@ import {
 import { useAppStore, LogItem, SlaContractItem } from "@/lib/store";
 import { apiClient } from "@/lib/api-client";
 import { formatNumber } from "@/lib/utils";
+import { generateIntelligentPromptResponse } from "@/lib/dynamic-prompt-answering";
 import Link from "next/link";
 
 const SAMPLE_PROMPTS = [
@@ -135,9 +136,7 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
       slaContractHash: contractHash,
       estimatedBusinessValueUSD: estimatedValue,
       candidateRanking,
-      responseContent: liveRes?.choices?.[0]?.message?.content || (isCode
-        ? `// Stream Handler Refactored (Pre-warmed in 68ms)\nexport async function POST(req: Request) {\n  const { prompt } = await req.json();\n  return new Response(JSON.stringify({ status: "success", model: "${model}", latency: "${latency}ms" }));\n}`
-        : `Subject: Cut AI token spend by 40% with Outcome-Indexed Routing\n\nHi Alex,\n\nI noticed your team is scaling LLM features. OutcomeRouter dynamically routes requests to Claude 3.5, DeepSeek, and Groq based on conversion KPIs—saving teams $12K/month while closing +14% more pipeline.\n\nOpen to a quick 10-minute demo this Thursday?\n\nBest,\nArjun`)
+      responseContent: liveRes?.choices?.[0]?.message?.content || generateIntelligentPromptResponse(promptText).content
     };
 
     setResult(simResult);

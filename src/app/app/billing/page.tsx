@@ -28,6 +28,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 import PaymentCheckoutModal from "@/components/PaymentCheckoutModal";
+import { InvoiceViewerModal, InvoiceData } from "@/components/InvoiceViewerModal";
 
 export default function BillingPage() {
   const {
@@ -50,6 +51,28 @@ export default function BillingPage() {
   const [mounted, setMounted] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<"starter" | "growth" | "enterprise">("growth");
+  const [selectedInvoiceForModal, setSelectedInvoiceForModal] = useState<InvoiceData | null>(null);
+
+  const [invoicesList, setInvoicesList] = useState<InvoiceData[]>([
+    {
+      id: "INV-OIR-2026-08892",
+      date: "Aug 31, 2026",
+      customerName: user?.name || "Arvind Vadivelu",
+      customerEmail: user?.email || "varvind2004@gmail.com",
+      workspaceName: orgName || "Primary Workspace",
+      planName: planTier && planTier !== "free" ? planTier : "Starter",
+      tokenQuota: planTier === "growth" ? 500000 : (planTier === "enterprise" ? 2000000 : 100000),
+      currency: "USD",
+      amount: 29.00,
+      taxAmount: 0.00,
+      totalAmount: 29.00,
+      paymentMethod: "ICICI Business Wire (SWIFT: ICICINBBCTS / Acc: 000405001234)",
+      transactionRef: "UTR_428194829103",
+      status: "PAID",
+      sha256Hash: "0x7f4b829e1c4a0d92e5f8a91b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d"
+    }
+  ]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -491,8 +514,9 @@ export default function BillingPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight flex items-center gap-2">
               <Receipt className="h-4 w-4 text-[#0050FF]" />
-              <span>Recent Invoices & Receipts</span>
+              <span>Recent Invoices & Receipts ({invoicesList.length})</span>
             </h3>
+            <span className="text-[11px] text-[#86868B]">Official White PDF Tax Invoices</span>
           </div>
 
           <div className="rounded-[22px] border border-black/[0.05] dark:border-white/[0.08] overflow-hidden text-xs">
@@ -501,20 +525,22 @@ export default function BillingPage() {
                 <tr>
                   <th className="py-2.5 px-4 font-semibold">Invoice ID</th>
                   <th className="py-2.5 px-4 font-semibold">Billing Date</th>
-                  <th className="py-2.5 px-4 font-semibold">Amount</th>
+                  <th className="py-2.5 px-4 font-semibold">Plan & Amount</th>
+                  <th className="py-2.5 px-4 font-semibold">Payment Channel</th>
                   <th className="py-2.5 px-4 font-semibold">Status</th>
-                  <th className="py-2.5 px-4 font-semibold text-right">Download</th>
+                  <th className="py-2.5 px-4 font-semibold text-right">PDF Invoice</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]">
-                {[
-                  { id: "INV-2026-08", date: "Aug 01, 2026", amount: formatCurrency(84.20 * rate, activeCurrency), status: "PAID" },
-                  { id: "INV-2026-07", date: "Jul 01, 2026", amount: formatCurrency(99.00 * rate, activeCurrency), status: "PAID" }
-                ].map((inv) => (
-                  <tr key={inv.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50">
+                {invoicesList.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-colors">
                     <td className="py-2.5 px-4 font-mono font-bold text-[#0050FF] dark:text-[#3374FF]">{inv.id}</td>
                     <td className="py-2.5 px-4 text-[#86868B]">{inv.date}</td>
-                    <td className="py-2.5 px-4 font-mono font-bold">{inv.amount}</td>
+                    <td className="py-2.5 px-4 font-mono font-bold">
+                      {inv.currency === "INR" ? `₹${inv.totalAmount.toFixed(2)}` : `$${inv.totalAmount.toFixed(2)}`}
+                      <span className="text-[10px] text-[#86868B] font-normal block">{inv.planName} Tier</span>
+                    </td>
+                    <td className="py-2.5 px-4 text-[#86868B] text-[11px] truncate max-w-[140px]">{inv.paymentMethod}</td>
                     <td className="py-2.5 px-4">
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
                         {inv.status}
@@ -522,11 +548,12 @@ export default function BillingPage() {
                     </td>
                     <td className="py-2.5 px-4 text-right">
                       <button
-                        onClick={() => handleDownloadInvoice(inv.id)}
-                        className="p-1 rounded-full text-[#86868B] hover:text-[#0050FF] transition-colors"
-                        title="Download CSV Receipt"
+                        onClick={() => setSelectedInvoiceForModal(inv)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#0050FF]/10 text-[#0050FF] dark:text-[#3374FF] font-semibold text-[11px] hover:bg-[#0050FF] hover:text-white transition-all shadow-xs hover:scale-105 active:scale-95"
+                        title="View Official PDF Tax Invoice"
                       >
-                        <Download className={`h-3.5 w-3.5 ${invoiceDownloading === inv.id ? "animate-spin" : ""}`} />
+                        <FileText className="h-3 w-3" />
+                        <span>View / Print PDF</span>
                       </button>
                     </td>
                   </tr>
@@ -724,8 +751,32 @@ export default function BillingPage() {
         initialCurrency={activeCurrency === "INR" ? "INR" : "USD"}
         onSuccess={() => {
           setPlanSwitchNotice(`Subscribed to ${checkoutPlan.toUpperCase()} tier! Quota updated.`);
+          const newInv: InvoiceData = {
+            id: `INV-OIR-${Date.now().toString().slice(-5)}`,
+            date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+            customerName: user?.name || "Arvind Vadivelu",
+            customerEmail: user?.email || "varvind2004@gmail.com",
+            workspaceName: orgName || "Primary Workspace",
+            planName: checkoutPlan.charAt(0).toUpperCase() + checkoutPlan.slice(1),
+            tokenQuota: checkoutPlan === "growth" ? 500000 : (checkoutPlan === "enterprise" ? 2000000 : 100000),
+            currency: (currency as "USD" | "INR") || "USD",
+            amount: currency === "INR" ? (checkoutPlan === "growth" ? 8500 : 2500) : (checkoutPlan === "growth" ? 99 : 29),
+            taxAmount: currency === "INR" ? (checkoutPlan === "growth" ? 1530 : 450) : 0,
+            totalAmount: currency === "INR" ? (checkoutPlan === "growth" ? 10030 : 2950) : (checkoutPlan === "growth" ? 99 : 29),
+            paymentMethod: currency === "INR" ? "GPay UPI (varvind2004@okaxis)" : "ICICI Bank Wire (SWIFT: ICICINBBCTS)",
+            transactionRef: `UTR_${Math.random().toString().slice(2, 14)}`,
+            status: "PAID",
+            sha256Hash: `0x${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`
+          };
+          setInvoicesList(prev => [newInv, ...prev]);
           setTimeout(() => setPlanSwitchNotice(null), 3000);
         }}
+      />
+
+      {/* FAANG/MAANG-grade White PDF Invoice Viewer Modal */}
+      <InvoiceViewerModal
+        invoice={selectedInvoiceForModal}
+        onClose={() => setSelectedInvoiceForModal(null)}
       />
     </div>
   );

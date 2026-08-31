@@ -34,10 +34,7 @@ export default function TeamPage() {
   }, []);
 
   const [members, setMembers] = useState([
-    { id: 1, name: user?.name || "User", email: user?.email || "user@example.com", role: "Owner", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" },
-    { id: 2, name: "Sarah Chen", email: "sarah@company.com", role: "Admin", tokenQuota: "200,000 / mo", mfaActive: true, lastActive: "15 min ago" },
-    { id: 3, name: "Marcus Rossi", email: "marcus@company.com", role: "Engineer", tokenQuota: "100,000 / mo", mfaActive: true, lastActive: "1 hour ago" },
-    { id: 4, name: "Priya Patel", email: "priya@company.com", role: "FinOps", tokenQuota: "50,000 / mo", mfaActive: false, lastActive: "Yesterday" }
+    { id: 1, name: user?.name || "Arvind", email: user?.email || "varvind2004@gmail.com", role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
   ]);
 
   const syncTeamToSession = (updatedMembers: any[]) => {
@@ -58,19 +55,16 @@ export default function TeamPage() {
           if (data.success && data.user?.teamMembers && data.user.teamMembers.length > 0) {
             setMembers(data.user.teamMembers);
           } else {
-            setMembers((prev) =>
-              prev.map((m) =>
-                m.role === "Owner"
-                  ? { ...m, name: user.name || m.name, email: user.email }
-                  : m
-              )
-            );
+            setMembers([
+              { id: 1, name: user.name || "Arvind", email: user.email, role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
+            ]);
           }
         })
         .catch(() => {});
     }
   }, [user]);
 
+  const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("Engineer");
   const [customRoleInput, setCustomRoleInput] = useState("");
@@ -83,8 +77,8 @@ export default function TeamPage() {
   const [isAuditing, setIsAuditing] = useState(false);
   const [rbacResult, setRbacResult] = useState<any>(null);
 
-  // Seat capacity based on subscribed plan
-  const seatLimit = planTier === "starter" ? 8 : (planTier === "growth" ? 15 : (planTier === "enterprise" ? 50 : 4));
+  // Seat capacity based on subscribed plan (Free: 2 max, Starter: 5 max, Growth: 15 max, Enterprise: Unlimited/100)
+  const seatLimit = planTier === "starter" ? 5 : (planTier === "growth" ? 15 : (planTier === "enterprise" ? 100 : 2));
   const isSeatLimitReached = members.length >= seatLimit;
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -109,11 +103,12 @@ export default function TeamPage() {
       const data = await res.json();
 
       if (data.success) {
+        const memberName = inviteName.trim() || inviteEmail.split("@")[0];
         const updated = [
           ...members,
           {
             id: Date.now(),
-            name: inviteEmail.split("@")[0],
+            name: memberName,
             email: inviteEmail.trim(),
             role: assignedRole,
             tokenQuota: inviteQuota,
@@ -126,7 +121,7 @@ export default function TeamPage() {
 
         await syncAuthUserToGoogleSheets({
           action: "TEAM_INVITE",
-          name: inviteEmail.split("@")[0],
+          name: memberName,
           email: inviteEmail.trim(),
           workspace: orgName || "",
           plan_tier: planTier || "free",
@@ -135,6 +130,7 @@ export default function TeamPage() {
           auth_method: "INVITE_LINK"
         });
 
+        setInviteName("");
         setInviteEmail("");
         setCustomRoleInput("");
         setIsCustomRole(false);
@@ -339,7 +335,18 @@ export default function TeamPage() {
         </div>
 
         <form onSubmit={handleInvite} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div className="sm:col-span-2">
+              <input
+                type="text"
+                placeholder="Full Name (e.g. Alex Vance)"
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                disabled={isSeatLimitReached}
+                className="w-full h-11 px-5 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] placeholder:text-[#86868B] focus:outline-none disabled:opacity-50"
+              />
+            </div>
+
             <div className="sm:col-span-2">
               <input
                 type="email"
@@ -352,7 +359,19 @@ export default function TeamPage() {
               />
             </div>
 
-            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80">
+            <button
+              type="submit"
+              disabled={!inviteEmail.trim() || isInviting || isSeatLimitReached}
+              className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+            <label className="text-xs font-semibold text-[#86868B] shrink-0">Assign Role:</label>
+            <div className="inline-flex p-1 rounded-full bg-[#E5E5EA]/70 dark:bg-[#242428]/80 max-w-sm">
               {["Engineer", "FinOps", "Admin"].map((r) => (
                 <button
                   type="button"
@@ -362,7 +381,7 @@ export default function TeamPage() {
                     setInviteRole(r);
                     setIsCustomRole(false);
                   }}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                  className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
                     !isCustomRole && inviteRole === r
                       ? "bg-[#0050FF] text-white shadow-xs"
                       : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -375,7 +394,7 @@ export default function TeamPage() {
                 type="button"
                 disabled={isSeatLimitReached}
                 onClick={() => setIsCustomRole(true)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
+                className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-full transition-all hover:scale-105 active:scale-95 disabled:opacity-50 ${
                   isCustomRole
                     ? "bg-[#0050FF] text-white shadow-xs"
                     : "text-[#86868B] hover:text-[#1D1D1F]"
@@ -384,27 +403,18 @@ export default function TeamPage() {
                 Custom
               </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={!inviteEmail.trim() || isInviting || isSeatLimitReached}
-              className="h-11 px-6 rounded-full bg-[#0050FF] text-white font-semibold text-xs hover:bg-[#0043D6] shadow-[0_4px_14px_rgba(0,80,255,0.3)] disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shrink-0 hover:scale-105 active:scale-95"
-            >
-              <Send className="h-3.5 w-3.5" />
-              <span>{isInviting ? "Queuing..." : "Send Invite"}</span>
-            </button>
           </div>
 
           {/* Custom Role Name Input */}
           {isCustomRole && (
             <div className="flex items-center gap-3 pt-1 animate-in fade-in">
-              <label className="text-xs font-semibold text-[#86868B] shrink-0">Custom Role Name:</label>
+              <label className="text-xs font-semibold text-[#86868B] shrink-0">Custom Role Title:</label>
               <input
                 type="text"
+                placeholder="e.g. Staff AI Architect, Compliance Lead"
                 value={customRoleInput}
                 onChange={(e) => setCustomRoleInput(e.target.value)}
-                placeholder="e.g. Lead ML Engineer, Security Officer, Product Analyst"
-                className="flex-1 h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]"
+                className="flex-1 max-w-md h-10 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]"
                 required={isCustomRole}
               />
             </div>

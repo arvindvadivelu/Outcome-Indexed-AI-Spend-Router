@@ -51,6 +51,17 @@
   ],
   "keys": [
     {
+      "id": "key_1788169127",
+      "name": "Demo",
+      "key_prefix": "oir_live_ca0a9159",
+      "environment": "live",
+      "rate_limit": 2400,
+      "rate_limit_rpm": 2400,
+      "created_at": "Just now",
+      "last_used_at": "Never",
+      "is_active": true
+    },
+    {
       "id": "key_1",
       "name": "Production Gateway Key",
       "key_prefix": "oir_live_8f9a2b",
@@ -65,6 +76,32 @@
   "contracts": [],
   "logs": [],
   "auth_records": [
+    {
+      "id": "auth_1788169741586",
+      "timestamp": "2026-08-31T09:48:58.069Z",
+      "action": "TEAM_INVITE",
+      "name": "varvind2004",
+      "email": "varvind2004@gmail.com",
+      "workspace": "Sol",
+      "plan_tier": "free",
+      "monthly_token_quota": 100000,
+      "currency": "USD",
+      "auth_method": "INVITE_LINK",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
+    {
+      "id": "auth_1788167892021",
+      "timestamp": "2026-08-31T09:18:09.304Z",
+      "action": "PLAN_UPGRADE",
+      "name": "Arvind V",
+      "email": "varvind2004@gmail.com",
+      "workspace": "College",
+      "plan_tier": "Free",
+      "monthly_token_quota": 10000,
+      "currency": "INR",
+      "auth_method": "MANUAL",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
     {
       "id": "auth_1788153981630",
       "timestamp": "2026-08-31T05:26:19.302Z",
