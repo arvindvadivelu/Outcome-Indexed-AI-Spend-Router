@@ -70,18 +70,18 @@ const DEFAULT_USERS: UserAccount[] = [
 // Active in-memory OTP storage: email -> { otp: string, expiresAt: number }
 const ACTIVE_OTPS = new Map<string, { otp: string; expiresAt: number }>();
 
+import { atomicWriteJson, safeReadJson } from "./atomic-file-writer";
+
 function ensureStorage(): UserAccount[] {
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(USERS_FILE)) {
-      fs.writeFileSync(USERS_FILE, "[]", "utf-8");
-      return [];
+      atomicWriteJson(USERS_FILE, DEFAULT_USERS);
+      return [...DEFAULT_USERS];
     }
-    const raw = fs.readFileSync(USERS_FILE, "utf-8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return safeReadJson<UserAccount[]>(USERS_FILE, DEFAULT_USERS);
   } catch (err) {
     console.error("Auth DB read error:", err);
     return [];
@@ -94,10 +94,7 @@ export function clearAllUsers(): void {
 
 function saveUsers(users: UserAccount[]) {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf-8");
+    atomicWriteJson(USERS_FILE, users);
   } catch (err) {
     console.error("Auth DB write error:", err);
   }
@@ -250,6 +247,28 @@ export function deleteUser(email: string): boolean {
   const index = users.findIndex((u) => u.email.trim().toLowerCase() === normalized);
   if (index === -1) return false;
   users.splice(index, 1);
+  saveUsers(users);
+  return true;
+}
+
+export function updateUserPlanTier(
+  email: string,
+  newPlanTier: "free" | "starter" | "growth" | "enterprise",
+  quota?: number
+): boolean {
+  const users = ensureStorage();
+  const normalized = email.trim().toLowerCase();
+  const user = users.find((u) => u.email.trim().toLowerCase() === normalized);
+  if (!user) return false;
+  user.plan_tier = newPlanTier;
+  if (quota) {
+    user.monthly_token_quota = quota;
+  } else {
+    if (newPlanTier === "free") user.monthly_token_quota = 10000;
+    else if (newPlanTier === "starter") user.monthly_token_quota = 100000;
+    else if (newPlanTier === "growth") user.monthly_token_quota = 500000;
+    else if (newPlanTier === "enterprise") user.monthly_token_quota = 2000000;
+  }
   saveUsers(users);
   return true;
 }

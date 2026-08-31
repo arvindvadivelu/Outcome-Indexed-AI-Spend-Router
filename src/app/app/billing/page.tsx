@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
+import PaymentCheckoutModal from "@/components/PaymentCheckoutModal";
 
 export default function BillingPage() {
   const {
@@ -47,6 +48,8 @@ export default function BillingPage() {
   } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<"starter" | "growth" | "enterprise">("growth");
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -678,7 +681,15 @@ export default function BillingPage() {
 
                     <button
                       type="button"
-                      onClick={() => handleSelectPlan(tier.id)}
+                      onClick={() => {
+                        if (tier.id === "free") {
+                          handleSelectPlan("free");
+                        } else {
+                          setShowPlanMatrix(false);
+                          setCheckoutPlan(tier.id);
+                          setCheckoutModalOpen(true);
+                        }
+                      }}
                       disabled={isCurrent}
                       className={`w-full h-11 rounded-full font-semibold text-xs transition-all flex items-center justify-center gap-1.5 hover:scale-105 active:scale-95 ${
                         isCurrent
@@ -694,7 +705,7 @@ export default function BillingPage() {
                           <span>Current Active Plan</span>
                         </>
                       ) : (
-                        <span>{tier.id === "free" ? "Switch to Free" : `Switch to ${tier.name}`}</span>
+                        <span>{tier.id === "free" ? "Switch to Free" : `Pay via GPay / ICICI Wire`}</span>
                       )}
                     </button>
                   </div>
@@ -704,6 +715,18 @@ export default function BillingPage() {
           </div>
         </div>
       )}
+
+      {/* Payment Checkout Modal for GPay UPI & ICICI Wire */}
+      <PaymentCheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        initialPlan={checkoutPlan}
+        initialCurrency={activeCurrency === "INR" ? "INR" : "USD"}
+        onSuccess={() => {
+          setPlanSwitchNotice(`Subscribed to ${checkoutPlan.toUpperCase()} tier! Quota updated.`);
+          setTimeout(() => setPlanSwitchNotice(null), 3000);
+        }}
+      />
     </div>
   );
 }

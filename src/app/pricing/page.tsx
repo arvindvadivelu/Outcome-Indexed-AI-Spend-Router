@@ -23,6 +23,7 @@ import {
   Minus
 } from "lucide-react";
 import Link from "next/link";
+import PaymentCheckoutModal from "@/components/PaymentCheckoutModal";
 
 export default function PricingPage() {
   const { currency, toggleCurrency } = useAppStore();
@@ -30,6 +31,8 @@ export default function PricingPage() {
   const [annualBilling, setAnnualBilling] = useState(true);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [showComparison, setShowComparison] = useState(false);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<"starter" | "growth" | "enterprise">("growth");
 
   useEffect(() => {
     setMounted(true);
@@ -276,16 +279,29 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                <Link
-                  href={tier.ctaHref}
-                  className={`w-full py-3.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
-                    tier.highlighted
-                      ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)]"
-                      : "bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
-                  }`}
-                >
-                  {tier.ctaText}
-                </Link>
+                {tier.id === "free" ? (
+                  <Link
+                    href={tier.ctaHref}
+                    className="w-full py-3.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
+                  >
+                    {tier.ctaText}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckoutPlan(tier.id as "starter" | "growth" | "enterprise");
+                      setCheckoutModalOpen(true);
+                    }}
+                    className={`w-full py-3.5 rounded-full text-xs font-semibold text-center transition-all shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
+                      tier.highlighted
+                        ? "bg-[#0050FF] text-white hover:bg-[#0043D6] shadow-[0_6px_20px_rgba(0,80,255,0.35)]"
+                        : "bg-[#F5F5F7] dark:bg-[#242428] text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 hover:text-[#0050FF]"
+                    }`}
+                  >
+                    {activeCurrency === "INR" ? `Pay via GPay / UPI (${tier.name})` : `Pay via ICICI Wire (${tier.name})`}
+                  </button>
+                )}
               </div>
             );
           })}
@@ -446,6 +462,14 @@ export default function PricingPage() {
           </div>
         </section>
       </main>
+
+      {/* Payment Checkout Modal for GPay UPI & ICICI Wire */}
+      <PaymentCheckoutModal
+        isOpen={checkoutModalOpen}
+        onClose={() => setCheckoutModalOpen(false)}
+        initialPlan={checkoutPlan}
+        initialCurrency={activeCurrency === "INR" ? "INR" : "USD"}
+      />
 
       <Footer />
     </div>

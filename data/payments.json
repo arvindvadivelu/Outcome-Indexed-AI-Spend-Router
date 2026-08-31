@@ -1,0 +1,26 @@
+[
+  {
+    "id": "tx_1788167457016_5r01j",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "COMPLETED",
+    "createdAt": "2026-08-31T09:10:57.016Z",
+    "invoiceNumber": "INV-OIR-INR-991854",
+    "referenceUtr": "423918471920",
+    "verifiedAt": "2026-08-31T09:10:57.154Z"
+  },
+  {
+    "id": "tx_1788167457091_4e5c4",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "USD",
+    "amount": 99,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T09:10:57.091Z",
+    "invoiceNumber": "INV-OIR-USD-728604"
+  }
+]
