@@ -880,9 +880,16 @@ export const useAppStore = create<AppState>()(
           version: "1.0",
           exported_at: new Date().toISOString(),
           user: state.user,
+          orgName: state.orgName,
+          planTier: state.planTier,
+          currency: state.currency,
           rules: state.rules,
+          routingRules: state.routingRules,
           apiKeys: state.apiKeys,
           webhookConfig: state.webhookConfig,
+          integrations: state.integrations,
+          autopilot: state.autopilot,
+          federationSettings: state.federationSettings,
           monthlySpendUSD: state.monthlySpendUSD,
           currentTokens: state.currentTokens
         };
@@ -892,12 +899,17 @@ export const useAppStore = create<AppState>()(
       importJsonBackup: (dataStr: string) => {
         try {
           const parsed = JSON.parse(dataStr);
-          if (parsed.rules) {
+          if (parsed && typeof parsed === "object") {
             set((state) => ({
-              rules: parsed.rules,
-              routingRules: parsed.rules,
+              orgName: parsed.orgName || state.orgName,
+              currency: parsed.currency || state.currency,
+              rules: parsed.rules || parsed.routingRules || state.rules,
+              routingRules: parsed.routingRules || parsed.rules || state.routingRules,
               apiKeys: parsed.apiKeys || state.apiKeys,
-              webhookConfig: parsed.webhookConfig || state.webhookConfig
+              webhookConfig: parsed.webhookConfig || state.webhookConfig,
+              integrations: parsed.integrations || state.integrations,
+              autopilot: parsed.autopilot || state.autopilot,
+              federationSettings: parsed.federationSettings || state.federationSettings
             }));
             return true;
           }

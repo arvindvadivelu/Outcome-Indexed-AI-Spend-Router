@@ -3,7 +3,7 @@ import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
-    const { endpointUrl, secretKey, eventType } = await req.json();
+    const { endpointUrl, secretKey, eventType } = await req.json().catch(() => ({}));
 
     const topic = eventType || "outcome.indexed.success";
     const secret = secretKey || "whsec_live_9f8e7d6c5b4a";

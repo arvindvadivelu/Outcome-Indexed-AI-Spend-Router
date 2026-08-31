@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { integrationId, apiKey } = await req.json();
+    const { integrationId, apiKey } = await req.json().catch(() => ({}));
 
     if (!integrationId || !apiKey) {
       return NextResponse.json({ success: false, error: "Integration ID and API key required." }, { status: 400 });

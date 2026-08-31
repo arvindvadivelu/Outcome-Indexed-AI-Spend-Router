@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const payload = await req.json();
+    const payload = await req.json().catch(() => ({}));
     const timestamp = payload.timestamp || new Date().toISOString();
 
     const record = {

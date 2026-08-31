@@ -58,6 +58,9 @@ This document serves as the persistent audit ledger and memory for continuous fu
 | **WF-048** | `/api/routing/synthesize` | Routing Synthesizer Empty Payload Resilience | Safely handles empty POST bodies with HTTP 400 validation error | Empty POST body crashed route with uncaught 500 JSON error | Missing `catch(() => ({}))` fallback on `req.json()` | [`src/app/api/routing/synthesize/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/routing/synthesize/route.ts) | **FIXED** | Run 13 |
 | **WF-049** | `/api/auth/session` | Session POST Safe Payload & User Profile Mutation | Allows safe partial updates for display name and workspace with empty-body protection | Empty payload to session route threw unhandled 500 JSON error | Missing `catch(() => ({}))` fallback on `req.json()` | [`src/app/api/auth/session/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/session/route.ts) | **FIXED** | Run 14 |
 | **WF-050** | `/api/benchmarks/eval` | Multi-Domain Parallel Benchmark Evaluation | Evaluates frontier models across `code_generation`, `sales_email`, `customer_support`, `complex_reasoning` | Evaluated and passed | Verified batch latency and frontier model score matrix | [`src/app/api/benchmarks/eval/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/benchmarks/eval/route.ts) | **FIXED** | Run 14 |
+| **WF-051** | `/app/dashboard` | Global Dashboard Theme & Bento Style Harmonization | Unifies Dashboard aesthetics with Apple/FinOps glassmorphism across `/app/*` | Dashboard had inconsistent harsh blue gradients and missing forensic table | Restyled 4 bento pillars and reintroduced glassmorphic decision table | [`src/app/app/dashboard/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/app/dashboard/page.tsx) | **FIXED** | Run 15 |
+| **WF-052** | Global State | Comprehensive JSON Configuration Export & Restore Round-Trip | Serializes and restores full state (rules, integrations, webhooks, autopilot, federation) | Export omitted workspace name and provider bridges; import only restored rules | Enhanced `exportJsonBackup` and `importJsonBackup` in store | [`src/lib/store.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/lib/store.ts) | **FIXED** | Run 15 |
+| **WF-053** | `/api/logs/inspect`, `/api/integrations/connect`, `/api/auth/delete-account`, `/api/auth/send-otp` | Safe Request Body Parsing & Resilience across Auxiliary APIs | All auxiliary APIs safely handle malformed or empty payloads with clean HTTP 400 responses | Empty POST bodies resulted in unhandled 500 JSON exceptions | Missing `.catch(() => ({}))` safe fallbacks on `req.json()` | [`src/app/api/logs/inspect/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/logs/inspect/route.ts), [`src/app/api/integrations/connect/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/integrations/connect/route.ts), [`src/app/api/auth/delete-account/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/delete-account/route.ts), [`src/app/api/auth/send-otp/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/send-otp/route.ts) | **FIXED** | Run 16 |
 
 ---
 
@@ -182,4 +185,17 @@ This document serves as the persistent audit ledger and memory for continuous fu
   - **WF-050**: Verified parallel benchmark evaluation across 4 frontier domains (`code_generation`, `sales_email`, `customer_support`, `complex_reasoning`).
 - **Verified**:
   - Automated test suite `stress-test/verify_run14_workflows.mjs` (12/12 tests passed - 100%).
-  - Total combined test suites: **154 / 154 Tests Passed (100.0%)**.
+
+### Run 15 — UI Harmonization & Comprehensive Configuration Backup Round-Trip
+- **Fixed**:
+  - **WF-051**: Harmonized Dashboard page styling, glassmorphism, fonts, and decision stream to match all other pages under `/app/*`.
+  - **WF-052**: Enhanced `exportJsonBackup` and `importJsonBackup` in store to cover all subsystems (rules, integrations, webhooks, autopilot, federation).
+- **Verified**:
+  - Automated test suite `stress-test/verify_run15_workflows.mjs` (8/8 tests passed - 100%).
+
+### Run 16 — API Resilience & Safe JSON Parsing Across All Auxiliary Endpoints
+- **Fixed**:
+  - **WF-053**: Added safe JSON parsing `req.json().catch(() => ({}))` across all remaining auxiliary endpoints (`/api/logs/inspect`, `/api/integrations/connect`, `/api/auth/delete-account`, `/api/auth/send-otp`).
+- **Verified**:
+  - Automated test suite `stress-test/verify_run16_workflows.mjs` (8/8 tests passed - 100%).
+  - Total combined test suites: **170 / 170 Tests Passed (100.0%)**.

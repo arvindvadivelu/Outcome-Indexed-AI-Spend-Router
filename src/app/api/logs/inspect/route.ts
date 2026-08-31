@@ -24,7 +24,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const { log } = await req.json();
+    const { log } = await req.json().catch(() => ({}));
 
     if (!log) {
       return NextResponse.json({ success: false, error: "Log payload required." }, { status: 400 });
