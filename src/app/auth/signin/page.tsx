@@ -51,6 +51,20 @@ function SignInContent() {
     }
   };
 
+  const handlePinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newPin = [...pin];
+    for (let i = 0; i < pasted.length; i++) {
+      newPin[i] = pasted[i];
+    }
+    setPin(newPin);
+    setErrorMessage(null);
+    const focusIndex = Math.min(5, pasted.length);
+    document.getElementById(`login-pin-${focusIndex}`)?.focus();
+  };
+
   const handleOtpChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
@@ -70,6 +84,20 @@ function SignInContent() {
       const prevInput = document.getElementById(`login-otp-${index - 1}`);
       prevInput?.focus();
     }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newOtp = [...otp];
+    for (let i = 0; i < pasted.length; i++) {
+      newOtp[i] = pasted[i];
+    }
+    setOtp(newOtp);
+    setErrorMessage(null);
+    const focusIndex = Math.min(5, pasted.length);
+    document.getElementById(`login-otp-${focusIndex}`)?.focus();
   };
 
   // 1. PIN-Based Login Submission
@@ -103,6 +131,11 @@ function SignInContent() {
 
       // Success: Clear any prior user's data, then load new user's state
       clearUserData();
+      const userConfigured = Boolean(
+        data.user.hasConfiguredBudget ||
+        (data.user.monthlyBudgetUSD !== undefined && data.user.monthlyBudgetUSD > 0)
+      );
+
       useAppStore.setState({
         user: {
           name: data.user.name,
@@ -117,6 +150,13 @@ function SignInContent() {
         monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
         baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
         currency: data.user.currency || "USD",
+        hasConfiguredBudget: userConfigured,
+        isBudgetSetupModalOpen: !userConfigured,
+        autopilot: {
+          ...useAppStore.getState().autopilot,
+          monthly_budget_usd: data.user.monthlyBudgetUSD ?? 0,
+          mode: data.user.autopilotMode ?? "optimal_pace"
+        },
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],
@@ -179,6 +219,7 @@ function SignInContent() {
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setSuccessMessage(null);
 
     const otpCode = otp.join("");
     if (!email.trim() || otpCode.length !== 6) {
@@ -205,6 +246,11 @@ function SignInContent() {
 
       // Success: Clear any prior user's data, then load new user's state
       clearUserData();
+      const userConfigured = Boolean(
+        data.user.hasConfiguredBudget ||
+        (data.user.monthlyBudgetUSD !== undefined && data.user.monthlyBudgetUSD > 0)
+      );
+
       useAppStore.setState({
         user: {
           name: data.user.name,
@@ -219,6 +265,13 @@ function SignInContent() {
         monthlySpendUSD: data.user.monthlySpendUSD ?? 0,
         baselineSpendUSD: data.user.baselineSpendUSD ?? 0,
         currency: data.user.currency || "USD",
+        hasConfiguredBudget: userConfigured,
+        isBudgetSetupModalOpen: !userConfigured,
+        autopilot: {
+          ...useAppStore.getState().autopilot,
+          monthly_budget_usd: data.user.monthlyBudgetUSD ?? 0,
+          mode: data.user.autopilotMode ?? "optimal_pace"
+        },
         rules: data.user.rules || [],
         routingRules: data.user.rules || [],
         apiKeys: data.user.apiKeys || [],
@@ -351,6 +404,7 @@ function SignInContent() {
                         value={digit}
                         onChange={(e) => handlePinChange(index, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(index, e)}
+                        onPaste={handlePinPaste}
                         className="w-11 h-12 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-center font-mono text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF] transition-all"
                       />
                     ))}
@@ -409,6 +463,7 @@ function SignInContent() {
                           value={digit}
                           onChange={(e) => handleOtpChange(index, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                          onPaste={handleOtpPaste}
                           className="w-11 h-12 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-center font-mono text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF] transition-all"
                         />
                       ))}

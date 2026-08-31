@@ -41,6 +41,7 @@ export default function RoutingRulesPage() {
     toggleRule,
     addRule,
     deleteRule,
+    reorderRule,
     autopilot,
     setAutopilotMode,
     toggleAutopilot,
@@ -49,6 +50,7 @@ export default function RoutingRulesPage() {
     toggleFederation,
     prewarmMetrics,
     planTier,
+    openPlanUpgradeModal,
     user
   } = useAppStore();
 
@@ -71,6 +73,7 @@ export default function RoutingRulesPage() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualName, setManualName] = useState("");
   const [manualTask, setManualTask] = useState("sales_email");
+  const [customTaskType, setCustomTaskType] = useState("");
   const [manualStrategy, setManualStrategy] = useState("outcome_optimized");
   const [manualMaxLatency, setManualMaxLatency] = useState(400);
   const [manualMaxCost, setManualMaxCost] = useState(0.0035);
@@ -148,13 +151,16 @@ export default function RoutingRulesPage() {
     let priority = ["Claude 3.5 Sonnet", "DeepSeek-V3", "GPT-4o Mini"];
     if (manualTask === "code_generation") priority = ["DeepSeek Coder", "Claude 3.5 Sonnet", "GPT-4o Mini"];
     if (manualTask === "customer_support") priority = ["Groq Llama 3.3", "DeepSeek-V3", "GPT-4o Mini"];
+    if (manualTask === "custom") priority = ["DeepSeek-V3", "Claude 3.5 Sonnet", "GPT-4o Mini"];
+
+    const effectiveTask = manualTask === "custom" ? (customTaskType.trim() || "custom_task") : manualTask;
 
     const newRule: RoutingRule = {
       id: `rule_man_${Date.now()}`,
       name: manualName.trim(),
-      task_type: manualTask,
-      condition_pattern: `task == '${manualTask}' && latency <= ${manualMaxLatency}ms`,
-      target_metric: manualTask === "sales_email" ? "demo_booked" : (manualTask === "code_generation" ? "code_merged" : "ticket_resolved"),
+      task_type: effectiveTask,
+      condition_pattern: `task == '${effectiveTask}' && latency <= ${manualMaxLatency}ms`,
+      target_metric: manualTask === "sales_email" ? "demo_booked" : (manualTask === "code_generation" ? "code_merged" : (manualTask === "customer_support" ? "ticket_resolved" : "outcome_achieved")),
       is_active: true,
       enabled: true,
       priority_models: priority,
@@ -173,6 +179,7 @@ export default function RoutingRulesPage() {
     syncRulesToSession(useAppStore.getState().routingRules);
     setShowManualModal(false);
     setManualName("");
+    setCustomTaskType("");
   };
 
   const handleTestDryRun = async (e?: React.FormEvent) => {
@@ -615,6 +622,14 @@ export default function RoutingRulesPage() {
               Evaluated in top-down sequence by the edge gateway on incoming requests
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowManualModal(true)}
+            className="px-4 py-2 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 shrink-0"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Custom Rule</span>
+          </button>
         </div>
 
         {routingRules.length === 0 ? (
@@ -651,10 +666,11 @@ export default function RoutingRulesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]" suppressHydrationWarning>
-                {routingRules.map((rule) => (
+                {routingRules.map((rule, idx) => (
                   <tr key={rule.id} className="hover:bg-[#F7F7F9]/50 dark:hover:bg-[#1B1B1E]/50 transition-all">
                     <td className="py-3.5 px-5">
                       <div className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono text-[#86868B]">#{idx + 1}</span>
                         <span>{rule.name}</span>
                         {rule.ai_synthesized && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
@@ -703,6 +719,30 @@ export default function RoutingRulesPage() {
 
                     <td className="py-3.5 px-5 text-right">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Priority Precedence Reorder Buttons */}
+                        <button
+                          disabled={idx === 0}
+                          onClick={() => {
+                            reorderRule(idx, idx - 1);
+                            syncRulesToSession(useAppStore.getState().routingRules);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
+                          title="Increase Rule Priority (Move Up)"
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </button>
+                        <button
+                          disabled={idx === routingRules.length - 1}
+                          onClick={() => {
+                            reorderRule(idx, idx + 1);
+                            syncRulesToSession(useAppStore.getState().routingRules);
+                          }}
+                          className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-[#F5F5F7] disabled:opacity-25 disabled:hover:bg-transparent transition-colors"
+                          title="Decrease Rule Priority (Move Down)"
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </button>
+
                         <button
                           onClick={() => setShowSimulate(true)}
                           className="p-1.5 rounded-full hover:bg-[#EEF4FF] dark:hover:bg-[#0050FF]/20 text-[#86868B] hover:text-[#0050FF] transition-colors"
@@ -765,11 +805,14 @@ export default function RoutingRulesPage() {
                   <select
                     value={manualTask}
                     onChange={(e) => setManualTask(e.target.value)}
-                    className="w-full h-10 px-3 rounded-full bg-[#F5F5F7] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs"
+                    className="w-full h-10 px-3 rounded-full bg-[#F5F5F7] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold"
                   >
-                    <option value="sales_email">Sales Email</option>
-                    <option value="code_generation">Code Generation</option>
-                    <option value="customer_support">Customer Support</option>
+                    <option value="sales_email">Sales Email (demo_booked)</option>
+                    <option value="code_generation">Code Generation (code_merged)</option>
+                    <option value="customer_support">Customer Support (ticket_resolved)</option>
+                    <option value="complex_reasoning">Complex Reasoning (answer_verified)</option>
+                    <option value="general_instruction">General Instruction (outcome_achieved)</option>
+                    <option value="custom">Custom Task Type...</option>
                   </select>
                 </div>
 
@@ -783,6 +826,20 @@ export default function RoutingRulesPage() {
                   />
                 </div>
               </div>
+
+              {manualTask === "custom" && (
+                <div className="space-y-1 animate-in fade-in">
+                  <label className="font-semibold text-[#86868B]">Custom Task Identifier</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. medical_diagnosis, legal_extraction, sql_query"
+                    value={customTaskType}
+                    onChange={(e) => setCustomTaskType(e.target.value)}
+                    className="w-full h-10 px-4 rounded-full bg-[#F5F5F7] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs focus:outline-none"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
@@ -851,14 +908,17 @@ export default function RoutingRulesPage() {
               >
                 Dismiss
               </button>
-              <Link
-                href="/app/billing"
-                onClick={() => setUpgradeModalInfo(null)}
+              <button
+                type="button"
+                onClick={() => {
+                  setUpgradeModalInfo(null);
+                  openPlanUpgradeModal();
+                }}
                 className="px-6 h-10 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] shadow-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all"
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Upgrade Plan</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>

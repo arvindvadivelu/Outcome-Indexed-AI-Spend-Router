@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { evaluateUserLifecycle } from "@/lib/lifecycle-engine";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, getAllUsers } from "@/lib/auth-db";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email") || "varvind2004@gmail.com";
-    const user = findUserByEmail(email);
+    const email = searchParams.get("email");
+    const user = email ? findUserByEmail(email) : getAllUsers()[0];
 
     const funnel = evaluateUserLifecycle(user);
 

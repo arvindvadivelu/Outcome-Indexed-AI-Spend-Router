@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
-import { X, Printer, Download, CheckCircle2, ShieldCheck, FileText, ArrowDownToLine, Zap } from "lucide-react";
+import { X, Printer, FileText } from "lucide-react";
 
 export interface InvoiceData {
   id: string;
@@ -39,38 +39,66 @@ export function InvoiceViewerModal({ invoice, onClose }: InvoiceViewerModalProps
     window.print();
   };
 
-  const handleDownloadPdf = () => {
-    // Trigger native browser print-to-PDF
-    window.print();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in overflow-y-auto">
-      {/* Container Box */}
-      <div className="relative bg-[#1A1A1E] border border-white/10 rounded-[28px] max-w-4xl w-full shadow-2xl my-8 overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-in fade-in overflow-y-auto print:p-0 print:bg-white print:static">
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .print-hidden,
+          nav,
+          header,
+          aside,
+          button {
+            display: none !important;
+          }
+          #printable-invoice-container {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: #ffffff !important;
+          }
+          .page-break-avoid {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
+
+      {/* Modal Dialog Container */}
+      <div className="relative bg-[#18181B] border border-white/10 rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[95vh] print:max-h-none print:border-none print:shadow-none print:bg-white">
+        
         {/* Top Control Bar (Non-Printable) */}
-        <div className="flex items-center justify-between px-6 py-4 bg-[#141416] border-b border-white/10 shrink-0 print:hidden">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-[#0050FF] text-white flex items-center justify-center shadow-xs">
-              <FileText className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="font-extrabold text-sm text-white">
-                Official Tax Invoice ({invoice.id})
-              </h2>
-              <p className="text-[11px] text-[#86868B]">
-                MAANG/FAANG Enterprise PDF Invoice Template · Pure White Format
-              </p>
-            </div>
+        <div className="flex items-center justify-between px-6 py-3.5 bg-[#121214] border-b border-white/10 shrink-0 print-hidden">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-[#0050FF]" />
+            <span className="font-bold text-sm text-white">Invoice {invoice.id}</span>
+            <span className="text-xs text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full font-bold">
+              {invoice.status}
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={handlePrint}
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs hover:scale-105 active:scale-95"
+              className="px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>Print / Save as PDF</span>
+              <span>Print / Download PDF</span>
             </button>
 
             <button
@@ -82,181 +110,126 @@ export function InvoiceViewerModal({ invoice, onClose }: InvoiceViewerModalProps
           </div>
         </div>
 
-        {/* The Printable FAANG/MAANG Pure-White Invoice Body */}
-        <div className="overflow-y-auto p-4 sm:p-8 bg-[#F4F4F6] flex justify-center">
+        {/* 1-Page Printable Professional Clean Invoice */}
+        <div className="overflow-y-auto p-4 sm:p-8 bg-neutral-100 dark:bg-neutral-900 flex justify-center print:p-0 print:bg-white">
           <div
             ref={printRef}
-            id="printable-invoice"
-            className="w-full max-w-[780px] bg-white text-[#1D1D1F] p-8 sm:p-12 rounded-2xl shadow-lg border border-black/10 font-sans space-y-8 print:shadow-none print:border-none print:p-0 print:m-0"
+            id="printable-invoice-container"
+            className="w-full max-w-[720px] bg-white text-[#1D1D1F] p-8 sm:p-10 rounded-xl shadow-md border border-black/5 font-sans space-y-6 print:shadow-none print:border-none print:p-0 print:space-y-5 print:max-w-none text-[13px] leading-normal"
           >
-            {/* Header: Company Info + Status Badge */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 border-b border-gray-200 pb-8">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-[#0050FF] text-white flex items-center justify-center font-black text-base shadow-sm">
-                    ⚡
-                  </div>
-                  <div>
-                    <h1 className="font-extrabold text-lg text-[#1D1D1F] tracking-tight leading-none">
-                      Outcome-Indexed AI Spend Router Pvt. Ltd.
-                    </h1>
-                    <span className="text-[10px] font-bold text-[#0050FF] uppercase tracking-widest block mt-0.5">
-                      Enterprise Inference Cloud Infrastructure
-                    </span>
-                  </div>
+            {/* Header: Company & Invoice Info */}
+            <div className="flex justify-between items-start border-b border-neutral-200 pb-5">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-xl tracking-tight text-[#1D1D1F]">
+                    OutcomeRouter<span className="text-[#0050FF]">.ai</span>
+                  </span>
                 </div>
-                <div className="text-[11px] text-gray-600 space-y-0.5 leading-relaxed pt-1">
-                  <p>Level 14, Free Press House, 215 Nariman Point</p>
-                  <p>Mumbai, Maharashtra 400021, India</p>
-                  <p className="font-mono text-[10px] text-gray-500">
-                    CIN: U72900MH2024PTC394821 | GSTIN: 27AABCO9182F1ZV
-                  </p>
-                  <p className="text-[10px] text-gray-500">
-                    Email: billing@outcomerouter.ai | Web: https://outcomerouter.ai
-                  </p>
-                </div>
+                <p className="font-semibold text-xs text-neutral-800">Outcome-Indexed AI Spend Router Pvt. Ltd.</p>
+                <p className="text-[11px] text-neutral-500">215 Nariman Point, Mumbai 400021, India</p>
+                <p className="text-[11px] text-neutral-500 font-mono">CIN: U72900MH2024PTC394821 | GSTIN: 27AABCO9182F1ZV</p>
               </div>
 
-              <div className="text-right sm:text-right space-y-2 shrink-0">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold uppercase tracking-wider">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  <span>{invoice.status} · VERIFIED</span>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-gray-800">INVOICE NO: <span className="font-mono text-[#0050FF]">{invoice.id}</span></p>
-                  <p className="text-[11px] text-gray-500">Invoice Date: {invoice.date}</p>
-                  <p className="text-[11px] text-gray-500">Payment Due: Immediate (Settled)</p>
-                  <p className="text-[10px] font-mono text-gray-400">SAC Code: 998313 (IT Software)</p>
+              <div className="text-right space-y-1">
+                <h1 className="text-xl font-extrabold text-neutral-900 tracking-tight">TAX INVOICE</h1>
+                <p className="text-xs font-mono font-bold text-[#0050FF]">{invoice.id}</p>
+                <p className="text-[11px] text-neutral-500">Date: {invoice.date}</p>
+                <div className="inline-block mt-1 px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  STATUS: {invoice.status}
                 </div>
               </div>
             </div>
 
-            {/* Bill To & Payment Channel Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-gray-50 p-5 rounded-xl border border-gray-200/80">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Billed To (Customer)</span>
-                <p className="font-bold text-sm text-[#1D1D1F]">{invoice.customerName || "Enterprise Customer"}</p>
-                <p className="text-xs text-gray-600">{invoice.customerEmail}</p>
-                <p className="text-xs text-gray-600 font-medium">Workspace: {invoice.workspaceName || "Default Workspace"}</p>
-                <p className="text-[11px] text-gray-500">Place of Supply: {isINR ? "Maharashtra (27)" : "Export of Services (Outside India - Zero Rated)"}</p>
+            {/* Bill To & Payment Info */}
+            <div className="grid grid-cols-2 gap-6 text-xs pb-1">
+              <div>
+                <p className="font-bold text-neutral-400 uppercase tracking-wider text-[10px] mb-1">Billed To</p>
+                <p className="font-bold text-sm text-neutral-900">{invoice.customerName || "Customer"}</p>
+                <p className="text-neutral-600">{invoice.customerEmail}</p>
+                <p className="text-neutral-500">Workspace: {invoice.workspaceName || "Primary Workspace"}</p>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Payment & Settlement Channel</span>
-                <p className="font-bold text-xs text-gray-800">{invoice.paymentMethod}</p>
-                <p className="text-xs text-gray-600 font-mono">Reference / UTR: {invoice.transactionRef || "TXN_AUTO_SETTLED"}</p>
-                <p className="text-[11px] text-emerald-700 font-medium">Settlement Status: Direct Bank Reconciliation Completed</p>
-                <p className="text-[10px] font-mono text-gray-500">Dispute Window: 30-Day SLA Micro-Escrow Bound</p>
+              <div>
+                <p className="font-bold text-neutral-400 uppercase tracking-wider text-[10px] mb-1">Payment Method</p>
+                <p className="font-semibold text-neutral-800">{invoice.paymentMethod}</p>
+                <p className="text-neutral-500 font-mono text-[11px]">Ref / UTR: {invoice.transactionRef || "N/A"}</p>
+                <p className="text-neutral-500 text-[11px]">SAC Code: 998313 (Software & Cloud Services)</p>
               </div>
             </div>
 
             {/* Line Items Table */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border border-neutral-200 rounded-lg overflow-hidden">
               <table className="w-full text-left text-xs">
-                <thead className="bg-gray-100/80 text-gray-700 border-b border-gray-200 font-bold uppercase tracking-wider text-[10px]">
+                <thead className="bg-neutral-100 text-neutral-700 font-bold uppercase text-[10px] border-b border-neutral-200">
                   <tr>
-                    <th className="py-3 px-4">Description</th>
-                    <th className="py-3 px-3 text-center">HSN/SAC</th>
-                    <th className="py-3 px-3 text-center">Qty / Period</th>
-                    <th className="py-3 px-3 text-right">Unit Rate</th>
-                    <th className="py-3 px-4 text-right">Total Amount</th>
+                    <th className="py-2.5 px-3">Description</th>
+                    <th className="py-2.5 px-3 text-center">Period</th>
+                    <th className="py-2.5 px-3 text-center">Monthly Quota</th>
+                    <th className="py-2.5 px-3 text-right">Amount</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-neutral-200">
                   <tr>
-                    <td className="py-4 px-4">
-                      <p className="font-bold text-gray-900 text-xs">
-                        Outcome-Indexed AI Spend Router — {invoice.planName.toUpperCase()} Tier
-                      </p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
-                        Autonomous Pareto Bayesian Gateway Ingestion ({invoice.tokenQuota.toLocaleString()} tokens/mo), Sub-50ms Speculative Pre-warming, Cryptographic SLA Escrow, and Multi-Agent Bridges.
-                      </p>
+                    <td className="py-3 px-3">
+                      <p className="font-bold text-neutral-900">{invoice.planName} Tier Subscription</p>
+                      <p className="text-[11px] text-neutral-500">Outcome-Indexed LLM Spend Routing Platform</p>
                     </td>
-                    <td className="py-4 px-3 text-center font-mono text-gray-600">998313</td>
-                    <td className="py-4 px-3 text-center text-gray-700 font-medium">1 Month</td>
-                    <td className="py-4 px-3 text-right font-mono text-gray-800">
-                      {currencySymbol}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <td className="py-3 px-3 text-center text-neutral-600">1 Month</td>
+                    <td className="py-3 px-3 text-center font-mono text-neutral-600">
+                      {invoice.tokenQuota.toLocaleString()} tokens
                     </td>
-                    <td className="py-4 px-4 text-right font-mono font-bold text-gray-900">
-                      {currencySymbol}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <td className="py-3 px-3 text-right font-mono font-bold text-neutral-900">
+                      {currencySymbol}{invoice.amount.toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Calculations Breakdown */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-2">
-              <div className="space-y-2 max-w-sm">
-                <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] text-blue-900 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5 text-[#0050FF]">
-                    <ShieldCheck className="h-3.5 w-3.5" />
-                    <span>Cryptographic Nonce Verification</span>
-                  </div>
-                  <p className="font-mono text-[9px] text-gray-600 break-all select-all">
-                    SHA-256: {invoice.sha256Hash}
-                  </p>
+            {/* Subtotal & Taxes Summary */}
+            <div className="flex justify-end pt-1">
+              <div className="w-64 space-y-1.5 text-xs">
+                <div className="flex justify-between text-neutral-600">
+                  <span>Subtotal:</span>
+                  <span className="font-mono font-semibold">{currencySymbol}{invoice.amount.toFixed(2)}</span>
                 </div>
-                <p className="text-[10px] text-gray-500 italic">
-                  * Payment received in full. No physical signature required as this is an electronically generated and cryptographically verifiable tax invoice.
-                </p>
-              </div>
-
-              <div className="w-full sm:w-72 space-y-2 text-xs">
-                <div className="flex justify-between py-1 border-b border-gray-100 text-gray-600">
-                  <span>Subtotal Amount:</span>
-                  <span className="font-mono font-bold text-gray-800">
-                    {currencySymbol}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-
                 {isINR ? (
                   <>
-                    <div className="flex justify-between py-1 border-b border-gray-100 text-gray-600">
-                      <span>CGST (9.0%):</span>
-                      <span className="font-mono text-gray-800">
-                        {currencySymbol}{(invoice.taxAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                    <div className="flex justify-between text-neutral-600">
+                      <span>CGST (9%):</span>
+                      <span className="font-mono">{currencySymbol}{(invoice.taxAmount / 2).toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between py-1 border-b border-gray-100 text-gray-600">
-                      <span>SGST (9.0%):</span>
-                      <span className="font-mono text-gray-800">
-                        {currencySymbol}{(invoice.taxAmount / 2).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                    <div className="flex justify-between text-neutral-600">
+                      <span>SGST (9%):</span>
+                      <span className="font-mono">{currencySymbol}{(invoice.taxAmount / 2).toFixed(2)}</span>
                     </div>
                   </>
                 ) : (
-                  <div className="flex justify-between py-1 border-b border-gray-100 text-gray-600">
-                    <span>Export Tax (Zero-Rated LUT):</span>
-                    <span className="font-mono text-gray-800">$0.00</span>
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Export Tax (0%):</span>
+                    <span className="font-mono">$0.00</span>
                   </div>
                 )}
-
-                <div className="flex justify-between py-2 border-t-2 border-gray-900 text-sm font-extrabold text-gray-900">
+                <div className="flex justify-between border-t-2 border-neutral-900 pt-2 text-sm font-extrabold text-neutral-900">
                   <span>Total Paid:</span>
-                  <span className="font-mono text-[#0050FF] text-base">
-                    {currencySymbol}{invoice.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className="font-mono text-[#0050FF]">
+                    {currencySymbol}{invoice.totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Signature & Seal Footer */}
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6 border-t border-gray-200 text-xs text-gray-500">
-              <div className="text-center sm:text-left space-y-0.5">
-                <p className="font-bold text-gray-700">Thank you for powering your AI infrastructure with OutcomeRouter.</p>
-                <p className="text-[10px]">For billing inquiries: billing@outcomerouter.ai | Terms: outcomerouter.ai/terms</p>
+            {/* Footer & Signature */}
+            <div className="flex justify-between items-end border-t border-neutral-200 pt-4 text-xs text-neutral-500 page-break-avoid">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-neutral-700">Thank you for your business!</p>
+                <p className="text-[11px] text-neutral-400">Questions? Contact billing@outcomerouter.ai</p>
+                <p className="font-mono text-[9px] text-neutral-400 truncate max-w-[340px]">Seal: {invoice.sha256Hash}</p>
               </div>
 
-              <div className="text-center sm:text-right space-y-1">
-                <div className="h-9 flex items-end justify-center sm:justify-end">
-                  <span className="font-serif italic text-sm text-[#0050FF] font-bold border-b border-gray-400 px-3">
-                    Arvind Vadivelu
-                  </span>
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-700">
-                  Authorized Signatory · OutcomeRouter Pvt Ltd
-                </p>
+              <div className="text-right">
+                <p className="font-serif italic text-sm text-[#0050FF] font-bold">Arvind Vadivelu</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-neutral-700">Authorized Signatory</p>
               </div>
             </div>
           </div>

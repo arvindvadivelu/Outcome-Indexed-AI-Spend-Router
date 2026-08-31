@@ -134,25 +134,6 @@ export default function TokenAnalyticsPage() {
     setTimeout(() => setCacheApplied(false), 3000);
   };
 
-  const handleExportCSV = () => {
-    const headers = "Day,ProcessedTokensM,AvoidedTokensM,CachedTokensM,NetAvoidanceRate\n";
-    const rows = [
-      `"Mon",2.1,1.4,1.4,40.0%`,
-      `"Tue",3.4,2.2,2.2,39.3%`,
-      `"Wed",2.8,1.9,1.9,40.4%`,
-      `"Thu",4.1,2.8,2.8,40.6%`,
-      `"Fri",3.9,2.5,2.5,39.1%`,
-      `"Sat",1.8,1.1,1.1,37.9%`,
-      `"Today",3.2,2.1,2.1,39.6%`
-    ].join("\n");
-    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `token_finops_audit_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-  };
-
   const tokenBreakdownData = useMemo(() => {
     if (logs.length === 0 && currentTokens === 0) {
       return [
@@ -179,6 +160,23 @@ export default function TokenAnalyticsPage() {
       { day: "Today", input: parseFloat(baseIn.toFixed(2)), output: parseFloat(baseOut.toFixed(2)), cached: parseFloat(baseCached.toFixed(2)) }
     ];
   }, [currentTokens, deltaStats.totalTokensAvoided, logs.length]);
+
+  const handleExportCSV = () => {
+    const headers = "Day,InputTokensK,OutputTokensK,CachedAvoidedTokensK,NetAvoidanceRate\n";
+    const rows = tokenBreakdownData
+      .map((d) => {
+        const total = d.input + d.output + d.cached;
+        const rate = total > 0 ? ((d.cached / total) * 100).toFixed(1) : "0.0";
+        return `"${d.day}",${d.input.toFixed(1)},${d.output.toFixed(1)},${d.cached.toFixed(1)},${rate}%`;
+      })
+      .join("\n");
+    const blob = new Blob([headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `token_finops_audit_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 selection:bg-[#0050FF]/20 selection:text-[#0050FF]" suppressHydrationWarning>
@@ -437,9 +435,21 @@ export default function TokenAnalyticsPage() {
           <div className="p-4 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/25 space-y-2">
             <div className="flex items-center justify-between text-[#0050FF] dark:text-[#3374FF] font-semibold">
               <span>Optimized Ingestion (&lt;delta_ref&gt; Injected)</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                {optimizedTokens} Tokens (-{compressionRatio}%)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                  {optimizedTokens} Tokens (-{compressionRatio}%)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`<delta_ref id="sys_ts_engineer_v1" cosine="${cosineThreshold}" saved_tokens="${avoidedTokens}" cache="HIT" />\nTask: Refactor the auth middleware to check Redis JWT tokens.`);
+                  }}
+                  className="p-1 rounded-md hover:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] transition-all text-[10px]"
+                  title="Copy Optimized Payload"
+                >
+                  Copy
+                </button>
+              </div>
             </div>
             <div className="w-full bg-white dark:bg-[#161618] p-3 rounded-xl border border-[#0050FF]/20 font-mono text-[11px] text-[#515154] dark:text-[#A1A1A6]">
               &lt;delta_ref id=&quot;sys_ts_engineer_v1&quot; cosine=&quot;{cosineThreshold}&quot; saved_tokens=&quot;{avoidedTokens}&quot; cache=&quot;HIT&quot; /&gt;<br />

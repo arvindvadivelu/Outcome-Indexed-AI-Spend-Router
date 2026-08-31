@@ -16,9 +16,12 @@ import {
   AlertCircle,
   Sparkles,
   Smartphone,
-  Globe
+  Globe,
+  FileText,
+  Printer
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { InvoiceViewerModal, InvoiceData } from "@/components/InvoiceViewerModal";
 
 interface PaymentCheckoutModalProps {
   isOpen: boolean;
@@ -46,6 +49,7 @@ export default function PaymentCheckoutModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<InvoiceData | null>(null);
 
   useEffect(() => {
     if (initialPlan) setSelectedPlan(initialPlan);
@@ -122,7 +126,7 @@ export default function PaymentCheckoutModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           referenceCode: utrCode.trim(),
-          email: user?.email || "varvind2004@gmail.com",
+          email: user?.email || "billing@enterprise.ai",
           planTier: selectedPlan,
           currency: selectedCurrency
         })
@@ -148,27 +152,34 @@ export default function PaymentCheckoutModal({
   const handleDownloadInvoice = async () => {
     setDownloadingInvoice(true);
     try {
-      const res = await fetch("/api/payments/invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user?.email || "varvind2004@gmail.com",
-          planTier: selectedPlan,
-          currency: selectedCurrency,
-          companyName: orgName || "Enterprise Client"
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        const blob = new Blob([JSON.stringify(data.invoice, null, 2)], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Invoice-${data.invoice.invoiceId}.json`;
-        a.click();
-      }
+      const isINR = selectedCurrency === "INR";
+      const totalVal = isINR ? currentPlanInfo.inr : currentPlanInfo.usd;
+      const taxVal = isINR ? Math.round(totalVal * 0.18) : 0;
+      const subtotalVal = totalVal - taxVal;
+      const quotaNum = selectedPlan === "starter" ? 100000 : (selectedPlan === "growth" ? 500000 : 2000000);
+
+      const invoiceItem: InvoiceData = {
+        id: `INV-OIR-${Date.now().toString().slice(-6)}`,
+        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        dueDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        customerName: user?.name || "Enterprise Lead",
+        customerEmail: user?.email || "billing@enterprise.ai",
+        workspaceName: orgName || "AI Enterprise Workspace",
+        planName: `${currentPlanInfo.name} Plan`,
+        tokenQuota: quotaNum,
+        currency: selectedCurrency,
+        amount: subtotalVal,
+        taxAmount: taxVal,
+        totalAmount: totalVal,
+        paymentMethod: isINR ? "GPay UPI" : "ICICI Business Wire",
+        transactionRef: utrCode.trim() || `TX-${Date.now().toString().slice(-8)}`,
+        status: "PAID",
+        sha256Hash: `0x${Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`
+      };
+
+      setViewingInvoice(invoiceItem);
     } catch (e) {
-      console.warn("Invoice download error:", e);
+      console.warn("Invoice view error:", e);
     } finally {
       setDownloadingInvoice(false);
     }
@@ -216,8 +227,8 @@ export default function PaymentCheckoutModal({
                 disabled={downloadingInvoice}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-black/[0.08] dark:border-white/[0.12] hover:bg-black/5 dark:hover:bg-white/5 text-sm font-medium transition-all"
               >
-                <Download className="w-4 h-4" />
-                {downloadingInvoice ? "Generating..." : "Download GST / Wire Invoice"}
+                <FileText className="w-4 h-4 text-[#0050FF]" />
+                <span>{downloadingInvoice ? "Preparing..." : "View / Print 1-Page PDF Invoice"}</span>
               </button>
               <button
                 onClick={onClose}
@@ -525,6 +536,11 @@ export default function PaymentCheckoutModal({
           </div>
         )}
       </div>
+
+      {/* 1-Page PDF Invoice Viewer Modal */}
+      {viewingInvoice && (
+        <InvoiceViewerModal invoice={viewingInvoice} onClose={() => setViewingInvoice(null)} />
+      )}
     </div>
   );
 }

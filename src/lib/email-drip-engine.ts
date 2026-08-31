@@ -15,7 +15,7 @@ export interface DripCampaign {
 }
 
 export function evaluateDripCampaignForUser(user: any): DripCampaign {
-  const email = user?.email || "varvind2004@gmail.com";
+  const email = user?.email || "user@enterprise.ai";
   const logs = user?.logs || [];
   const spend = user?.monthlySpendUSD || 0;
 

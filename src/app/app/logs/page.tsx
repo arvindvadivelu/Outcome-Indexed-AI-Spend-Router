@@ -32,7 +32,16 @@ import Link from "next/link";
 import { getPlanFeatures } from "@/lib/plan-gates";
 
 export default function LogsPage() {
-  const { telemetryLogs, logs, currency, slaEscrowContracts, recordOutcome, planTier, user } = useAppStore();
+  const {
+    telemetryLogs,
+    logs,
+    currency,
+    slaEscrowContracts,
+    recordOutcome,
+    planTier,
+    openPlanUpgradeModal,
+    user
+  } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -99,9 +108,11 @@ export default function LogsPage() {
     } catch (err) {
       console.warn("Log inspection fallback:", err);
     } finally {
-      setAiExplaining(false);
+      setIsAiExplaining(false);
     }
   };
+
+  const setIsAiExplaining = setAiExplaining;
 
   const handleCopyCurl = (log: LogItem) => {
     const snippet = `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -H "X-Task-Type: ${log.task_type}" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview.replace(/"/g, '\\"')}"}]}'`;
@@ -146,7 +157,7 @@ export default function LogsPage() {
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
               Every request bound to cryptographic SHA-256 Micro-SLA contracts with inline outcome feedback and cURL reproduction snippets.
               {plan.logRetentionDays <= 3 && (
-                <> <Link href="/app/billing" className="text-[#0050FF] dark:text-[#3374FF] font-semibold hover:underline">Upgrade to Starter for 30 days retention.</Link></>
+                <> <button onClick={openPlanUpgradeModal} className="text-[#0050FF] dark:text-[#3374FF] font-semibold hover:underline">Upgrade to Starter for 30 days retention.</button></>
               )}
             </p>
           </div>

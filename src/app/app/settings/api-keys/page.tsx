@@ -432,17 +432,26 @@ export default function ApiKeysPage() {
 
       {/* 5. Quick-Start Gateway Integration Box */}
       <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-4" suppressHydrationWarning>
-        <div className="flex items-center gap-2.5">
-          <Code2 className="h-4 w-4 text-[#0050FF]" />
-          <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
-            Drop-In Gateway Authentication Snippet
-          </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Code2 className="h-4 w-4 text-[#0050FF]" />
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Drop-In Gateway Authentication Snippet
+            </h3>
+          </div>
+          <button
+            onClick={() => handleCopy("snippet_box", `import OpenAI from 'openai';\n\nconst client = new OpenAI({\n  apiKey: process.env.OUTCOME_ROUTER_API_KEY, // oir_live_...\n  baseURL: 'https://gateway.outcomerouter.ai/v1'\n});`)}
+            className="px-4 py-1.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-[#F0F0F2] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-105 active:scale-95 self-start sm:self-auto"
+          >
+            {copiedId === "snippet_box" ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5 text-[#0050FF]" />}
+            <span>{copiedId === "snippet_box" ? "Copied Snippet!" : "Copy Snippet"}</span>
+          </button>
         </div>
         <p className="text-xs text-[#86868B]">Use standard OpenAI-compatible SDK clients by pointing your base URL to the OutcomeRouter Anycast edge gateway.</p>
         <div className="p-4 rounded-2xl bg-[#0F0F12] text-white font-mono text-xs overflow-x-auto">
-          <code>
+          <pre>
             {`import OpenAI from 'openai';\n\nconst client = new OpenAI({\n  apiKey: process.env.OUTCOME_ROUTER_API_KEY, // oir_live_...\n  baseURL: 'https://gateway.outcomerouter.ai/v1'\n});`}
-          </code>
+          </pre>
         </div>
       </div>
     </div>

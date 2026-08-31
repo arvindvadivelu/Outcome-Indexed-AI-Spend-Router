@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { evaluateDripCampaignForUser } from "@/lib/email-drip-engine";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, getAllUsers } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
     const { email } = await req.json().catch(() => ({}));
-    const targetEmail = email || "varvind2004@gmail.com";
-    const user = findUserByEmail(targetEmail);
+    const user = email ? findUserByEmail(email) : getAllUsers()[0];
+    const targetEmail = user?.email || email || "user@enterprise.ai";
 
     const campaign = evaluateDripCampaignForUser(user);
 

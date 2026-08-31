@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, getAllUsers } from "@/lib/auth-db";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email") || "varvind2004@gmail.com";
-    const user = findUserByEmail(email);
+    const emailParam = searchParams.get("email");
+    const user = emailParam ? findUserByEmail(emailParam) : getAllUsers()[0];
+    const email = user?.email || emailParam || "compliance@enterprise.ai";
 
     const dpaAgreement = {
       agreementId: `dpa_oir_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`,

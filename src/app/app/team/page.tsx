@@ -34,7 +34,7 @@ export default function TeamPage() {
   }, []);
 
   const [members, setMembers] = useState([
-    { id: 1, name: user?.name || "Arvind", email: user?.email || "varvind2004@gmail.com", role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
+    { id: 1, name: user?.name || "Workspace Admin", email: user?.email || "admin@enterprise.ai", role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
   ]);
 
   const syncTeamToSession = (updatedMembers: any[]) => {
@@ -56,7 +56,7 @@ export default function TeamPage() {
             setMembers(data.user.teamMembers);
           } else {
             setMembers([
-              { id: 1, name: user.name || "Arvind", email: user.email, role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
+              { id: 1, name: user.name || "Workspace Admin", email: user.email, role: "Owner (Primary)", tokenQuota: "Unlimited", mfaActive: true, lastActive: "Just now" }
             ]);
           }
         })
@@ -145,7 +145,7 @@ export default function TeamPage() {
   };
 
   const handleRoleChange = (id: number, newRole: string) => {
-    const updated = members.map((m) => (m.id === id && m.role !== "Owner" ? { ...m, role: newRole } : m));
+    const updated = members.map((m) => (m.id === id && !m.role.includes("Owner") ? { ...m, role: newRole } : m));
     setMembers(updated);
     syncTeamToSession(updated);
   };
@@ -157,7 +157,9 @@ export default function TeamPage() {
   };
 
   const handleRemoveMember = (id: number) => {
-    const updated = members.filter((m) => m.id !== id || m.role === "Owner");
+    const target = members.find((m) => m.id === id);
+    if (target && target.role.includes("Owner")) return;
+    const updated = members.filter((m) => m.id !== id);
     setMembers(updated);
     syncTeamToSession(updated);
   };

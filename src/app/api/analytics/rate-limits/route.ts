@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { distributedRateLimiter } from "@/lib/distributed-rate-limiter";
-import { findUserByEmail } from "@/lib/auth-db";
+import { findUserByEmail, getAllUsers } from "@/lib/auth-db";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email") || "varvind2004@gmail.com";
-    const user = findUserByEmail(email);
+    const emailParam = searchParams.get("email");
+    const user = emailParam ? findUserByEmail(emailParam) : getAllUsers()[0];
+    const email = user?.email || emailParam || "tenant@enterprise.ai";
     const planTier = user?.plan_tier || "growth";
 
     const bucketResult = distributedRateLimiter.checkTokenBucket(`user_${email}`, planTier, 0);

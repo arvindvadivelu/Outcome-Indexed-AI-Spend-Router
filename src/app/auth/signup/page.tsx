@@ -65,6 +65,20 @@ export default function SignUpPage() {
     }
   };
 
+  const handlePinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newPin = [...pin];
+    for (let i = 0; i < pasted.length; i++) {
+      newPin[i] = pasted[i];
+    }
+    setPin(newPin);
+    setErrorMessage(null);
+    const focusIndex = Math.min(5, pasted.length);
+    document.getElementById(`signup-pin-${focusIndex}`)?.focus();
+  };
+
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -111,6 +125,25 @@ export default function SignUpPage() {
       });
       setOrgName(data.user.workspace);
       setPlanTier(data.user.plan_tier || selectedPlan);
+      useAppStore.setState({
+        currentTokens: 0,
+        logs: [],
+        slaEscrowContracts: [],
+        monthlySpendUSD: 0,
+        baselineSpendUSD: 0,
+        currency: activeCurrency,
+        hasConfiguredBudget: false,
+        isBudgetSetupModalOpen: true,
+        autopilot: {
+          enabled: true,
+          mode: "optimal_pace",
+          burn_ratio: 0.00,
+          monthly_budget_usd: 0,
+          projected_spend_usd: 0.00,
+          cost_weight_w2: 25.0,
+          quality_weight_w1: 0.70
+        }
+      });
 
       setRegisteredSuccess(true);
       setTimeout(() => {
@@ -215,6 +248,7 @@ export default function SignUpPage() {
                       value={digit}
                       onChange={(e) => handlePinChange(index, e.target.value)}
                       onKeyDown={(e) => handlePinKeyDown(index, e)}
+                      onPaste={handlePinPaste}
                       className="w-10 sm:w-11 h-12 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-center font-mono text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF] transition-all"
                       required
                     />

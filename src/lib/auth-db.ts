@@ -11,6 +11,9 @@ export interface UserAccount {
   tokens_used?: number;
   monthlySpendUSD?: number;
   baselineSpendUSD?: number;
+  monthlyBudgetUSD?: number;
+  autopilotMode?: string;
+  hasConfiguredBudget?: boolean;
   rules?: any[];
   apiKeys?: any[];
   logs?: any[];
@@ -27,45 +30,8 @@ export interface UserAccount {
 const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
-// Default initial accounts seeded for instant login
-const DEFAULT_USERS: UserAccount[] = [
-  {
-    id: "usr_alex_vance",
-    name: "Alex Vance",
-    email: "alex@company.com",
-    workspace: "Acme AI Lab",
-    plan_tier: "free",
-    monthly_token_quota: 10000,
-    tokens_used: 0,
-    pin: "123456",
-    currency: "USD",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "usr_varvind",
-    name: "Arvind",
-    email: "varvind2004@gmail.com",
-    workspace: "Arvind's Workspace",
-    plan_tier: "free",
-    monthly_token_quota: 10000,
-    tokens_used: 0,
-    pin: "111111",
-    currency: "USD",
-    created_at: new Date().toISOString()
-  },
-  {
-    id: "usr_lead_architect",
-    name: "Lead Architect",
-    email: "dev@outcomerouter.ai",
-    workspace: "Core Inference Team",
-    plan_tier: "growth",
-    monthly_token_quota: 500000,
-    tokens_used: 0,
-    pin: "888999",
-    currency: "INR",
-    created_at: new Date().toISOString()
-  }
-];
+// Default initial accounts seeded for instant login (Empty for clean production slate)
+const DEFAULT_USERS: UserAccount[] = [];
 
 // Active in-memory OTP storage: email -> { otp: string, expiresAt: number }
 const ACTIVE_OTPS = new Map<string, { otp: string; expiresAt: number }>();
@@ -78,10 +44,10 @@ function ensureStorage(): UserAccount[] {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     if (!fs.existsSync(USERS_FILE)) {
-      atomicWriteJson(USERS_FILE, DEFAULT_USERS);
-      return [...DEFAULT_USERS];
+      atomicWriteJson(USERS_FILE, []);
+      return [];
     }
-    return safeReadJson<UserAccount[]>(USERS_FILE, DEFAULT_USERS);
+    return safeReadJson<UserAccount[]>(USERS_FILE, []);
   } catch (err) {
     console.error("Auth DB read error:", err);
     return [];

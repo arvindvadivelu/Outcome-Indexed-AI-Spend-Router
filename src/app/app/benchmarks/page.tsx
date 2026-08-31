@@ -24,20 +24,34 @@ import {
   ChevronRight,
   RefreshCw,
   Scale,
-  DollarSign
+  DollarSign,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 export default function BenchmarksPage() {
-  const { benchmarks, currency, federationSettings, addRule, user } = useAppStore();
+  const {
+    benchmarks,
+    setBenchmarks,
+    currency,
+    federationSettings,
+    addRule,
+    user,
+    currentTokens,
+    monthlyQuota,
+    consumeTokens,
+    openPlanUpgradeModal
+  } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"win_rate" | "cost" | "latency" | "thompson">("win_rate");
   const [deployedModel, setDeployedModel] = useState<string | null>(null);
   const [showSimulate, setShowSimulate] = useState(false);
-  
+  const [quotaExceededNotice, setQuotaExceededNotice] = useState(false);
+  const [policyAppliedNotice, setPolicyAppliedNotice] = useState<string | null>(null);
+
   // Synthetic Batch Test State
   const [isRunningBatch, setIsRunningBatch] = useState(false);
   const [batchResults, setBatchResults] = useState<any[] | null>(null);
@@ -126,6 +140,11 @@ export default function BenchmarksPage() {
   };
 
   const handleRunSyntheticBatch = async () => {
+    if (currentTokens >= monthlyQuota) {
+      setQuotaExceededNotice(true);
+      return;
+    }
+
     setIsRunningBatch(true);
     setBatchResults(null);
 
@@ -138,12 +157,59 @@ export default function BenchmarksPage() {
       const data = await res.json();
       if (data.success && data.results) {
         setBatchResults(data.results);
+        consumeTokens(50);
+
+        // Dynamically update benchmarks in Zustand store so leaderboard reflects fresh evaluation
+        const updated = benchmarks.map((b) => {
+          const matchingResult = data.results.find((r: any) =>
+            r.model.toLowerCase().includes(b.model_name.toLowerCase()) ||
+            b.model_name.toLowerCase().includes(r.model.toLowerCase())
+          );
+          if (matchingResult) {
+            return {
+              ...b,
+              win_rate: matchingResult.winRate,
+              avg_latency_ms: matchingResult.latencyMs,
+              avg_cost_usd: matchingResult.costUsd,
+              thompson_score: matchingResult.criticScore,
+              pareto_tier: matchingResult.paretoTier as any
+            };
+          }
+          return b;
+        });
+        setBenchmarks(updated);
       }
     } catch (err) {
       console.warn("Batch eval error:", err);
     } finally {
       setIsRunningBatch(false);
     }
+  };
+
+  const handleDeployEvaluatedPolicy = (topResult: any) => {
+    const newRule = {
+      id: `rule_synth_${Date.now()}`,
+      name: `Synthetic Audit Optimal: ${topResult.model} (${topResult.task})`,
+      task_type: topResult.task || "general_instruction",
+      condition_pattern: `task == '${topResult.task || "general_instruction"}' && latency <= ${topResult.latencyMs + 50}ms`,
+      target_metric: "outcome_success",
+      is_active: true,
+      enabled: true,
+      priority_models: [topResult.model, "DeepSeek-V3", "GPT-4o Mini"],
+      models_priority: [topResult.model, "DeepSeek-V3", "GPT-4o Mini"],
+      fallback_model: "GPT-4o",
+      max_latency_ms: topResult.latencyMs + 50,
+      max_cost_usd: topResult.costUsd * 1.5,
+      min_win_rate: topResult.winRate,
+      strategy: "outcome_optimized",
+      ai_synthesized: true,
+      trigger_count: 0,
+      total_saved_usd: 0.0
+    };
+    addRule(newRule);
+    syncRulesToSession(useAppStore.getState().routingRules);
+    setPolicyAppliedNotice(`Policy deployed: ${topResult.model} prioritized for ${topResult.task}!`);
+    setTimeout(() => setPolicyAppliedNotice(null), 4000);
   };
 
   return (
@@ -227,21 +293,61 @@ export default function BenchmarksPage() {
         </div>
       </div>
 
+      {/* Notifications */}
+      {policyAppliedNotice && (
+        <div className="p-3.5 rounded-2xl bg-emerald-500 text-white text-xs font-bold shadow-lg flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>{policyAppliedNotice}</span>
+          </div>
+          <Link href="/app/routing" className="px-3 py-1 bg-white text-emerald-800 rounded-full text-[11px] font-extrabold hover:bg-emerald-50 transition-all">
+            View Routing Rules →
+          </Link>
+        </div>
+      )}
+
+      {quotaExceededNotice && (
+        <div className="p-4 rounded-2xl bg-rose-500 text-white text-xs font-bold shadow-lg flex items-center justify-between animate-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            <span>Monthly Token Quota Reached! Upgrade your plan to run live synthetic evaluations.</span>
+          </div>
+          <button
+            onClick={openPlanUpgradeModal}
+            className="px-3.5 py-1.5 bg-white text-rose-700 rounded-full text-xs font-extrabold hover:bg-rose-50 transition-all hover:scale-105 active:scale-95 shadow-sm"
+          >
+            Upgrade Plan →
+          </button>
+        </div>
+      )}
+
       {/* 3. Synthetic Batch Evaluation Results Drawer */}
       {batchResults && (
         <div className="rounded-[30px] bg-gradient-to-r from-[#EEF4FF]/90 via-white/80 to-[#F5F5F7]/90 dark:from-[#0050FF]/15 dark:via-[#161618]/80 dark:to-[#1C1C1E]/80 backdrop-blur-3xl border border-[#0050FF]/25 p-6 sm:p-7 shadow-sm space-y-4 animate-in fade-in" suppressHydrationWarning>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <h3 className="font-extrabold text-sm text-[#1D1D1F] dark:text-[#F5F5F7] flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-[#0050FF]" />
-              <span>Real-Time Synthetic Batch Evaluation (5 Models Parallel)</span>
+              <span>Real-Time Synthetic Batch Evaluation (5 Models Audited · 50 Tokens Consumed)</span>
             </h3>
-            <button onClick={() => setBatchResults(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F]">Dismiss</button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDeployEvaluatedPolicy(batchResults[0])}
+                className="px-3.5 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs hover:scale-105 active:scale-95"
+              >
+                <Zap className="h-3 w-3 fill-current" />
+                <span>Deploy Optimal Policy ({batchResults[0]?.model})</span>
+              </button>
+              <button onClick={() => setBatchResults(null)} className="text-xs text-[#86868B] hover:text-[#1D1D1F] px-2 py-1">Dismiss</button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
             {batchResults.map((r, i) => (
               <div key={i} className="p-4 rounded-2xl bg-white/90 dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] space-y-1.5 shadow-2xs">
-                <div className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] truncate">{r.model}</div>
+                <div className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] truncate flex items-center justify-between">
+                  <span>{r.model}</span>
+                  {i === 0 && <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">#1 WINNER</span>}
+                </div>
                 <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
                   {r.latencyMs}ms · {formatCurrency(r.costUsd * rate, activeCurrency)}
                 </div>
@@ -294,7 +400,7 @@ export default function BenchmarksPage() {
           </div>
 
           {/* Delta Pill */}
-          <div className="p-5 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 text-center space-y-1.5">
+          <div className="p-5 rounded-2xl bg-[#EEF4FF] dark:bg-[#0050FF]/15 border border-[#0050FF]/20 text-center space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-[#0050FF] dark:text-[#3374FF]">
               Arbitration Delta
             </span>
@@ -304,8 +410,17 @@ export default function BenchmarksPage() {
               ) : "88% Cheaper"}
             </div>
             <p className="text-[11px] text-[#86868B]">
-              Latency Delta: {Math.abs((modelAData?.avg_latency_ms || 64) - (modelBData?.avg_latency_ms || 380))}ms faster
+              Latency Delta: {((modelBData?.avg_latency_ms || 380) - (modelAData?.avg_latency_ms || 64)) >= 0
+                ? `${(modelBData?.avg_latency_ms || 380) - (modelAData?.avg_latency_ms || 64)}ms faster`
+                : `${Math.abs((modelBData?.avg_latency_ms || 380) - (modelAData?.avg_latency_ms || 64))}ms slower`}
             </p>
+            <button
+              onClick={() => handleSetPrimary(modelAData)}
+              className="mt-1 px-3.5 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-[11px] font-bold transition-all shadow-xs hover:scale-105 active:scale-95 flex items-center justify-center gap-1 mx-auto"
+            >
+              <Zap className="h-3 w-3 fill-current" />
+              <span>Prioritize {modelAData?.model_name || "Model A"}</span>
+            </button>
           </div>
 
           {/* Model B */}

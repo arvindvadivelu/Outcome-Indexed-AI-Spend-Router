@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { calculateReferralStats } from "@/lib/growth-engine";
-import { findUserByEmail, updateUserAccountState } from "@/lib/auth-db";
+import { findUserByEmail, getAllUsers, updateUserAccountState } from "@/lib/auth-db";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email") || "varvind2004@gmail.com";
-    const user = findUserByEmail(email);
+    const emailParam = searchParams.get("email");
+    const user = emailParam ? findUserByEmail(emailParam) : getAllUsers()[0];
+    const email = user?.email || emailParam || "user@enterprise.ai";
 
     const stats = calculateReferralStats(email, user?.plan_tier || "growth");
 

@@ -420,6 +420,27 @@ export default function HomePage() {
               className="w-full accent-[#0050FF] h-2.5 bg-[#E5E5EA] dark:bg-[#2C2C2E] rounded-lg cursor-pointer"
             />
 
+            {/* Quick Spend Preset Pills */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[11px] text-[#86868B] font-medium">Quick Presets:</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[5000, 15000, 30000, 50000, 100000].map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setMonthlySpend(amt)}
+                    className={`px-3 py-1 rounded-full text-[10px] font-semibold transition-all hover:scale-105 active:scale-95 ${
+                      monthlySpend === amt
+                        ? "bg-[#0050FF] text-white shadow-xs"
+                        : "bg-[#F5F5F7] dark:bg-[#242428] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF]"
+                    }`}
+                  >
+                    {formatCurrency(amt * rate, activeCurrency)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
               <div className="p-7 rounded-[28px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] space-y-1 flex flex-col justify-center">
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">Estimated Net Savings</span>

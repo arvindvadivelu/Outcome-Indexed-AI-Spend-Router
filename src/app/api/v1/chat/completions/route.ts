@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const userEmail = user?.email || headers.get("x-user-email") || body.user_email || "varvind2004@gmail.com";
+    const userEmail = user?.email || headers.get("x-user-email") || body.user_email || "anonymous@api.outcomerouter.ai";
     const planTier = user?.plan_tier || "free";
     const monthlyQuota = user?.monthly_token_quota || 10000;
 

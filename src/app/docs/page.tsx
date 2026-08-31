@@ -97,40 +97,44 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
-  const handleExecuteLiveTest = () => {
+  const handleExecuteLiveTest = async () => {
     setIsExecuting(true);
     setLiveResponse(null);
 
-    setTimeout(() => {
-      let routed = "DeepSeek Coder V2";
-      let cost = "$0.00062";
-      let ttft = "58.4ms";
-      let savings = "88.2%";
-
-      if (testTargetMetric === "first_contact_resolution") {
-        routed = "Groq Llama 3.3 70B";
-        cost = "$0.00018";
-        ttft = "42.1ms";
-        savings = "92.4%";
-      } else if (testTargetMetric === "demo_booked") {
-        routed = "Claude 3.5 Sonnet";
-        cost = "$0.0034";
-        ttft = "68.2ms";
-        savings = "74.1%";
-      }
-
-      setLiveResponse({
-        id: "oir_req_" + Math.random().toString(36).substring(2, 9),
-        model_routed: routed,
-        ttft: ttft,
-        cost_usd: cost,
-        spend_saved_pct: savings,
-        sla_contract_nonce: "0x" + Math.random().toString(16).substring(2, 14),
-        delta_cached_tokens: 284,
-        content: `OutcomeRouter Gateway synthesized your request under Pareto target [${testTargetMetric}].\n\n- Model Selected: ${routed} (Marginal KPI win probability: 94.6%)\n- TTFT Edge Latency: ${ttft}\n- Avoided Spend vs GPT-4o: -${savings}\n- SHA-256 Micro-SLA Contract Nonce: Active`
+    try {
+      const res = await fetch("/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Outcome-Strategy": testStrategy,
+          "X-Outcome-Target-Metric": testTargetMetric
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: testPrompt }],
+          strategy: testStrategy,
+          target_metric: testTargetMetric
+        })
       });
+      const data = await res.json();
+      if (data.choices && data.choices.length > 0) {
+        const choice = data.choices[0];
+        const meta = data._router_metadata || {};
+        setLiveResponse({
+          id: data.id || "oir_req_" + Math.random().toString(36).substring(2, 9),
+          model_routed: meta.model_selected || data.model || "DeepSeek-V3",
+          ttft: `${meta.latency_ms || 58}ms`,
+          cost_usd: `$${(meta.cost_usd || 0.00042).toFixed(5)}`,
+          spend_saved_pct: `${meta.savings_percent || 88.2}%`,
+          sla_contract_nonce: meta.sla_contract_nonce || "0x" + Math.random().toString(16).substring(2, 14),
+          delta_cached_tokens: meta.delta_cached_tokens || 140,
+          content: choice.message?.content || "Request successfully routed."
+        });
+      }
+    } catch (err) {
+      console.warn("Docs live test fallback:", err);
+    } finally {
       setIsExecuting(false);
-    }, 450);
+    }
   };
 
   const customHeaders = [

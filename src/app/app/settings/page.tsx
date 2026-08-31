@@ -66,6 +66,7 @@ export default function SettingsPage() {
   const [defaultStrategy, setDefaultStrategy] = useState("outcome_optimized");
   const [defaultFallback, setDefaultFallback] = useState("GPT-4o");
   const [monthlyBudgetLimit, setMonthlyBudgetLimit] = useState(autopilot.monthly_budget_usd || 1500);
+  const [budgetLimitStr, setBudgetLimitStr] = useState(String(autopilot.monthly_budget_usd || 1500));
   const [alertThreshold, setAlertThreshold] = useState(85);
   const [autoThrottleOnCeiling, setAutoThrottleOnCeiling] = useState(true);
   const [slaLatencyLimit, setSlaLatencyLimit] = useState(250);
@@ -96,6 +97,7 @@ export default function SettingsPage() {
       updateUserProfile(user.name, contactEmail);
     }
     setMonthlyBudget(monthlyBudgetLimit);
+    setFederationWeight(privacyEpsilon);
 
     // 1. Persist workspace and user profile to database
     const targetEmail = user?.email || contactEmail;
@@ -108,7 +110,14 @@ export default function SettingsPage() {
             email: targetEmail,
             workspace: workspaceName,
             name: user?.name,
-            currency: activeCurrency
+            currency: activeCurrency,
+            monthlyBudgetUSD: monthlyBudgetLimit,
+            hasConfiguredBudget: true,
+            autopilotMode: autopilot.mode,
+            federationSettings: {
+              ...federationSettings,
+              epsilon: privacyEpsilon
+            }
           })
         });
       } catch (err) {
@@ -430,7 +439,10 @@ export default function SettingsPage() {
                   <button
                     key={amt}
                     type="button"
-                    onClick={() => setMonthlyBudgetLimit(amt)}
+                    onClick={() => {
+                      setMonthlyBudgetLimit(amt);
+                      setBudgetLimitStr(String(amt));
+                    }}
                     className="px-3 py-1 rounded-full text-[10px] font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.04] dark:border-white/[0.06] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] hover:border-[#0050FF]/30 transition-all hover:scale-105 active:scale-95"
                   >
                     {formatCurrency(amt * rate, activeCurrency)}
@@ -443,12 +455,23 @@ export default function SettingsPage() {
               <div className="space-y-1.5">
                 <label className="font-semibold text-[#86868B]">Monthly Budget Ceiling ({activeCurrency})</label>
                 <input
-                  type="number"
-                  value={monthlyBudgetLimit}
-                  onChange={(e) => setMonthlyBudgetLimit(parseFloat(e.target.value) || 0)}
+                  type="text"
+                  inputMode="numeric"
+                  value={budgetLimitStr}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9]/g, "");
+                    setBudgetLimitStr(raw);
+                    const val = parseFloat(raw) || 0;
+                    if (val > 0) setMonthlyBudgetLimit(val);
+                  }}
+                  onBlur={() => {
+                    if (!budgetLimitStr || parseFloat(budgetLimitStr) === 0) {
+                      setBudgetLimitStr("1500");
+                      setMonthlyBudgetLimit(1500);
+                    }
+                  }}
                   className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] font-mono font-bold text-sm text-[#0050FF] dark:text-[#3374FF] focus:outline-none"
-                  min="100"
-                  step="50"
+                  placeholder="1500"
                 />
               </div>
 

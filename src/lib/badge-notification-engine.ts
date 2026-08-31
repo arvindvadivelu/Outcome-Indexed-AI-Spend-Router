@@ -19,7 +19,7 @@ export function getUserBadgeNotifications(user: any): {
   totalUnclaimedTokens: number;
   badges: UserBadgeNotification[];
 } {
-  const email = user?.email || "varvind2004@gmail.com";
+  const email = user?.email || "user@enterprise.ai";
   const badges: UserBadgeNotification[] = [
     {
       id: "badge_sav_1000",

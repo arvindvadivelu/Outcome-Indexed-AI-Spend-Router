@@ -64,7 +64,7 @@ export function calculateEnterpriseRoi(input: Partial<RoiSimulationInput> = {}):
 
   const monthlySavings = parseFloat(Math.max(0, baselineTotalMonthly - routedTotalMonthly).toFixed(2));
   const annualSavings = parseFloat((monthlySavings * 12).toFixed(2));
-  const savingsPct = parseFloat(((monthlySavings / baselineTotalMonthly) * 100).toFixed(1));
+  const savingsPct = baselineTotalMonthly > 0 ? parseFloat(((monthlySavings / baselineTotalMonthly) * 100).toFixed(1)) : 0;
 
   return {
     monthlyCalls: calls,

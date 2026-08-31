@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { QuotaAlertNotification } from "@/components/QuotaAlertNotification";
+import { SubscriptionPlanModal } from "@/components/SubscriptionPlanModal";
+import { BudgetSetupModal } from "@/components/BudgetSetupModal";
 import { useAppStore } from "@/lib/store";
 
 export default function AppLayout({
@@ -50,6 +52,8 @@ export default function AppLayout({
         </main>
       </div>
       <QuotaAlertNotification />
+      <SubscriptionPlanModal />
+      <BudgetSetupModal />
     </div>
   );
 }

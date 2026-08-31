@@ -54,7 +54,10 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     monthlyQuota,
     planTier,
     consumeTokens,
-    cycleStartDate
+    cycleStartDate,
+    openPlanUpgradeModal,
+    hasConfiguredBudget,
+    openBudgetSetupModal
   } = useAppStore();
 
   const [selectedTask, setSelectedTask] = useState("sales_email");
@@ -72,7 +75,14 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
   const isQuotaExceeded = currentTokens >= monthlyQuota;
 
   const handleSimulate = async () => {
-    // 0. Quota check: Stop execution if limit reached
+    // 0. Budget Ceiling check: User must configure budget before routing live tokens
+    if (!hasConfiguredBudget) {
+      onClose();
+      openBudgetSetupModal();
+      return;
+    }
+
+    // 0b. Quota check: Stop execution if limit reached
     if (isQuotaExceeded) {
       setQuotaBlocked(true);
       return;
@@ -347,15 +357,56 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
               <p className="text-[11px] text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
                 Your monthly ingestion allowance is 100% full. All gateway execution is paused. Please upgrade your subscription tier on the Billing page or wait for the automatic 30-day reset cycle.
               </p>
-              <div className="pt-1">
+              <div className="pt-1 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    onClose();
+                    openPlanUpgradeModal();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-[11px] font-semibold transition-all hover:scale-105 active:scale-95"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>Upgrade Plan</span>
+                </button>
                 <Link
                   href="/app/billing"
                   onClick={onClose}
-                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-[11px] font-semibold transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-[#1D1D1F] dark:text-[#F5F5F7] text-[11px] font-semibold transition-all"
                 >
-                  <span>Upgrade Plan on Billing</span>
+                  <span>Go to Billing</span>
                   <ArrowRight className="h-3 w-3" />
                 </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Budget Setup Required Notice Banner */}
+          {!hasConfiguredBudget && (
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
+                  <Sliders className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  <span>Monthly Budget Ceiling &amp; Pacing Setup Required</span>
+                </span>
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                  Required
+                </span>
+              </div>
+              <p className="text-[11px] text-[#515154] dark:text-[#A1A1A6] leading-relaxed">
+                Before routing live tokens, please define your monthly spending threshold and auto-pilot pacing strategy.
+              </p>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    openBudgetSetupModal();
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-xs"
+                >
+                  <Sliders className="h-3.5 w-3.5" />
+                  <span>Configure Monthly Budget Ceiling &amp; Pacing</span>
+                </button>
               </div>
             </div>
           )}

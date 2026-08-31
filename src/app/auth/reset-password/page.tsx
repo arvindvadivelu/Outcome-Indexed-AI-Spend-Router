@@ -9,7 +9,7 @@ import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("alex@company.com");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -45,6 +45,20 @@ export default function ResetPasswordPage() {
     }
   };
 
+  const handlePinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newPin = [...pin];
+    for (let i = 0; i < pasted.length; i++) {
+      newPin[i] = pasted[i];
+    }
+    setPin(newPin);
+    setErrorMsg("");
+    const focusIndex = Math.min(5, pasted.length);
+    document.getElementById(`new-pin-${focusIndex}`)?.focus();
+  };
+
   const handleConfirmPinChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     const newPin = [...confirmPin];
@@ -63,6 +77,20 @@ export default function ResetPasswordPage() {
       const prevInput = document.getElementById(`confirm-pin-${index - 1}`);
       prevInput?.focus();
     }
+  };
+
+  const handleConfirmPinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    if (!pasted) return;
+    const newPin = [...confirmPin];
+    for (let i = 0; i < pasted.length; i++) {
+      newPin[i] = pasted[i];
+    }
+    setConfirmPin(newPin);
+    setErrorMsg("");
+    const focusIndex = Math.min(5, pasted.length);
+    document.getElementById(`confirm-pin-${focusIndex}`)?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,6 +204,7 @@ export default function ResetPasswordPage() {
                         value={digit}
                         onChange={(e) => handlePinChange(idx, e.target.value)}
                         onKeyDown={(e) => handlePinKeyDown(idx, e)}
+                        onPaste={handlePinPaste}
                         className="w-10 sm:w-11 h-12 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-center font-mono text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF] transition-all"
                       />
                     ))}
@@ -194,6 +223,7 @@ export default function ResetPasswordPage() {
                         value={digit}
                         onChange={(e) => handleConfirmPinChange(idx, e.target.value)}
                         onKeyDown={(e) => handleConfirmPinKeyDown(idx, e)}
+                        onPaste={handleConfirmPinPaste}
                         className="w-10 sm:w-11 h-12 rounded-2xl bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-center font-mono text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF] transition-all"
                       />
                     ))}

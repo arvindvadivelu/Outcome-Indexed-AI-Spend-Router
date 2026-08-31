@@ -41,6 +41,9 @@ export async function GET(req: Request) {
         monthlySpendUSD: actualSpendUsd,
         baselineSpendUSD: baselineSpendUsd,
         avoidedSpendUSD: avoidedSpendUsd,
+        monthlyBudgetUSD: user.monthlyBudgetUSD,
+        autopilotMode: user.autopilotMode,
+        hasConfiguredBudget: user.hasConfiguredBudget ?? (user.monthlyBudgetUSD !== undefined && user.monthlyBudgetUSD > 0),
         rules: user.rules || [],
         apiKeys: user.apiKeys || [],
         logs: user.logs || [],
@@ -73,6 +76,9 @@ export async function POST(req: Request) {
       tokens_used,
       monthlySpendUSD,
       baselineSpendUSD,
+      monthlyBudgetUSD,
+      autopilotMode,
+      hasConfiguredBudget,
       rules,
       apiKeys,
       logs,
@@ -96,6 +102,9 @@ export async function POST(req: Request) {
     if (tokens_used !== undefined) updates.tokens_used = tokens_used;
     if (monthlySpendUSD !== undefined) updates.monthlySpendUSD = monthlySpendUSD;
     if (baselineSpendUSD !== undefined) updates.baselineSpendUSD = baselineSpendUSD;
+    if (monthlyBudgetUSD !== undefined) updates.monthlyBudgetUSD = monthlyBudgetUSD;
+    if (autopilotMode !== undefined) updates.autopilotMode = autopilotMode;
+    if (hasConfiguredBudget !== undefined) updates.hasConfiguredBudget = hasConfiguredBudget;
     if (rules !== undefined) updates.rules = rules;
     if (apiKeys !== undefined) updates.apiKeys = apiKeys;
     if (logs !== undefined) updates.logs = logs;

@@ -7,7 +7,7 @@ import { AlertTriangle, Sparkles, ArrowRight, X, RotateCcw, ShieldAlert, Calenda
 import Link from "next/link";
 
 export function QuotaAlertNotification() {
-  const { currentTokens, monthlyQuota, planTier, cycleStartDate, resetTokenQuota } = useAppStore();
+  const { currentTokens, monthlyQuota, planTier, cycleStartDate, resetTokenQuota, openPlanUpgradeModal } = useAppStore();
   const [mounted, setMounted] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -101,13 +101,16 @@ export function QuotaAlertNotification() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 pt-1 relative z-10">
-          <Link
-            href="/app/billing"
-            className="flex-1 h-9 px-4 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-[0_4px_14px_rgba(0,80,255,0.35)] flex items-center justify-center gap-1.5 transition-all"
+          <button
+            onClick={() => {
+              openPlanUpgradeModal();
+              setIsDismissed(true);
+            }}
+            className="flex-1 h-9 px-4 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white text-xs font-semibold shadow-[0_4px_14px_rgba(0,80,255,0.35)] flex items-center justify-center gap-1.5 transition-all hover:scale-105 active:scale-95"
           >
             <span>Upgrade Plan</span>
             <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          </button>
 
           <button
             onClick={() => {

@@ -40,11 +40,11 @@ export default function BillingPage() {
     currentTokens,
     monthlyQuota,
     cycleStartDate,
-    resetTokenQuota,
     fillQuotaToLimit,
     slaEscrowContracts,
     autopilot,
     orgName,
+    openPlanUpgradeModal,
     user
   } = useAppStore();
 
@@ -57,8 +57,8 @@ export default function BillingPage() {
     {
       id: "INV-OIR-2026-08892",
       date: "Aug 31, 2026",
-      customerName: user?.name || "Arvind Vadivelu",
-      customerEmail: user?.email || "varvind2004@gmail.com",
+      customerName: user?.name || "Workspace Member",
+      customerEmail: user?.email || "billing@enterprise.ai",
       workspaceName: orgName || "Primary Workspace",
       planName: planTier && planTier !== "free" ? planTier : "Starter",
       tokenQuota: planTier === "growth" ? 500000 : (planTier === "enterprise" ? 2000000 : 100000),
@@ -458,27 +458,16 @@ export default function BillingPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {!isQuotaExceeded ? (
-              <button
-                onClick={fillQuotaToLimit}
-                className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-[11px] transition-all hover:scale-105 active:scale-95"
-                title="Simulate 100% full quota to test execution block"
-              >
-                Test Fill Quota (100%)
-              </button>
-            ) : (
-              <button
-                onClick={resetTokenQuota}
-                className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 font-semibold text-[11px] transition-all hover:scale-105 active:scale-95"
-                title="Reset token quota to 0 for demo"
-              >
-                Reset Cycle Tokens (0%)
-              </button>
-            )}
-
             <button
-              onClick={() => setShowPlanMatrix(true)}
-              className="px-4 py-1 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white font-semibold text-[11px] transition-all shadow-xs hover:scale-105 active:scale-95"
+              onClick={fillQuotaToLimit}
+              className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 font-semibold text-[11px] transition-all hover:scale-105 active:scale-95 border border-amber-300/40"
+              title="Simulate 100% full quota to test execution block"
+            >
+              Test Fill to 100%
+            </button>
+            <button
+              onClick={openPlanUpgradeModal}
+              className="px-4 py-1.5 rounded-full bg-[#0050FF] hover:bg-[#0043D6] text-white font-semibold text-xs transition-all shadow-xs hover:scale-105 active:scale-95"
             >
               Upgrade Plan
             </button>
@@ -754,15 +743,15 @@ export default function BillingPage() {
           const newInv: InvoiceData = {
             id: `INV-OIR-${Date.now().toString().slice(-5)}`,
             date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-            customerName: user?.name || "Arvind Vadivelu",
-            customerEmail: user?.email || "varvind2004@gmail.com",
+            customerName: user?.name || "Workspace Member",
+            customerEmail: user?.email || "billing@enterprise.ai",
             workspaceName: orgName || "Primary Workspace",
             planName: checkoutPlan.charAt(0).toUpperCase() + checkoutPlan.slice(1),
             tokenQuota: checkoutPlan === "growth" ? 500000 : (checkoutPlan === "enterprise" ? 2000000 : 100000),
             currency: (currency as "USD" | "INR") || "USD",
-            amount: currency === "INR" ? (checkoutPlan === "growth" ? 8500 : 2500) : (checkoutPlan === "growth" ? 99 : 29),
-            taxAmount: currency === "INR" ? (checkoutPlan === "growth" ? 1530 : 450) : 0,
-            totalAmount: currency === "INR" ? (checkoutPlan === "growth" ? 10030 : 2950) : (checkoutPlan === "growth" ? 99 : 29),
+            amount: currency === "INR" ? (checkoutPlan === "growth" ? 7203 : (checkoutPlan === "enterprise" ? 36440 : 2119)) : (checkoutPlan === "growth" ? 99 : (checkoutPlan === "enterprise" ? 299 : 29)),
+            taxAmount: currency === "INR" ? (checkoutPlan === "growth" ? 1297 : (checkoutPlan === "enterprise" ? 6560 : 381)) : 0,
+            totalAmount: currency === "INR" ? (checkoutPlan === "growth" ? 8500 : (checkoutPlan === "enterprise" ? 43000 : 2500)) : (checkoutPlan === "growth" ? 99 : (checkoutPlan === "enterprise" ? 299 : 29)),
             paymentMethod: currency === "INR" ? "GPay UPI (varvind2004@okaxis)" : "ICICI Bank Wire (SWIFT: ICICINBBCTS)",
             transactionRef: `UTR_${Math.random().toString().slice(2, 14)}`,
             status: "PAID",

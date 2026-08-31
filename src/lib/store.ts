@@ -209,11 +209,28 @@ interface AppState {
   webhookLogs: WebhookLogItem[];
   addWebhookLog: (log: WebhookLogItem) => void;
 
+  sidebarCollapsed: boolean;
+  toggleSidebarCollapse: () => void;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+
+  // Centralized Subscription Plan Upgrade Modal
+  isPlanUpgradeModalOpen: boolean;
+  openPlanUpgradeModal: () => void;
+  closePlanUpgradeModal: () => void;
+
+  // Onboarding Monthly Budget Setup Modal
+  hasConfiguredBudget: boolean;
+  setHasConfiguredBudget: (configured: boolean) => void;
+  isBudgetSetupModalOpen: boolean;
+  openBudgetSetupModal: () => void;
+  closeBudgetSetupModal: () => void;
+
   // Telemetry items
   logs: LogItem[];
   telemetryLogs: LogItem[];
   benchmarks: BenchmarkItem[];
   modelBenchmarks: BenchmarkItem[];
+  setBenchmarks: (benchmarks: BenchmarkItem[]) => void;
   rules: RoutingRule[];
   routingRules: RoutingRule[];
   apiKeys: ApiKeyItem[];
@@ -221,13 +238,16 @@ interface AppState {
   integrations: IntegrationItem[];
   setIntegrations: (integrations: IntegrationItem[] | ((prev: IntegrationItem[]) => IntegrationItem[])) => void;
   connectIntegration: (id: string, latency?: string) => void;
+  disconnectIntegration: (id: string) => void;
   addCustomIntegration: (integration: IntegrationItem) => void;
+  deleteCustomIntegration: (id: string) => void;
 
   // Actions
   recordOutcome: (requestId: string, success: boolean) => void;
   addRule: (rule: RoutingRule) => void;
   toggleRule: (id: string) => void;
   deleteRule: (id: string) => void;
+  reorderRule: (currentIndex: number, targetIndex: number) => void;
   updateRulePriority: (id: string, newPriority: string[]) => void;
   createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string) => string;
   deleteApiKey: (id: string) => void;
@@ -476,9 +496,11 @@ export const useAppStore = create<AppState>()(
           if (tier === "starter") quota = 100000;
           else if (tier === "growth") quota = 500000;
           else if (tier === "enterprise") quota = 2000000;
+          const newCurrent = Math.min(quota, state.currentTokens || 0);
           return {
             planTier: tier,
-            monthlyQuota: quota
+            monthlyQuota: quota,
+            currentTokens: newCurrent
           };
         }),
       monthlyQuota: 10000,
@@ -487,19 +509,45 @@ export const useAppStore = create<AppState>()(
 
       consumeTokens: (amount: number) => {
         const state = get();
+        if (!state.hasConfiguredBudget) {
+          state.openBudgetSetupModal();
+        }
         if (state.currentTokens >= state.monthlyQuota) {
           return false; // Execution halted due to quota limit
         }
-        const newTotal = Math.min(state.monthlyQuota, state.currentTokens + amount);
+        const newTotal = Math.min(state.monthlyQuota, (state.currentTokens || 0) + amount);
         set({ currentTokens: newTotal });
+        const user = state.user;
+        if (user?.email) {
+          fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              tokens_used: newTotal
+            })
+          }).catch(() => {});
+        }
         return true;
       },
 
-      resetTokenQuota: () =>
+      resetTokenQuota: () => {
         set({
           currentTokens: 0,
           cycleStartDate: new Date().toISOString()
-        }),
+        });
+        const user = get().user;
+        if (user?.email) {
+          fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: user.email,
+              tokens_used: 0
+            })
+          }).catch(() => {});
+        }
+      },
 
       fillQuotaToLimit: () =>
         set((state) => ({
@@ -513,7 +561,7 @@ export const useAppStore = create<AppState>()(
         enabled: true,
         mode: "optimal_pace",
         burn_ratio: 0.00,
-        monthly_budget_usd: 1500.0,
+        monthly_budget_usd: 0,
         projected_spend_usd: 0.00,
         cost_weight_w2: 25.0,
         quality_weight_w1: 0.70
@@ -604,10 +652,30 @@ export const useAppStore = create<AppState>()(
           autopilot: { ...state.autopilot, enabled: !state.autopilot.enabled }
         })),
 
+      sidebarCollapsed: false,
+      toggleSidebarCollapse: () =>
+        set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      setSidebarCollapsed: (collapsed: boolean) =>
+        set({ sidebarCollapsed: collapsed }),
+
+      // Centralized Subscription Plan Upgrade Modal State
+      isPlanUpgradeModalOpen: false,
+      openPlanUpgradeModal: () => set({ isPlanUpgradeModalOpen: true }),
+      closePlanUpgradeModal: () => set({ isPlanUpgradeModalOpen: false }),
+
+      // Onboarding Monthly Budget Setup Modal State
+      hasConfiguredBudget: false,
+      setHasConfiguredBudget: (configured: boolean) => set({ hasConfiguredBudget: configured }),
+      isBudgetSetupModalOpen: false,
+      openBudgetSetupModal: () => set({ isBudgetSetupModalOpen: true }),
+      closeBudgetSetupModal: () => set({ isBudgetSetupModalOpen: false }),
+
       logs: [],
       telemetryLogs: [],
       benchmarks: DEFAULT_BENCHMARKS,
       modelBenchmarks: DEFAULT_BENCHMARKS,
+      setBenchmarks: (benchmarks: BenchmarkItem[]) =>
+        set({ benchmarks, modelBenchmarks: benchmarks }),
       rules: DEFAULT_RULES,
       routingRules: DEFAULT_RULES,
       apiKeys: DEFAULT_KEYS,
@@ -625,9 +693,21 @@ export const useAppStore = create<AppState>()(
           )
         })),
 
+      disconnectIntegration: (id: string) =>
+        set((state) => ({
+          integrations: state.integrations.map((item) =>
+            item.id === id ? { ...item, connected: false, latency: "—" } : item
+          )
+        })),
+
       addCustomIntegration: (integration: IntegrationItem) =>
         set((state) => ({
           integrations: [integration, ...state.integrations]
+        })),
+
+      deleteCustomIntegration: (id: string) =>
+        set((state) => ({
+          integrations: state.integrations.filter((item) => item.id !== id)
         })),
 
       recordOutcome: (requestId: string, success: boolean) =>
@@ -685,6 +765,17 @@ export const useAppStore = create<AppState>()(
         set((state) => {
           const updated = state.routingRules.filter((r) => r.id !== id);
           return { rules: updated, routingRules: updated };
+        }),
+
+      reorderRule: (currentIndex: number, targetIndex: number) =>
+        set((state) => {
+          const list = [...state.routingRules];
+          if (currentIndex < 0 || currentIndex >= list.length || targetIndex < 0 || targetIndex >= list.length) {
+            return state;
+          }
+          const [moved] = list.splice(currentIndex, 1);
+          list.splice(targetIndex, 0, moved);
+          return { rules: list, routingRules: list };
         }),
 
       updateRulePriority: (id: string, newPriority: string[]) =>
