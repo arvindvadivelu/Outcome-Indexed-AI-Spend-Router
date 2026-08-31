@@ -10,7 +10,7 @@
     "createdAt": "2026-08-31T09:10:57.016Z",
     "invoiceNumber": "INV-OIR-INR-991854",
     "referenceUtr": "423918471920",
-    "verifiedAt": "2026-08-31T09:10:57.154Z"
+    "verifiedAt": "2026-08-31T09:14:54.444Z"
   },
   {
     "id": "tx_1788167457091_4e5c4",
@@ -22,5 +22,27 @@
     "status": "PENDING_VERIFICATION",
     "createdAt": "2026-08-31T09:10:57.091Z",
     "invoiceNumber": "INV-OIR-USD-728604"
+  },
+  {
+    "id": "tx_1788167694395_du0bj",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T09:14:54.395Z",
+    "invoiceNumber": "INV-OIR-INR-785755"
+  },
+  {
+    "id": "tx_1788167694420_sdzqf",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "USD",
+    "amount": 99,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T09:14:54.420Z",
+    "invoiceNumber": "INV-OIR-USD-877484"
   }
 ]
