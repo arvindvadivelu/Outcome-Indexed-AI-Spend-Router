@@ -10,7 +10,8 @@ export async function POST(req: Request) {
     const projectedSavings = parseFloat((currentSpend * 0.76).toFixed(2));
 
     const safeBudget = Math.max(1, currentBudget);
-    const pacingPct = Math.round((1 - currentSpend / safeBudget) * 100);
+    const isUnderBudget = currentSpend <= currentBudget;
+    const diffPct = Math.abs(Math.round(((currentBudget - currentSpend) / safeBudget) * 100));
 
     return NextResponse.json({
       success: true,
@@ -19,8 +20,10 @@ export async function POST(req: Request) {
       monthly_budget_usd: currentBudget,
       projected_invoice_usd: projectedInvoice,
       projected_savings_usd: projectedSavings,
-      pacing_status: currentSpend < currentBudget ? "OPTIMAL_PACING" : "OVER_BUDGET_WARNING",
-      recommendation: `Pacing is ${pacingPct}% within your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $${(projectedSavings * 0.28).toFixed(2)}/mo without impacting conversion rates.`
+      pacing_status: isUnderBudget ? "OPTIMAL_PACING" : "OVER_BUDGET_WARNING",
+      recommendation: isUnderBudget
+        ? `Pacing is ${diffPct}% within your monthly budget ceiling. Shifting 15% more traffic from Claude 3.5 Sonnet to DeepSeek-V3 on SQL extraction will recover an additional $${(projectedSavings * 0.28).toFixed(2)}/mo without impacting conversion rates.`
+        : `Spend velocity is currently exceeding budget ceiling by ${diffPct}%. Enabling aggressive savings mode will throttle costly fallbacks and bring pacing back within target boundaries.`
     });
   } catch (error: any) {
     return NextResponse.json(

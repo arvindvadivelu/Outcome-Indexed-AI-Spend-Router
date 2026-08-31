@@ -66,6 +66,32 @@
   "logs": [],
   "auth_records": [
     {
+      "id": "auth_1788153981630",
+      "timestamp": "2026-08-31T05:26:19.302Z",
+      "action": "SIGNIN",
+      "name": "Unknown User",
+      "email": "user@example.com",
+      "workspace": "Acme AI Lab",
+      "plan_tier": "Free",
+      "monthly_token_quota": 10000,
+      "currency": "USD",
+      "auth_method": "PIN_PASSWORD",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
+    {
+      "id": "auth_1788153962984",
+      "timestamp": "2026-08-31T05:26:00.114Z",
+      "action": "SIGNIN",
+      "name": "Unknown User",
+      "email": "user@example.com",
+      "workspace": "Acme AI Lab",
+      "plan_tier": "Free",
+      "monthly_token_quota": 10000,
+      "currency": "USD",
+      "auth_method": "PIN_PASSWORD",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
+    {
       "id": "auth_1788149757259",
       "timestamp": "2026-08-31T04:15:55.047Z",
       "action": "CONTACT_INQUIRY",

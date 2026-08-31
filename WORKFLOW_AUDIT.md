@@ -61,6 +61,7 @@ This document serves as the persistent audit ledger and memory for continuous fu
 | **WF-051** | `/app/dashboard` | Global Dashboard Theme & Bento Style Harmonization | Unifies Dashboard aesthetics with Apple/FinOps glassmorphism across `/app/*` | Dashboard had inconsistent harsh blue gradients and missing forensic table | Restyled 4 bento pillars and reintroduced glassmorphic decision table | [`src/app/app/dashboard/page.tsx`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/app/dashboard/page.tsx) | **FIXED** | Run 15 |
 | **WF-052** | Global State | Comprehensive JSON Configuration Export & Restore Round-Trip | Serializes and restores full state (rules, integrations, webhooks, autopilot, federation) | Export omitted workspace name and provider bridges; import only restored rules | Enhanced `exportJsonBackup` and `importJsonBackup` in store | [`src/lib/store.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/lib/store.ts) | **FIXED** | Run 15 |
 | **WF-053** | `/api/logs/inspect`, `/api/integrations/connect`, `/api/auth/delete-account`, `/api/auth/send-otp` | Safe Request Body Parsing & Resilience across Auxiliary APIs | All auxiliary APIs safely handle malformed or empty payloads with clean HTTP 400 responses | Empty POST bodies resulted in unhandled 500 JSON exceptions | Missing `.catch(() => ({}))` safe fallbacks on `req.json()` | [`src/app/api/logs/inspect/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/logs/inspect/route.ts), [`src/app/api/integrations/connect/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/integrations/connect/route.ts), [`src/app/api/auth/delete-account/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/delete-account/route.ts), [`src/app/api/auth/send-otp/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/send-otp/route.ts) | **FIXED** | Run 16 |
+| **WF-054** | `/api/auth/sync-sheet`, `/api/webhooks/dispatch`, `/api/benchmarks/eval` | Empty Request Body Default Handling Across Telemetry & Ingress | Defaults safely injected when empty bodies are posted to webhook & sync routes | Handled with fallback records and default task benchmarks | Evaluated safe parameter defaulting | [`src/app/api/auth/sync-sheet/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/auth/sync-sheet/route.ts), [`src/app/api/webhooks/dispatch/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/webhooks/dispatch/route.ts), [`src/app/api/benchmarks/eval/route.ts`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/src/app/api/benchmarks/eval/route.ts) | **FIXED** | Run 17 |
 
 ---
 
@@ -198,4 +199,10 @@ This document serves as the persistent audit ledger and memory for continuous fu
   - **WF-053**: Added safe JSON parsing `req.json().catch(() => ({}))` across all remaining auxiliary endpoints (`/api/logs/inspect`, `/api/integrations/connect`, `/api/auth/delete-account`, `/api/auth/send-otp`).
 - **Verified**:
   - Automated test suite `stress-test/verify_run16_workflows.mjs` (8/8 tests passed - 100%).
-  - Total combined test suites: **170 / 170 Tests Passed (100.0%)**.
+
+### Run 17 — Default Parameter Ingress & Fallback Resilience
+- **Fixed**:
+  - **WF-054**: Added safe parameter defaulting for empty requests across `/api/auth/sync-sheet`, `/api/webhooks/dispatch`, and `/api/benchmarks/eval`.
+- **Verified**:
+  - Automated test suite `stress-test/verify_run17_workflows.mjs` (5/5 tests passed - 100%).
+  - Total combined test suites: **175 / 175 Tests Passed (100.0%)**.
