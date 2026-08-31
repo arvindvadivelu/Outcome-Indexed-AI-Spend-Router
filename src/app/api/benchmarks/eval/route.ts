@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
+import { benchmarkCache } from "@/lib/lru-cache";
 
 export async function POST(req: Request) {
   try {
     const { task_type } = await req.json().catch(() => ({}));
     const targetTask = task_type || "code_generation";
+
+    const cachedResult = benchmarkCache.get(`eval_${targetTask}`);
+    if (cachedResult) {
+      return NextResponse.json({
+        ...cachedResult,
+        cached: true,
+        evaluatedAt: new Date().toISOString()
+      });
+    }
 
     // Simulate high-speed parallel benchmark audit across frontier inference endpoints
     const models = [
@@ -74,13 +84,20 @@ export async function POST(req: Request) {
       }
     ];
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
-      evaluatedAt: new Date().toISOString(),
       testedTask: targetTask,
       totalAuditedModels: models.length,
       averageBatchLatencyMs: 76.4,
       results: models
+    };
+
+    benchmarkCache.set(`eval_${targetTask}`, responsePayload, 60000);
+
+    return NextResponse.json({
+      ...responsePayload,
+      cached: false,
+      evaluatedAt: new Date().toISOString()
     });
   } catch (error: any) {
     return NextResponse.json(
