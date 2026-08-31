@@ -38,6 +38,8 @@ export async function POST(req: Request) {
     const taskLabel = log.task_type === "code_generation"
       ? "High-Complexity Code Review / Generation"
       : (log.task_type === "sales_email" ? "Outreach Conversion Optimization" : "Sub-100ms Customer Support FAQ");
+    const isBreached = typeof log.latency_ms === "number" && log.latency_ms > 250;
+    const breachPenalty = isBreached ? (log.latency_ms - 250) * 0.00001 : 0;
 
     const analysis = [
       {
@@ -50,7 +52,9 @@ export async function POST(req: Request) {
       },
       {
         step: "3. Micro-SLA Cryptographic Verification",
-        verdict: `SHA-256 Escrow Nonce verified on ledger. Latency ${log.latency_ms}ms is well within the 250ms target ceiling (0ms breach penalty).`
+        verdict: isBreached
+          ? `SHA-256 Escrow Nonce breached: Latency ${log.latency_ms}ms exceeded 250ms SLA ceiling by ${log.latency_ms - 250}ms. Auto-refund of $${breachPenalty.toFixed(5)} escrow credit dispatched.`
+          : `SHA-256 Escrow Nonce verified on ledger. Latency ${log.latency_ms}ms is well within the 250ms target ceiling (0ms breach penalty).`
       },
       {
         step: "4. FinOps Economic Delta",

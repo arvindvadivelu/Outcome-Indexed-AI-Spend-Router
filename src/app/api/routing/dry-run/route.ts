@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { prompt, rules } = await req.json();
+    const { prompt, rules } = await req.json().catch(() => ({}));
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json({ success: false, error: "Prompt is required." }, { status: 400 });

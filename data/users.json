@@ -45,7 +45,26 @@
       }
     ],
     "monthlySpendUSD": 0.000285,
-    "baselineSpendUSD": 0.002588
+    "baselineSpendUSD": 0.002588,
+    "rules": [
+      {
+        "id": "rule_sales_auto",
+        "name": "High-Converting Sales Pitch Routing",
+        "task_type": "sales_email",
+        "condition_pattern": "outreach",
+        "target_metric": "reply_rate",
+        "priority_models": [
+          "Claude 3.5 Sonnet",
+          "DeepSeek-V3",
+          "GPT-4o Mini"
+        ],
+        "fallback_model": "GPT-4o",
+        "cost_ceiling_usd": 0.0045,
+        "max_latency_ms": 350,
+        "is_active": true,
+        "enabled": true
+      }
+    ]
   },
   {
     "name": "Alex",

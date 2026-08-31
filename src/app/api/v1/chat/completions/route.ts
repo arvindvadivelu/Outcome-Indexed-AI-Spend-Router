@@ -49,7 +49,7 @@ const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCost
 export async function POST(req: Request) {
   const startTime = performance.now();
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const headers = req.headers;
 
     // Identify user email via API key or direct header
