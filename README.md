@@ -318,36 +318,6 @@ npm run start
 
 Visit [**http://localhost:3000**](http://localhost:3000) to access the console.
 
-### 4. Auto-Push to GitHub (Silent Background Watcher)
-
-The project ships with an **automated Git push watcher** that detects file changes and pushes to GitHub silently — no manual `git commit` or `git push` required.
-
-| File | Purpose |
-| :--- | :--- |
-| `auto_push.bat` | Non-interactive Git stage → commit → push (auto-generated commit messages) |
-| `auto_push_watcher.ps1` | PowerShell watcher — polls git every 30s for changes |
-| `START_WATCHER_SILENT.vbs` | Launches the watcher **fully hidden** (no console window) |
-| `START_WATCHER.bat` | Launches the watcher with a visible console for debugging |
-
-**How it works:**
-```
-You edit & save a file
-        ↓
-Watcher detects uncommitted git changes (polls every 30s)
-        ↓
-Waits 2 minutes (batches rapid edits into one commit)
-        ↓
-Auto-runs: git add . → git commit -m "Auto-push 2026-09-01 00:48" → git push origin main
-        ↓
-Resets — waits silently for next change (never pushes empty commits)
-```
-
-**Setup (one-time):**
-- The watcher is pre-configured to auto-start on Windows boot via the Startup folder.
-- All push activity is logged to `auto_push_watcher.log` in the project root.
-- To stop: open **Task Manager** → find `powershell.exe` → End Task.
-- To remove from startup: `Win + R` → `shell:startup` → delete `AutoPushWatcher.vbs`.
-
 ---
 
 ## 🛡️ Enterprise Security & Compliance
