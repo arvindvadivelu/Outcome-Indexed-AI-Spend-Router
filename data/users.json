@@ -1,15 +1,29 @@
 [
   {
-    "name": "Arvind",
+    "name": "Arvind V",
     "email": "varvind2004@gmail.com",
-    "workspace": "Arvind Workspace",
+    "workspace": "College",
     "plan_tier": "free",
     "monthly_token_quota": 10000,
-    "pin": "111111",
-    "currency": "USD",
+    "pin": "222222",
+    "currency": "INR",
+    "apiKeys": [
+      {
+        "id": "key_1788072881695",
+        "name": "Default Live Gateway Key",
+        "key_prefix": "oir_live_0dj9jf",
+        "full_key": "oir_live_0dj9jfsdeldz2w7b",
+        "environment": "live",
+        "rate_limit": 600,
+        "rate_limit_rpm": 600,
+        "created_at": "Just now",
+        "last_used_at": "Never",
+        "is_active": true
+      }
+    ],
     "tokens_used": 0,
-    "id": "usr_1788039321510_tv9mw",
-    "created_at": "2026-08-29T21:35:21.510Z"
+    "id": "usr_1788072881696_op7b9",
+    "created_at": "2026-08-30T06:54:41.696Z"
   },
   {
     "name": "Alex",
