@@ -28,7 +28,7 @@ import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 const TokenBarChart = dynamic(
-  () => import("@/components/TokenBarChart"),
+  () => import("@/components/TokenBarChart").then((mod) => mod.TokenBarChart),
   {
     ssr: false,
     loading: () => (

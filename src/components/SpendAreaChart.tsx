@@ -73,5 +73,3 @@ export function SpendAreaChart({ data, currencySymbol = "$", viewMode = "spend" 
     </div>
   );
 }
-
-export default SpendAreaChart;

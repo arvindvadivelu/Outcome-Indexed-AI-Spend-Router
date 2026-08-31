@@ -39,5 +39,3 @@ export function TokenBarChart({ data }: TokenBarChartProps) {
     </div>
   );
 }
-
-export default TokenBarChart;

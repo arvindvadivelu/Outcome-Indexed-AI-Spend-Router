@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/lib/store";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -20,21 +20,17 @@ import {
   ChevronRight,
   Layers,
   Sparkles,
-  ToggleLeft,
-  ToggleRight,
-  SlidersHorizontal,
-  DollarSign,
   CreditCard,
-  Flame,
   CheckCircle2,
-  Inbox
+  SlidersHorizontal,
+  Bot
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
 
 const SpendAreaChart = dynamic(
-  () => import("@/components/SpendAreaChart"),
+  () => import("@/components/SpendAreaChart").then((mod) => mod.SpendAreaChart),
   {
     ssr: false,
     loading: () => (
@@ -47,30 +43,31 @@ const SpendAreaChart = dynamic(
 
 export default function DashboardPage() {
   const {
-    currency,
     monthlySpendUSD,
     baselineSpendUSD,
-    currentTokens,
-    monthlyQuota,
-    planTier,
-    orgName,
-    logs,
     telemetryLogs,
+    logs,
+    routingRules,
+    monthlyQuota,
+    currency,
     autopilot,
     setAutopilotMode,
     setMonthlyBudget,
+    planTier,
+    orgName,
     slaEscrowContracts,
     deltaStats,
     loadDemoData,
-    clearUserData
+    clearUserData,
+    user
   } = useAppStore();
 
   const [mounted, setMounted] = useState(false);
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d" | "90d">("7d");
+  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d" | "90d">("30d");
   const [chartViewMode, setChartViewMode] = useState<"spend" | "savings" | "volume">("spend");
-  const [showSimulate, setShowSimulate] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [customBudget, setCustomBudget] = useState<number>(autopilot.monthly_budget_usd || 1500);
+  const [customBudget, setCustomBudget] = useState(autopilot.monthly_budget_usd || 1500);
+  const [showSimulate, setShowSimulate] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -79,35 +76,57 @@ export default function DashboardPage() {
 
   const fetchSessionTelemetry = () => {
     const userEmail = useAppStore.getState().user?.email;
-    // Guard: only sync if we have a real authenticated user email
     if (!userEmail) return;
 
     fetch(`/api/auth/session?email=${encodeURIComponent(userEmail)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.user) {
-          const currentStore = useAppStore.getState();
           useAppStore.setState({
-            currentTokens: data.user.tokens_used ?? currentStore.currentTokens ?? 0,
-            monthlyQuota: data.user.monthly_token_quota || currentStore.monthlyQuota || 10000,
-            monthlySpendUSD: data.user.monthlySpendUSD ?? currentStore.monthlySpendUSD ?? 0,
-            baselineSpendUSD: data.user.baselineSpendUSD ?? currentStore.baselineSpendUSD ?? 0,
-            planTier: data.user.plan_tier || currentStore.planTier || "free",
-            orgName: data.user.workspace || currentStore.orgName || "",
-            currency: data.user.currency || currentStore.currency || "USD",
-            rules: data.user.rules?.length ? data.user.rules : currentStore.rules,
-            routingRules: data.user.rules?.length ? data.user.rules : currentStore.routingRules,
-            apiKeys: (data.user.apiKeys && data.user.apiKeys.length > 0) ? data.user.apiKeys : currentStore.apiKeys,
-            logs: (data.user.logs && data.user.logs.length > 0) ? data.user.logs : currentStore.logs,
-            slaEscrowContracts: (data.user.slaEscrowContracts && data.user.slaEscrowContracts.length > 0) ? data.user.slaEscrowContracts : currentStore.slaEscrowContracts,
-            webhookConfig: data.user.webhookConfig || currentStore.webhookConfig,
-            federationSettings: data.user.federationSettings || currentStore.federationSettings
+            monthlySpendUSD: data.user.monthlySpendUSD ?? useAppStore.getState().monthlySpendUSD,
+            baselineSpendUSD: data.user.baselineSpendUSD ?? useAppStore.getState().baselineSpendUSD,
+            monthlyQuota: data.user.monthly_token_quota ?? useAppStore.getState().monthlyQuota,
+            currency: data.user.currency ?? useAppStore.getState().currency,
+            planTier: data.user.plan_tier ?? useAppStore.getState().planTier,
+            slaEscrowContracts: data.user.slaEscrowContracts ?? useAppStore.getState().slaEscrowContracts,
+            logs: data.user.logs && data.user.logs.length > 0 ? data.user.logs : useAppStore.getState().logs
           });
         }
       })
-      .catch((err) => console.warn("Session sync notice:", err));
+      .catch((err) => console.warn("Session rehydrate notice:", err));
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchSessionTelemetry();
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 600);
+  };
+
+  const handleBudgetChange = (newBudget: number) => {
+    setCustomBudget(newBudget);
+    setMonthlyBudget(newBudget);
+
+    const userEmail = useAppStore.getState().user?.email;
+    if (!userEmail) return;
+
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: userEmail,
+        updates: {
+          autopilot: {
+            ...autopilot,
+            monthly_budget_usd: newBudget
+          }
+        }
+      })
+    })
+      .then((res) => res.json())
+      .catch((err) => console.warn("Session sync notice:", err));
+  };
 
   useEffect(() => {
     if (autopilot.monthly_budget_usd) {
@@ -120,7 +139,6 @@ export default function DashboardPage() {
   const currencySymbol = activeCurrency === "INR" ? "₹" : "$";
 
   const activeLogs = logs.length > 0 ? logs : telemetryLogs;
-  const isDemoMode = activeLogs.length > 0;
 
   // Time multiplier adjustments
   const timeMultiplier = timeRange === "24h" ? 0.35 : timeRange === "7d" ? 1 : timeRange === "30d" ? 2.8 : 7.2;
@@ -128,58 +146,44 @@ export default function DashboardPage() {
   const baselineSpend = baselineSpendUSD * rate * timeMultiplier;
   const savedAmount = baselineSpend > currentSpend ? baselineSpend - currentSpend : 0;
   const savingsPct = baselineSpend > 0 ? ((savedAmount / baselineSpend) * 100).toFixed(1) : "42.8";
-  const isFreshAccount = currentSpend === 0 && activeLogs.length === 0;
 
   // Token quota calculations
   const effectiveQuota = monthlyQuota || 10000;
+  const currentTokens = (activeLogs.reduce((acc, l) => acc + (l.tokens_in || 0) + (l.tokens_out || 0), 0)) || (monthlySpendUSD > 0 ? Math.round((monthlySpendUSD / 0.00065) * 1000) : 0);
   const tokenUsagePercent = Math.min(100, Math.max(0, (currentTokens / effectiveQuota) * 100));
 
-  // Dynamic spend trend data depending on selected timeRange & mode
+  const displayOrgName = mounted && orgName ? orgName : "Enterprise Workspace";
+
+  // Chart telemetry dataset
   const spendTrendData = useMemo(() => {
-    if (isFreshAccount) {
-      const labels = timeRange === "24h" 
-        ? ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00", "Now"]
+    const points = timeRange === "24h" ? 6 : timeRange === "7d" ? 7 : timeRange === "30d" ? 6 : 8;
+    const labels =
+      timeRange === "24h"
+        ? ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
         : timeRange === "7d"
         ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         : timeRange === "30d"
-        ? ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6", "Today"]
-        : ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6", "Current"];
-      return labels.map(day => ({ day, baseline: 0, actual: 0, savings: 0, requests: 0 }));
-    }
+        ? ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Now"]
+        : ["Month 1", "Month 2", "Month 3", "Month 4", "Month 5", "Month 6", "Month 7", "Now"];
 
-    const step = currentSpend / 6;
-    const baseStep = baselineSpend / 6;
-    const baseReqs = timeRange === "24h" ? 42 : timeRange === "7d" ? 180 : timeRange === "30d" ? 750 : 2100;
-
-    let labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Today"];
-    if (timeRange === "24h") {
-      labels = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00", "Now"];
-    } else if (timeRange === "30d") {
-      labels = ["Day 1-5", "Day 6-10", "Day 11-15", "Day 16-20", "Day 21-25", "Day 26-29", "Day 30"];
-    } else if (timeRange === "90d") {
-      labels = ["Month 1A", "Month 1B", "Month 2A", "Month 2B", "Month 3A", "Month 3B", "Current"];
-    }
-
-    const multipliers = [1.0, 2.1, 3.2, 4.3, 5.2, 5.8, 6.0];
-
-    return labels.map((day, idx) => {
-      const mult = multipliers[idx];
-      const actualVal = parseFloat((step * (mult / 6) * 6).toFixed(2));
-      const baseVal = parseFloat((baseStep * (mult / 6) * 6).toFixed(2));
-      const savingsVal = Math.max(0, parseFloat((baseVal - actualVal).toFixed(2)));
-      const requestsVal = Math.round(baseReqs * (mult / 6));
+    return labels.map((label, idx) => {
+      const step = (idx + 1) / points;
+      const base = (baselineSpend / points) * (0.8 + step * 0.4);
+      const actual = (currentSpend / points) * (0.7 + step * 0.3);
+      const savings = Math.max(0, base - actual);
+      const volume = Math.round(140 + idx * 85 + (actual > 0 ? 120 : 0));
 
       return {
-        day,
-        baseline: idx === 6 ? parseFloat(baselineSpend.toFixed(2)) : baseVal,
-        actual: idx === 6 ? parseFloat(currentSpend.toFixed(2)) : actualVal,
-        savings: idx === 6 ? parseFloat(savedAmount.toFixed(2)) : savingsVal,
-        requests: requestsVal
+        day: label,
+        actual: parseFloat(actual.toFixed(2)),
+        baseline: parseFloat(base.toFixed(2)),
+        savings: parseFloat(savings.toFixed(2)),
+        requests: volume
       };
     });
-  }, [currentSpend, baselineSpend, savedAmount, isFreshAccount, timeRange]);
+  }, [timeRange, baselineSpend, currentSpend]);
 
-  // Model traffic allocation
+  // Model Share Matrix
   const modelShareData = useMemo(() => {
     if (activeLogs.length === 0) {
       return [
@@ -192,15 +196,16 @@ export default function DashboardPage() {
 
     const counts: Record<string, number> = {};
     activeLogs.forEach((l) => {
-      const key = l.model_used;
-      counts[key] = (counts[key] || 0) + 1;
+      const m = l.model_used || "DeepSeek-V3";
+      counts[m] = (counts[m] || 0) + 1;
     });
 
     const total = activeLogs.length;
+
     return Object.entries(counts).map(([name, count]) => {
-      const pct = Math.round((count / total) * 100);
+      const share = Math.round((count / total) * 100);
       let provider = "DeepSeek";
-      let costStr = "$0.00065/req";
+      let costStr = "$0.00042/req";
       let savings = "88%";
       let rate1M = "$0.27 / 1M";
       let ttft = "64ms";
@@ -236,7 +241,7 @@ export default function DashboardPage() {
       return {
         name,
         provider,
-        share: pct,
+        share,
         cost: costStr,
         savings,
         ratePerMillion: rate1M,
@@ -247,22 +252,15 @@ export default function DashboardPage() {
     });
   }, [activeLogs]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    fetchSessionTelemetry();
-    setTimeout(() => setIsRefreshing(false), 500);
-  };
-
   const handleExportCSV = () => {
     const headers = "Timestamp,RequestID,Model,Provider,TokensIn,TokensOut,CostUSD,CostINR,LatencyMs,Outcome,Prompt\n";
     let rows = "";
 
     if (activeLogs.length > 0) {
-      rows = activeLogs.map(l =>
+      rows = activeLogs.map((l) =>
         `"${l.created_at}","${l.id}","${l.model_used}","${l.provider}",${l.tokens_in},${l.tokens_out},${l.cost_usd},${(l.cost_usd * 86.5).toFixed(4)},${l.latency_ms},${l.outcome_success ? "Win" : "Loss"},"${(l.prompt_preview || "").replace(/"/g, '""')}"`
       ).join("\n");
     } else {
-      // Sample export row
       rows = `"${new Date().toISOString()}","req_sample_01","DeepSeek-V3","DeepSeek",450,120,0.00042,0.0363,64,Win,"Analyze token spend trajectory"`;
     }
 
@@ -270,13 +268,8 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `spend_router_audit_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `finops_dashboard_telemetry_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
-  };
-
-  const handleBudgetChange = (newBudget: number) => {
-    setCustomBudget(newBudget);
-    setMonthlyBudget(newBudget);
   };
 
   const totalRecoveredEscrow = slaEscrowContracts.reduce((acc, c) => acc + (c.refundUsd || 0), 0);
@@ -296,7 +289,7 @@ export default function DashboardPage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1D1D1F] dark:text-[#F5F5F7]">
-                Outcome-Indexed AI Spend Router
+                Executive FinOps Dashboard & Spend Router
               </h1>
               
               {/* Active Plan Tier & Quota Capsule */}
@@ -309,7 +302,7 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-xs sm:text-sm text-[#86868B] max-w-2xl leading-relaxed">
-              Autonomous multi-model intelligence gateway for <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{orgName || "Acme AI Lab"}</span>, dynamically prioritizing marginal outcome conversion over raw model scale.
+              Autonomous multi-model intelligence gateway for <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{displayOrgName}</span>, dynamically prioritizing marginal outcome conversion over raw model scale.
             </p>
 
             {/* Token Quota Ingestion Progress Indicator */}
@@ -390,37 +383,35 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* 2. Apple Bento Grid — 4 Core Metric Glass Pillars */}
+      {/* 2. Apple Bento Grid — 4 Core Metric Glass Pillars (Matched to /app/routing and /app/logs) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" suppressHydrationWarning>
         {/* Pillar 1: Avoided AI Spend */}
-        <div className="rounded-[30px] bg-gradient-to-br from-[#0B1528] via-[#0038A8] to-[#0050FF] p-6 text-white shadow-[0_16px_36px_rgba(0,80,255,0.28)] relative overflow-hidden flex flex-col justify-between group" suppressHydrationWarning>
-          <div className="absolute top-0 right-0 -mr-10 -mt-10 w-36 h-36 bg-white/15 rounded-full blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
-          
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-white/80 tracking-wider uppercase">Avoided AI Spend</span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white">
+            <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Avoided AI Spend</span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
               <ArrowDownRight className="h-3 w-3" />
               <span>{savingsPct}% Saved</span>
             </span>
           </div>
 
           <div className="my-5">
-            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono">
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-emerald-600 dark:text-emerald-400">
               +{formatCurrency(savedAmount, activeCurrency)}
             </div>
-            <div className="text-xs text-white/70 mt-1 flex items-center justify-between">
+            <div className="text-xs text-[#86868B] mt-1 flex items-center justify-between">
               <span>Optimized: {formatCurrency(currentSpend, activeCurrency)}</span>
               <span>Raw: {formatCurrency(baselineSpend, activeCurrency)}</span>
             </div>
           </div>
 
-          <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-white h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(15, parseFloat(savingsPct)))}%` }} />
+          <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden">
+            <div className="bg-emerald-500 h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, Math.max(15, parseFloat(savingsPct)))}%` }} />
           </div>
         </div>
 
         {/* Pillar 2: Thompson Win Rate */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Thompson Win Rate</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#EEF4FF] dark:bg-[#0050FF]/20 text-[#0050FF] dark:text-[#3374FF] px-2.5 py-0.5 rounded-full">
@@ -440,13 +431,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="w-full bg-[#E5E5EA] dark:bg-[#2C2C2E] h-1.5 rounded-full overflow-hidden flex">
-            <div className="bg-emerald-500 h-full transition-all duration-700" style={{ width: currentTokens > 0 || logs.length > 0 ? "88%" : "0%" }} />
+            <div className="bg-[#0050FF] h-full transition-all duration-700" style={{ width: currentTokens > 0 || logs.length > 0 ? "88%" : "0%" }} />
             <div className="bg-amber-400 h-full transition-all duration-700" style={{ width: currentTokens > 0 || logs.length > 0 ? "12%" : "0%" }} />
           </div>
         </div>
 
         {/* Pillar 3: Micro-SLA Escrow */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Micro-SLA Escrow</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 px-2.5 py-0.5 rounded-full">
@@ -471,7 +462,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Pillar 4: Semantic Delta Token Cut */}
-        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between" suppressHydrationWarning>
+        <div className="rounded-[30px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 shadow-sm flex flex-col justify-between hover:scale-[1.02] transition-all group" suppressHydrationWarning>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-[#86868B] uppercase tracking-wider">Semantic Delta</span>
             <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 px-2.5 py-0.5 rounded-full">
@@ -701,6 +692,79 @@ export default function DashboardPage() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 5. Recent Gateway Ingress Forensic Decision Waterfall (Matched to /app/logs) */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+              Recent Gateway Ingress Decisions
+            </h3>
+            <p className="text-xs text-[#86868B]">
+              Real-time prompt telemetry waterfall with cryptographic outcome ratings
+            </p>
+          </div>
+          <Link
+            href="/app/logs"
+            className="text-xs text-[#0050FF] dark:text-[#3374FF] font-semibold hover:underline flex items-center gap-1"
+          >
+            <span>Full Forensic Logs</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-black/[0.06] dark:border-white/[0.08] text-[#86868B]">
+                <th className="py-3 pr-4 font-semibold">Request ID</th>
+                <th className="py-3 px-4 font-semibold">Model Selected</th>
+                <th className="py-3 px-4 font-semibold">Tokens (In / Out)</th>
+                <th className="py-3 px-4 font-semibold">Latency</th>
+                <th className="py-3 px-4 font-semibold">Cost</th>
+                <th className="py-3 pl-4 font-semibold text-right">Outcome</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04] dark:divide-white/[0.06]">
+              {activeLogs.slice(0, 5).map((log, idx) => (
+                <tr key={idx} className="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="py-3.5 pr-4 font-mono text-[#86868B] truncate max-w-[140px]">
+                    {log.id || `req_00${idx + 1}`}
+                  </td>
+                  <td className="py-3.5 px-4 font-medium text-[#1D1D1F] dark:text-[#F5F5F7]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Cpu className="h-3.5 w-3.5 text-[#0050FF]" />
+                      <span>{log.model_used || "DeepSeek-V3"}</span>
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-[#86868B]">
+                    {log.tokens_in || 450} / {log.tokens_out || 120}
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-[#86868B]">
+                    {log.latency_ms || 64}ms
+                  </td>
+                  <td className="py-3.5 px-4 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency((log.cost_usd || 0.00042) * rate, activeCurrency)}
+                  </td>
+                  <td className="py-3.5 pl-4 text-right">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>Verified Win</span>
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {activeLogs.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-xs text-[#86868B]">
+                    No live logs yet. Click &quot;Simulate Request&quot; above to route your first test prompt!
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
