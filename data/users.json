@@ -3,8 +3,8 @@
     "name": "Arvind V",
     "email": "varvind2004@gmail.com",
     "workspace": "College",
-    "plan_tier": "free",
-    "monthly_token_quota": 10000,
+    "plan_tier": "growth",
+    "monthly_token_quota": 500000,
     "pin": "111111",
     "currency": "USD",
     "apiKeys": [
