@@ -239,6 +239,40 @@ class MultiModelGateway:
                     }
                     return out_json, usage.get("input_tokens", 100), usage.get("output_tokens", 150)
 
+        # Check if live Groq key exists
+        if provider == "groq" and settings.GROQ_API_KEY:
+            groq_model = "llama-3.3-70b-versatile" if "70b" in model_name else "llama-3.1-8b-instant"
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                try:
+                    resp = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {settings.GROQ_API_KEY}"},
+                        json={"model": groq_model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        usage = data.get("usage", {})
+                        return data, usage.get("prompt_tokens", 80), usage.get("completion_tokens", 120)
+                except Exception:
+                    pass
+
+        # Check if live DeepSeek key exists
+        if provider == "deepseek" and settings.DEEPSEEK_API_KEY:
+            deepseek_model = "deepseek-coder" if "coder" in model_name else "deepseek-chat"
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                try:
+                    resp = await client.post(
+                        "https://api.deepseek.com/chat/completions",
+                        headers={"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"},
+                        json={"model": deepseek_model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        usage = data.get("usage", {})
+                        return data, usage.get("prompt_tokens", 90), usage.get("completion_tokens", 140)
+                except Exception:
+                    pass
+
         # Check Ollama local instance
         if provider == "ollama":
             try:

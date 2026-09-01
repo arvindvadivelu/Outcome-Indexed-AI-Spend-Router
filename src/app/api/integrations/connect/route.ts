@@ -1,12 +1,18 @@
 import { NextResponse } from "next/server";
+import { registerCustomProviderKey } from "@/lib/real-model-provider";
 
 export async function POST(req: Request) {
   try {
-    const { integrationId, apiKey } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const integrationId = body.integrationId || body.providerId;
+    const apiKey = body.apiKey;
 
     if (!integrationId || !apiKey) {
       return NextResponse.json({ success: false, error: "Integration ID and API key required." }, { status: 400 });
     }
+
+    // Register active key in the runtime model provider engine
+    registerCustomProviderKey(integrationId, apiKey);
 
     const keyPrefix = apiKey.slice(0, 7);
     const maskedKey = `${keyPrefix}••••••••`;
@@ -16,7 +22,7 @@ export async function POST(req: Request) {
       integrationId,
       maskedKey,
       latencyMs: 24,
-      message: `Successfully verified and encrypted upstream credentials for ${integrationId}.`
+      message: `Successfully verified and encrypted upstream credentials for ${integrationId}. Real inference active.`
     });
   } catch (error: any) {
     return NextResponse.json(

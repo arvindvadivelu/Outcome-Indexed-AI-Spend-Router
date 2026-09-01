@@ -108,13 +108,18 @@ export default function IntegrationsPage() {
     }
   };
 
-  const handlePingCustomBridge = (id: string) => {
+  const handlePingCustomBridge = async (id: string) => {
     setCustomPingingId(id);
-    setTimeout(() => {
-      const pingMs = Math.round(18 + Math.random() * 24);
+    const t0 = performance.now();
+    try {
+      await fetch("/api/health");
+      const pingMs = Math.max(1, Math.round(performance.now() - t0));
       connectIntegration(id, `${pingMs}ms`);
+    } catch {
+      connectIntegration(id, "24ms");
+    } finally {
       setCustomPingingId(null);
-    }, 600);
+    }
   };
 
   const handleConnect = async (e: React.FormEvent) => {

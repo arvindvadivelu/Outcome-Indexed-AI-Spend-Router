@@ -32,11 +32,35 @@ export async function POST(req: Request) {
       .digest("hex");
 
     const headerSignature = `t=${timestamp},v1=${signature}`;
+    let realHttpStatus = 200;
+    let deliveryLatencyMs = 28;
+
+    // Execute real HTTP webhook delivery if external URL is provided
+    if (endpointUrl && (endpointUrl.startsWith("http://") || endpointUrl.startsWith("https://")) && !endpointUrl.includes("yourcompany.com")) {
+      const t0 = performance.now();
+      try {
+        const remoteRes = await fetch(endpointUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Outcome-Router-Signature": headerSignature,
+            "User-Agent": "Outcome-Indexed-AI-Spend-Router/1.0 Webhook-Delivery"
+          },
+          body: payloadString,
+          signal: AbortSignal.timeout(8000)
+        });
+        deliveryLatencyMs = Math.round(performance.now() - t0);
+        realHttpStatus = remoteRes.status;
+      } catch (e: any) {
+        deliveryLatencyMs = Math.round(performance.now() - t0);
+        realHttpStatus = 502;
+      }
+    }
 
     return NextResponse.json({
-      success: true,
-      http_status: 200,
-      latency_ms: 34,
+      success: realHttpStatus >= 200 && realHttpStatus < 300,
+      http_status: realHttpStatus,
+      latency_ms: deliveryLatencyMs,
       endpoint_url: endpointUrl || "https://api.yourcompany.com/webhooks/spend-router",
       signature_header: headerSignature,
       signature_verified: true,

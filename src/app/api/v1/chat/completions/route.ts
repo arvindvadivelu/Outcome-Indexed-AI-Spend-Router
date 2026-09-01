@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { findUserByEmail, findUserByApiKey, consumeUserTokens, updateUserAccountState } from "@/lib/auth-db";
-import { generateIntelligentPromptResponse } from "@/lib/dynamic-prompt-answering";
+import { dispatchRealOrIntelligentModel } from "@/lib/real-model-provider";
 
 // Live Model Cost Matrix (per 1K tokens - USD)
 const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCostPer1K: number; outputCostPer1K: number; avgTtftMs: number; winRate: number }> = {
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
 
     // Real-Time Token Count Approximation (1 token ≈ 4 chars)
     const promptTokens = Math.max(1, Math.ceil(promptText.length / 4));
-    const completionTokens = Math.min(body.max_tokens || 256, 350);
+    const completionTokens = Math.min(body.max_tokens || 512, 1024);
     const totalRequestTokens = promptTokens + completionTokens;
 
     // -------------------------------------------------------------
@@ -132,8 +132,6 @@ export async function POST(req: Request) {
     // -------------------------------------------------------------
     // FREE PLAN FEATURE ISOLATION CHECK
     // -------------------------------------------------------------
-    // Free Plan only has Thompson Sampling + Standard Connectors
-    // Paid features (Prewarming, Delta Diffing, SLA Escrow) are locked on Free Plan
     const isFreePlan = planTier === "free";
     const paidFeatureAttempted =
       headers.get("x-outcome-semantic-delta") === "true" ||
@@ -144,22 +142,36 @@ export async function POST(req: Request) {
     // -------------------------------------------------------------
     // REAL-TIME BAYESIAN INTENT & PARETO ROUTING ARBITRATION
     // -------------------------------------------------------------
-    const intelligentResult = generateIntelligentPromptResponse(promptText);
     let selectedModelKey = "groq-llama-3-3-70b";
-    let taskType = intelligentResult.taskDomain;
-    let simulatedResponseContent = intelligentResult.content;
+    let taskType = "general_conversational";
 
-    if (intelligentResult.modelUsed.includes("DeepSeek Coder")) {
+    const isCode = lowerPrompt.includes("code") || lowerPrompt.includes("function") || lowerPrompt.includes("python") || lowerPrompt.includes("typescript") || lowerPrompt.includes("sql") || lowerPrompt.includes("refactor") || lowerPrompt.includes("bug");
+    const isReasoningOrSales = lowerPrompt.includes("reasoning") || lowerPrompt.includes("email") || lowerPrompt.includes("outreach") || lowerPrompt.includes("pitch") || lowerPrompt.includes("strategy") || lowerPrompt.includes("explain");
+    const isMath = lowerPrompt.includes("calculate") || lowerPrompt.includes("solve") || lowerPrompt.includes("math") || /\b\d+\s*[\+\-\*\/]\s*\d+\b/.test(lowerPrompt);
+
+    if (isCode) {
       selectedModelKey = "deepseek-coder-v2";
-    } else if (intelligentResult.modelUsed.includes("Claude")) {
+      taskType = "code_generation";
+    } else if (isReasoningOrSales) {
       selectedModelKey = "claude-3-5-sonnet";
-    } else if (intelligentResult.modelUsed.includes("DeepSeek-V3")) {
+      taskType = lowerPrompt.includes("email") || lowerPrompt.includes("outreach") ? "sales_email" : "reasoning";
+    } else if (isMath) {
       selectedModelKey = "deepseek-v3";
+      taskType = "mathematical_reasoning";
     } else {
       selectedModelKey = "groq-llama-3-3-70b";
+      taskType = "customer_support";
     }
 
-    const selectedModel = MODEL_REGISTRY[selectedModelKey];
+    // Model execution: Real Provider API or High-Fidelity Intelligent Answering
+    const modelExecution = await dispatchRealOrIntelligentModel({
+      messages,
+      modelKey: selectedModelKey,
+      temperature: body.temperature || 0.7,
+      maxTokens: body.max_tokens || 1024
+    });
+
+    const selectedModel = MODEL_REGISTRY[selectedModelKey] || MODEL_REGISTRY["groq-llama-3-3-70b"];
     const baselineControl = MODEL_REGISTRY["gpt-4o"];
 
     // -------------------------------------------------------------
@@ -171,23 +183,24 @@ export async function POST(req: Request) {
     const semanticCacheHit = !isFreePlan && isSemanticDeltaRequested;
     const speculativePrewarmActive = !isFreePlan && isSpeculativePrewarmRequested;
 
-    const effectivePromptTokens = semanticCacheHit ? Math.max(1, Math.round(promptTokens * 0.40)) : promptTokens;
-    const tokensSavedByCache = promptTokens - effectivePromptTokens;
+    const actualPromptTokens = modelExecution.promptTokens || promptTokens;
+    const actualCompletionTokens = modelExecution.completionTokens || completionTokens;
+    const effectivePromptTokens = semanticCacheHit ? Math.max(1, Math.round(actualPromptTokens * 0.40)) : actualPromptTokens;
+    const tokensSavedByCache = actualPromptTokens - effectivePromptTokens;
 
     const baselineCost =
-      (promptTokens / 1000) * baselineControl.inputCostPer1K +
-      (completionTokens / 1000) * baselineControl.outputCostPer1K;
+      (actualPromptTokens / 1000) * baselineControl.inputCostPer1K +
+      (actualCompletionTokens / 1000) * baselineControl.outputCostPer1K;
 
     const actualCost =
       (effectivePromptTokens / 1000) * selectedModel.inputCostPer1K +
-      (completionTokens / 1000) * selectedModel.outputCostPer1K;
+      (actualCompletionTokens / 1000) * selectedModel.outputCostPer1K;
 
     const capitalSavedUsd = Math.max(0, baselineCost - actualCost);
     const spendAvoidedPct = baselineCost > 0 ? ((capitalSavedUsd / baselineCost) * 100).toFixed(1) : "0.0";
 
     const elapsedMs = performance.now() - startTime;
-    const baseTtftMs = Math.round(selectedModel.avgTtftMs + (Math.random() * 8 - 4));
-    const ttftMs = speculativePrewarmActive ? Math.max(12, Math.round(baseTtftMs * 0.55)) : baseTtftMs;
+    const ttftMs = modelExecution.latencyMs || Math.round(selectedModel.avgTtftMs * (speculativePrewarmActive ? 0.55 : 1));
 
     // Cryptographic Micro-SLA SHA-256 Nonce
     const contractNonce = crypto
@@ -200,21 +213,21 @@ export async function POST(req: Request) {
       id: `chatcmpl-oir-${crypto.randomBytes(8).toString("hex")}`,
       object: "chat.completion",
       created: Math.floor(Date.now() / 1000),
-      model: selectedModel.name,
+      model: modelExecution.modelUsed || selectedModel.name,
       choices: [
         {
           index: 0,
           message: {
             role: "assistant",
-            content: simulatedResponseContent
+            content: modelExecution.content
           },
           finish_reason: "stop"
         }
       ],
       usage: {
         prompt_tokens: effectivePromptTokens,
-        completion_tokens: completionTokens,
-        total_tokens: effectivePromptTokens + completionTokens
+        completion_tokens: actualCompletionTokens,
+        total_tokens: effectivePromptTokens + actualCompletionTokens
       },
       // OUTCOME-ROUTER ENTERPRISE PROPRIETARY TELEMETRY
       _router_metadata: {
@@ -223,17 +236,19 @@ export async function POST(req: Request) {
         monthly_token_quota: quotaCheck.monthly_token_quota,
         tokens_consumed: quotaCheck.tokens_used,
         tokens_remaining: quotaCheck.remaining,
+        is_real_inference: modelExecution.isRealInference,
+        provider_status: modelExecution.providerStatus,
         features_used: [
           "Thompson Sampling Routing Engine",
-          "OpenAI + Anthropic + Groq Connectors",
+          "OpenAI + Anthropic + Groq + DeepSeek Connectors",
           "Basic Telemetry Logs (3 Days)"
         ],
         paid_feature_blocked_reason: isFreePlan && paidFeatureAttempted ? "Paid feature locked on Free Tier. Upgrade to Starter/Growth." : null,
         task_type: taskType,
         target_metric: targetMetric,
         strategy_applied: strategy,
-        model_routed: selectedModel.name,
-        provider: selectedModel.provider,
+        model_routed: modelExecution.modelUsed || selectedModel.name,
+        provider: modelExecution.provider || selectedModel.provider,
         baseline_model: "GPT-4o (Control)",
         baseline_cost_usd: Number(baselineCost.toFixed(6)),
         actual_cost_usd: Number(actualCost.toFixed(6)),

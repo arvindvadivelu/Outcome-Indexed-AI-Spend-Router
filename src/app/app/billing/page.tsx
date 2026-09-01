@@ -167,17 +167,16 @@ export default function BillingPage() {
 
   const handleDownloadInvoice = (invId: string) => {
     setInvoiceDownloading(invId);
-    setTimeout(() => {
-      const headers = "Invoice ID,Billing Period,Amount,Status,Payment Method\n";
-      const row = `"${invId}","Current Billing Cycle","${formatCurrency(monthlySpendUSD * rate, activeCurrency)}","PAID","Stripe (Visa ending in 4242)"\n`;
-      const blob = new Blob([headers + row], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${invId}.csv`;
-      a.click();
-      setInvoiceDownloading(null);
-    }, 800);
+    const targetInv = invoicesList.find((i) => i.id === invId) || invoicesList[0];
+    const headers = "Invoice ID,Date,Customer Name,Customer Email,Workspace,Plan,Token Quota,Currency,Total Amount,Payment Method,Transaction Ref,Status,SHA256 Hash\n";
+    const row = `"${targetInv.id}","${targetInv.date}","${targetInv.customerName}","${targetInv.customerEmail}","${targetInv.workspaceName}","${targetInv.planName}",${targetInv.tokenQuota},"${targetInv.currency}",${targetInv.totalAmount},"${targetInv.paymentMethod}","${targetInv.transactionRef}","${targetInv.status}","${targetInv.sha256Hash}"\n`;
+    const blob = new Blob([headers + row], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${targetInv.id}.csv`;
+    a.click();
+    setInvoiceDownloading(null);
   };
 
   const handleSelectPlan = async (tierId: "free" | "starter" | "growth" | "enterprise") => {

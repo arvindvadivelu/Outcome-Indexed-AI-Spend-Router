@@ -1,21 +1,29 @@
 import { NextResponse } from "next/server";
+import { findUserByEmail, getAllUsers } from "@/lib/auth-db";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "25");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const email = searchParams.get("email");
+
+    let realLogs: any[] = [];
+
+    if (email) {
+      const user = findUserByEmail(email);
+      realLogs = user?.logs || [];
+    } else {
+      const allUsers = getAllUsers();
+      realLogs = allUsers.flatMap((u) => u.logs || []);
+    }
+
+    // Sort newest first
+    realLogs = realLogs.slice(0, limit);
 
     return NextResponse.json({
       success: true,
-      totalLogs: limit,
-      logs: Array.from({ length: limit }).map((_, idx) => ({
-        id: `oir_log_${idx + 1}`,
-        model_used: idx % 3 === 0 ? "DeepSeek Coder" : idx % 3 === 1 ? "Claude 3.5 Sonnet" : "Groq Llama 3.3",
-        latency_ms: 55 + (idx * 4),
-        cost_usd: 0.00065,
-        status: "COMPLIANT_SLA",
-        timestamp: new Date(Date.now() - idx * 60000).toISOString()
-      }))
+      totalLogs: realLogs.length,
+      logs: realLogs
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

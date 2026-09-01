@@ -1,1 +1,70 @@
-[]
+[
+  {
+    "id": "tx_1788212853613_qez8b",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "COMPLETED",
+    "createdAt": "2026-08-31T21:47:33.613Z",
+    "invoiceNumber": "INV-OIR-INR-457635",
+    "referenceUtr": "423918471920",
+    "verifiedAt": "2026-09-01T02:34:13.757Z"
+  },
+  {
+    "id": "tx_1788212853685_90xk6",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "USD",
+    "amount": 99,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T21:47:33.685Z",
+    "invoiceNumber": "INV-OIR-USD-165430"
+  },
+  {
+    "id": "tx_1788213033787_iuup3",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T21:50:33.787Z",
+    "invoiceNumber": "INV-OIR-INR-485424"
+  },
+  {
+    "id": "tx_1788213033842_u08tv",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "USD",
+    "amount": 99,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-08-31T21:50:33.842Z",
+    "invoiceNumber": "INV-OIR-USD-789486"
+  },
+  {
+    "id": "tx_1788230053640_pd6nd",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-01T02:34:13.641Z",
+    "invoiceNumber": "INV-OIR-INR-612944"
+  },
+  {
+    "id": "tx_1788230053708_mu5mr",
+    "userEmail": "varvind2004@gmail.com",
+    "planTier": "growth",
+    "currency": "USD",
+    "amount": 99,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-01T02:34:13.708Z",
+    "invoiceNumber": "INV-OIR-USD-130994"
+  }
+]
