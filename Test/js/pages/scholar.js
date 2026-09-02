@@ -1,10 +1,11 @@
 /**
  * AURA Scholar & Research Lab Controller
  * Handles academic literature search, citation graphing, paper modal reading,
- * and BibTeX export.
+ * and BibTeX export via REST API.
  */
 
 import { AuraNav } from '../nav.js';
+import { auraApi } from '../apiClient.js';
 
 class ScholarApp {
   constructor() {
@@ -21,15 +22,7 @@ class ScholarApp {
         doi: "10.1145/3411764.3445582",
         domain: "AI & Machine Learning",
         abstract: "We introduce an autonomous multi-agent framework capable of decomposing complex combinatorial reasoning tasks into decentralized sub-agent trees. Across 1,400 benchmark evaluation suites, our approach achieves a 42.6% reduction in hallucination rates while accelerating inference throughput by 3.2x compared to standard sequential chain-of-thought methods.",
-        bibtex: `@article{vance2025autonomous,
-  title={Autonomous Multi-Agent Reasoning via Latent Tree-of-Thought Decomposition},
-  author={Vance, Elena and Chen, Marcus and Tanaka, Kenji},
-  journal={Journal of Artificial Intelligence Research},
-  volume={74},
-  pages={112--134},
-  year={2025},
-  publisher={JAIR}
-}`
+        bibtex: `@article{vance2025autonomous,\n  title={Autonomous Multi-Agent Reasoning via Latent Tree-of-Thought Decomposition},\n  author={Vance, Elena and Chen, Marcus and Tanaka, Kenji},\n  journal={Journal of Artificial Intelligence Research},\n  volume={74},\n  pages={112--134},\n  year={2025},\n  publisher={JAIR}\n}`
       },
       {
         id: "p2",
@@ -41,13 +34,7 @@ class ScholarApp {
         doi: "10.1038/s41534-024-00812-x",
         domain: "Quantum Physics",
         abstract: "Scalable quantum computation demands surface-code error mitigation with thresholds exceeding physical error rates. Here we demonstrate a 128-qubit planar architecture operating at 15 mK with two-qubit gate fidelities exceeding 99.92%, paving a verifiable path towards utility-scale quantum supremacy.",
-        bibtex: `@article{pendelton2024fault,
-  title={Fault-Tolerant Superconducting Qubit Architectures at 15 Millikelvin},
-  author={Pendelton, Arthur and Rostova, Svetlana and Lindqvist, Henrik},
-  journal={Nature Quantum Information},
-  volume={18},
-  year={2024}
-}`
+        bibtex: `@article{pendelton2024fault,\n  title={Fault-Tolerant Superconducting Qubit Architectures at 15 Millikelvin},\n  author={Pendelton, Arthur and Rostova, Svetlana and Lindqvist, Henrik},\n  journal={Nature Quantum Information},\n  volume={18},\n  year={2024}\n}`
       },
       {
         id: "p3",
@@ -59,36 +46,14 @@ class ScholarApp {
         doi: "10.1016/j.stem.2025.02.011",
         domain: "Biotech & Longevity",
         abstract: "Transient expression of Yamanaka reprogramming factors mediated via deactivated Cas9 epigenome modifiers restores youthful DNA methylation profiles without inducing oncogenic pluripotency, leading to a 28% increase in median lifespan in aged murine cohorts.",
-        bibtex: `@article{sterling2025crispr,
-  title={CRISPR Epigenome Editing for Cellular Rejuvenation in Mammalian Models},
-  author={Sterling, Sarah and Zhao, David and Moreau, Luc},
-  journal={Cell Stem Cell & Longevity},
-  year={2025}
-}`
-      },
-      {
-        id: "p4",
-        title: "High-Throughput Distributed Consensus via Zero-Knowledge State Channels",
-        authors: "Alexandre Dubois, Rachel Cohen, M. Al-Mansoor",
-        journal: "IEEE Transactions on Dependable & Secure Computing",
-        year: 2024,
-        citations: 380,
-        doi: "10.1109/TDSC.2024.3129845",
-        domain: "Distributed Systems",
-        abstract: "We formulate an asynchronous consensus algorithm that offloads cryptographic verification to non-interactive zero-knowledge proofs (zk-SNARKs), achieving over 180,000 transactions per second under adversarial network partitions.",
-        bibtex: `@article{dubois2024consensus,
-  title={High-Throughput Distributed Consensus via Zero-Knowledge State Channels},
-  author={Dubois, Alexandre and Cohen, Rachel},
-  journal={IEEE Transactions on Dependable & Secure Computing},
-  year={2024}
-}`
+        bibtex: `@article{sterling2025crispr,\n  title={CRISPR Epigenome Editing for Cellular Rejuvenation in Mammalian Models},\n  author={Sterling, Sarah and Zhao, David and Moreau, Luc},\n  journal={Cell Stem Cell & Longevity},\n  year={2025}\n}`
       }
     ];
 
     this.activePapers = [...this.papers];
     this.initDOM();
     this.bindEvents();
-    this.renderPapers();
+    this.loadPapersFromApi();
   }
 
   initDOM() {
@@ -103,13 +68,7 @@ class ScholarApp {
     if (this.searchInput) {
       this.searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase().trim();
-        this.activePapers = this.papers.filter(p => 
-          p.title.toLowerCase().includes(query) ||
-          p.authors.toLowerCase().includes(query) ||
-          p.abstract.toLowerCase().includes(query) ||
-          p.domain.toLowerCase().includes(query)
-        );
-        this.renderPapers();
+        this.filterPapers(query, '');
       });
     }
 
@@ -118,8 +77,7 @@ class ScholarApp {
       tag.addEventListener('click', () => {
         const dom = tag.getAttribute('data-domain');
         if (this.searchInput) this.searchInput.value = dom;
-        this.activePapers = this.papers.filter(p => p.domain.toLowerCase().includes(dom.toLowerCase()) || p.title.toLowerCase().includes(dom.toLowerCase()));
-        this.renderPapers();
+        this.filterPapers('', dom);
         this.nav.showToast(`Filtered by ${dom}`);
       });
     });
@@ -134,6 +92,30 @@ class ScholarApp {
         if (e.target === this.paperModal) this.paperModal.classList.remove('active');
       });
     }
+  }
+
+  async loadPapersFromApi() {
+    const remote = await auraApi.getScholarPapers();
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      this.papers = remote;
+      this.activePapers = [...remote];
+    }
+    this.renderPapers();
+  }
+
+  async filterPapers(query, domain) {
+    const remote = await auraApi.getScholarPapers(query, domain);
+    if (remote && Array.isArray(remote)) {
+      this.activePapers = remote;
+    } else {
+      // Local fallback
+      this.activePapers = this.papers.filter(p => {
+        const matchQ = !query || p.title.toLowerCase().includes(query) || p.authors.toLowerCase().includes(query) || p.abstract.toLowerCase().includes(query);
+        const matchD = !domain || p.domain.toLowerCase().includes(domain.toLowerCase());
+        return matchQ && matchD;
+      });
+    }
+    this.renderPapers();
   }
 
   renderPapers() {

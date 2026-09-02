@@ -1,9 +1,10 @@
 /**
  * AURA Workspace & AI Docs Controller
- * Real-time document editor with AI co-writing actions, file tree, and export.
+ * Real-time document editor with AI co-writing actions, file tree, and REST API synchronization.
  */
 
 import { AuraNav } from '../nav.js';
+import { auraApi } from '../apiClient.js';
 
 class WorkspacePageApp {
   constructor() {
@@ -42,10 +43,10 @@ Quantum computing represents a paradigm transition from binary computational bou
     ];
 
     this.activeDoc = this.documents[0];
+    this.saveTimeout = null;
     this.initDOM();
     this.bindEvents();
-    this.loadDocument(this.activeDoc);
-    this.renderFileTree();
+    this.loadDocsFromApi();
   }
 
   initDOM() {
@@ -62,30 +63,42 @@ Quantum computing represents a paradigm transition from binary computational bou
       this.docEditor.addEventListener('input', () => {
         this.activeDoc.content = this.docEditor.value;
         this.updateStats();
+        
         if (this.saveStatusEl) {
           this.saveStatusEl.textContent = 'Saving...';
-          setTimeout(() => {
-            this.saveStatusEl.textContent = 'Saved to Cloud';
-          }, 400);
         }
+
+        clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(async () => {
+          await auraApi.updateDocument(this.activeDoc.id, this.activeDoc.title, this.activeDoc.content);
+          if (this.saveStatusEl) {
+            this.saveStatusEl.textContent = 'Saved to Cloud';
+          }
+        }, 600);
       });
     }
 
     if (this.docTitleInput) {
-      this.docTitleInput.addEventListener('input', (e) => {
+      this.docTitleInput.addEventListener('input', async (e) => {
         this.activeDoc.title = e.target.value;
         this.renderFileTree();
+        await auraApi.updateDocument(this.activeDoc.id, this.activeDoc.title, this.activeDoc.content);
       });
     }
 
     // New Document Button
-    document.querySelector('#btn-new-doc')?.addEventListener('click', () => {
-      const newDoc = {
+    document.querySelector('#btn-new-doc')?.addEventListener('click', async () => {
+      const defaultTitle = `Untitled Dossier ${this.documents.length + 1}`;
+      const defaultContent = `# New AI Document\n\nStart typing or use AI actions above to synthesize research...`;
+
+      const remoteDoc = await auraApi.createDocument(defaultTitle, defaultContent);
+      const newDoc = remoteDoc || {
         id: `doc-${Date.now()}`,
-        title: `Untitled Document ${this.documents.length + 1}`,
-        content: `# New AI Document\n\nStart typing or use AI actions above to synthesize research...`
+        title: defaultTitle,
+        content: defaultContent
       };
-      this.documents.push(newDoc);
+
+      this.documents.unshift(newDoc);
       this.loadDocument(newDoc);
       this.renderFileTree();
       this.nav.showToast('Created new AI document');
@@ -112,6 +125,16 @@ Quantum computing represents a paradigm transition from binary computational bou
     });
   }
 
+  async loadDocsFromApi() {
+    const remote = await auraApi.getDocuments();
+    if (remote && Array.isArray(remote) && remote.length > 0) {
+      this.documents = remote;
+      this.activeDoc = this.documents[0];
+    }
+    this.loadDocument(this.activeDoc);
+    this.renderFileTree();
+  }
+
   loadDocument(doc) {
     this.activeDoc = doc;
     if (this.docTitleInput) this.docTitleInput.value = doc.title;
@@ -132,15 +155,19 @@ Quantum computing represents a paradigm transition from binary computational bou
     if (!this.fileTreeList) return;
     this.fileTreeList.innerHTML = this.documents.map(doc => `
       <div class="collection-item ${doc.id === this.activeDoc.id ? 'active' : ''}" data-id="${doc.id}" style="padding: 10px 14px; cursor: pointer;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span style="font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${doc.title}</span>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px; overflow: hidden;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span style="font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${doc.title}</span>
+          </div>
+          <button class="btn-icon btn-del-doc" data-id="${doc.id}" style="width: 24px; height: 24px; font-size: 0.7rem;">✕</button>
         </div>
       </div>
     `).join('');
 
     this.fileTreeList.querySelectorAll('.collection-item').forEach(item => {
-      item.addEventListener('click', () => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-del-doc')) return;
         const id = item.getAttribute('data-id');
         const d = this.documents.find(doc => doc.id === id);
         if (d) {
@@ -149,30 +176,47 @@ Quantum computing represents a paradigm transition from binary computational bou
         }
       });
     });
+
+    this.fileTreeList.querySelectorAll('.btn-del-doc').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        await auraApi.deleteDocument(id);
+        this.documents = this.documents.filter(d => d.id !== id);
+        if (this.documents.length === 0) {
+          this.documents.push({ id: `doc-${Date.now()}`, title: "Untitled Document", content: "" });
+        }
+        this.activeDoc = this.documents[0];
+        this.loadDocument(this.activeDoc);
+        this.renderFileTree();
+        this.nav.showToast('Document deleted');
+      });
+    });
   }
 
-  executeAiAction(action) {
+  async executeAiAction(action) {
     if (!this.docEditor) return;
 
-    if (action === 'expand') {
-      const addition = `\n\n### Extended Verification & Cross-References:\n- **Empirical Baseline**: Validated across distributed testbeds with 99.4% precision. [1]\n- **Latency Profile**: End-to-end response times sustain sub-40ms execution under peak concurrency. [2]`;
-      this.docEditor.value += addition;
-      this.activeDoc.content = this.docEditor.value;
-      this.updateStats();
-      this.nav.showToast('Expanded with verified citations');
-    } else if (action === 'bullets') {
-      const addition = `\n\n### Key Takeaways:\n1. Accelerated throughput via autonomous sub-agent decomposition.\n2. Cryogenic stability verified at 15 mK.\n3. Scalable fault-tolerance via lattice cryptographic standards.`;
-      this.docEditor.value += addition;
-      this.activeDoc.content = this.docEditor.value;
-      this.updateStats();
-      this.nav.showToast('Synthesized into 3 key takeaways');
-    } else if (action === 'table') {
-      const tableStr = `\n\n| Feature | Conventional Baseline | AURA Intelligence |\n| :--- | :--- | :--- |\n| **Latency** | 450ms | 32ms |\n| **Ad Invasiveness** | High (5+ Ads) | Zero Ads |\n| **Reasoning Depth** | Single Pass | Multi-Agent Tree |`;
-      this.docEditor.value += tableStr;
-      this.activeDoc.content = this.docEditor.value;
-      this.updateStats();
-      this.nav.showToast('Appended structured comparison table');
+    // Try REST API transformation
+    const remote = await auraApi.executeAiAction(this.activeDoc.id, action, this.docEditor.value);
+
+    if (remote && remote.transformed_content) {
+      this.docEditor.value = remote.transformed_content;
+    } else {
+      // Local fallback
+      if (action === 'expand') {
+        this.docEditor.value += `\n\n### Extended Verification & Cross-References:\n- **Empirical Baseline**: Validated across distributed testbeds with 99.4% precision. [1]\n- **Latency Profile**: End-to-end response times sustain sub-40ms execution under peak concurrency. [2]`;
+      } else if (action === 'bullets') {
+        this.docEditor.value += `\n\n### Key Takeaways:\n1. Accelerated throughput via autonomous sub-agent decomposition.\n2. Cryogenic stability verified at 15 mK.\n3. Scalable fault-tolerance via lattice cryptographic standards.`;
+      } else if (action === 'table') {
+        this.docEditor.value += `\n\n| Feature | Conventional Baseline | AURA Intelligence |\n| :--- | :--- | :--- |\n| **Latency** | 450ms | 32ms |\n| **Ad Invasiveness** | High (5+ Ads) | Zero Ads |\n| **Reasoning Depth** | Single Pass | Multi-Agent Tree |`;
+      }
     }
+
+    this.activeDoc.content = this.docEditor.value;
+    this.updateStats();
+    await auraApi.updateDocument(this.activeDoc.id, this.activeDoc.title, this.activeDoc.content);
+    this.nav.showToast(`Applied AI Action: ${action.toUpperCase()}`);
   }
 }
 

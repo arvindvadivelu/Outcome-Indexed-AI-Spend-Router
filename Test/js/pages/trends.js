@@ -1,10 +1,11 @@
 /**
  * AURA Global Trends Controller
  * Renders multi-line comparative search volume charts on HTML5 Canvas,
- * real-time breakout search velocity feeds, and regional heatmaps.
+ * real-time breakout search velocity feeds, and regional heatmaps via REST API.
  */
 
 import { AuraNav } from '../nav.js';
+import { auraApi } from '../apiClient.js';
 
 class TrendsApp {
   constructor() {
@@ -30,8 +31,7 @@ class TrendsApp {
     this.activeBreakouts = [...this.breakouts];
     this.initCanvas();
     this.bindEvents();
-    this.renderChart();
-    this.renderBreakouts();
+    this.loadTrendsFromApi();
   }
 
   initCanvas() {
@@ -49,11 +49,11 @@ class TrendsApp {
   bindEvents() {
     // Timeframe Switches
     document.querySelectorAll('.timeframe-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.activeTimeframe = btn.getAttribute('data-tf');
-        this.renderChart();
+        await this.loadTrendsFromApi();
         this.nav.showToast(`Updated to ${this.activeTimeframe.toUpperCase()} trend window`);
       });
     });
@@ -70,6 +70,17 @@ class TrendsApp {
         this.renderBreakouts();
       });
     });
+  }
+
+  async loadTrendsFromApi() {
+    const remote = await auraApi.getTrends(this.activeTimeframe);
+    if (remote && remote.series && remote.breakouts) {
+      this.datasets = remote.series;
+      this.breakouts = remote.breakouts;
+      this.activeBreakouts = [...remote.breakouts];
+    }
+    this.renderChart();
+    this.renderBreakouts();
   }
 
   renderChart() {

@@ -1,10 +1,11 @@
 /**
  * AURA Vision Studio Controller
  * Handles generative image prompts, style switches, real-time image adjustments,
- * object detection tags, and gallery downloads.
+ * object detection tags, and gallery downloads with API support.
  */
 
 import { AuraNav } from '../nav.js';
+import { auraApi } from '../apiClient.js';
 
 class StudioApp {
   constructor() {
@@ -159,16 +160,28 @@ class StudioApp {
       `;
     }
 
-    // Select matching sample asset
-    await new Promise(r => setTimeout(r, 1400));
+    // Call REST API
+    const remoteData = await auraApi.synthesizeVision(prompt, this.selectedStyle, this.selectedRatio);
 
-    const randomAsset = this.sampleGallery[Math.floor(Math.random() * this.sampleGallery.length)];
-    this.currentImage = {
-      ...randomAsset,
-      prompt: prompt,
-      style: this.selectedStyle,
-      ratio: this.selectedRatio
-    };
+    if (remoteData && remoteData.image_url) {
+      this.currentImage = {
+        url: remoteData.image_url,
+        prompt: remoteData.prompt,
+        style: remoteData.style,
+        ratio: remoteData.aspect_ratio,
+        tags: remoteData.neural_tags || ["Neural Synthesis (99.2%)"]
+      };
+    } else {
+      // Local fallback
+      await new Promise(r => setTimeout(r, 1000));
+      const randomAsset = this.sampleGallery[Math.floor(Math.random() * this.sampleGallery.length)];
+      this.currentImage = {
+        ...randomAsset,
+        prompt: prompt,
+        style: this.selectedStyle,
+        ratio: this.selectedRatio
+      };
+    }
 
     if (this.mainPreviewImg) {
       this.mainPreviewImg.src = this.currentImage.url;

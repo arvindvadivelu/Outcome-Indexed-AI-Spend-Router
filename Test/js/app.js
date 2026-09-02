@@ -11,6 +11,7 @@ import { KnowledgeGraphVisualizer } from './features/knowledgeGraph.js';
 import { WidgetManager } from './features/widgets.js';
 import { VoiceAudioManager } from './features/voiceAudio.js';
 import { WorkspaceManager } from './features/workspace.js';
+import { auraApi } from './apiClient.js';
 
 class AuraApp {
   constructor() {
@@ -98,6 +99,21 @@ class AuraApp {
         this.suggestionsDropdown.classList.remove('open');
       }
     });
+
+    // Apps Launcher Modal Toggle
+    const launcherBtn = document.querySelector('#btn-apps-launcher');
+    const appsModal = document.querySelector('#apps-grid-modal');
+    if (launcherBtn && appsModal) {
+      launcherBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        appsModal.classList.toggle('open');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#apps-grid-modal') && !e.target.closest('#btn-apps-launcher')) {
+          appsModal.classList.remove('open');
+        }
+      });
+    }
 
     // Pro Mode Toggles
     document.querySelectorAll('.pro-toggle-btn').forEach(btn => {
@@ -262,14 +278,49 @@ class AuraApp {
       this.deepResearchPanel.style.display = 'none';
     }
 
-    // Execute Search Core
-    const result = await this.core.search(query, {
-      isPro: this.isProMode,
-      model: this.selectedModel
-    });
-    this.currentResult = result;
+    // Try REST API First, with instant fallback
+    let result = null;
+    const remoteResponse = await auraApi.executeSearch(query, this.selectedModel, this.isProMode);
+    
+    if (remoteResponse && remoteResponse.ai_summary) {
+      result = {
+        query: remoteResponse.query,
+        intent: remoteResponse.intent,
+        latencyMs: remoteResponse.latency_ms,
+        model: remoteResponse.model,
+        isPro: remoteResponse.is_pro,
+        aiSummary: remoteResponse.ai_summary,
+        sources: remoteResponse.sources.map(s => ({
+          title: s.title,
+          domain: s.domain,
+          index: s.citation_index
+        })),
+        widgetData: null,
+        images: remoteResponse.images || [],
+        news: remoteResponse.news || [],
+        papers: [],
+        codeSnippet: null,
+        graphData: remoteResponse.graph_data,
+        suggestedFollowUps: remoteResponse.suggested_follow_ups || []
+      };
 
-    // Render SERP components
+      // Check specialized widget data
+      if (remoteResponse.intent === 'finance') {
+        const fin = await auraApi.getFinance(query);
+        if (fin) result.widgetData = { type: 'finance', data: fin };
+      } else if (remoteResponse.intent === 'weather') {
+        const w = await auraApi.getWeather(query);
+        if (w) result.widgetData = { type: 'weather', data: w };
+      }
+    } else {
+      // Local Engine Fallback
+      result = await this.core.search(query, {
+        isPro: this.isProMode,
+        model: this.selectedModel
+      });
+    }
+
+    this.currentResult = result;
     this.renderSerpResult(result);
   }
 
@@ -340,7 +391,7 @@ class AuraApp {
     container.style.transition = 'opacity 0.3s ease-in';
     setTimeout(() => container.style.opacity = '1', 50);
 
-    // Bind citation pill clicks to highlight matching source
+    // Bind citation pill clicks
     container.querySelectorAll('.citation-pill').forEach(pill => {
       pill.addEventListener('click', (e) => {
         e.preventDefault();
@@ -353,27 +404,20 @@ class AuraApp {
   parseMarkdown(md) {
     if (!md) return '';
     let html = md
-      // Headers
       .replace(/^### (.*$)/gim, '<h3>$1</h3>')
       .replace(/^## (.*$)/gim, '<h2>$1</h2>')
       .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      // Bold & Italic
       .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      // Citation Pills [1], [2]
       .replace(/\[(\d+)\]/g, '<span class="citation-pill" data-index="$1">$1</span>')
-      // Code blocks
       .replace(/```python([\s\S]*?)```/gim, '<pre><code class="lang-python">$1</code></pre>')
       .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
       .replace(/`([^`]+)`/gim, '<code style="background: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em;">$1</code>')
-      // Unordered Lists
       .replace(/^\s*\-\s(.*$)/gim, '<li>$1</li>')
-      // Table formatting simple
       .replace(/\|(.+)\|/gim, (match) => {
         const cells = match.split('|').filter(c => c.trim() !== '');
         return `<tr>${cells.map(c => `<td style="padding: 6px 12px; border: 1px solid var(--border-subtle);">${c.trim()}</td>`).join('')}</tr>`;
       })
-      // Paragraph line breaks
       .replace(/\n\n/gim, '</p><p>');
 
     return `<p>${html}</p>`;
