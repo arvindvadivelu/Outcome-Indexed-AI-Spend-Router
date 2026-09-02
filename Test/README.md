@@ -1,38 +1,68 @@
-# AURA — Next-Generation AI Ecosystem (Full Suite)
+# AURA — Production-Ready AI Ecosystem (Google Competitor MVP)
 
-**AURA (Autonomous Universal Reasoning & Answer Platform)** is a state-of-the-art web platform engineered to rival Google's entire consumer and research ecosystem.
-
----
-
-## 🌐 The Full Multi-Page Ecosystem
-
-| Page | URL / File | Replaces / Competes With | Key Features |
-| :--- | :--- | :--- | :--- |
-| **Search & Answer Engine** | [`index.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/index.html) | Google Search / Perplexity | SERP 3.0, live markdown answer synthesis, source citation pills `[1]`, autonomous deep research multi-agent trace, interactive force-directed knowledge graph, stock charts, weather, code runner, voice search & TTS readout. |
-| **Vision Studio** | [`studio.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/studio.html) | Google Lens / Photos / Imagen | Multi-modal neural image generator, prompt studio with 6 artistic styles, aspect ratios, real-time image adjustment filters (brightness, contrast, saturation, blur), neural visual tag decomposition, 4K download & upscale. |
-| **Quantum Maps** | [`maps.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/maps.html) | Google Maps | Interactive HTML5 Canvas vector map, hyperloop/EV/drone transit corridor planner, simulated autonomous vehicle traffic particles, carbon savings telemetrics, clickable POI station cards, zoom & pan controls. |
-| **Scholar Lab** | [`scholar.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/scholar.html) | Google Scholar / DeepMind Lab | Peer-reviewed academic literature index, interactive paper reader with AI executive synthesis, citation velocity metrics, discipline tags, and one-click BibTeX/LaTeX export. |
-| **Cloud Workspace** | [`workspace.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/workspace.html) | Google Docs / Drive | Real-time AI markdown document editor, cloud dossier organizer, AI co-writing actions (Expand Citations, 3 Key Bullets, Comparison Matrix), word count & read-time estimator, auto-save, Markdown export. |
-| **Global Trends** | [`trends.html`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test/trends.html) | Google Trends / Finance | Multi-line comparative search volume Canvas curves, real-time breakout search velocity surge rankings, category domain filtering, and regional momentum tracking. |
+**AURA (Autonomous Universal Reasoning & Answer Platform)** is a production-grade, zero-overhead monolith engineered with **FastAPI**, **SQLite 3 in WAL Mode**, and a **pure ESM client-side architecture** competing directly with Google's search, vision, maps, scholar, workspace, and trends services.
 
 ---
 
-## 🧭 Universal Navigation Features
-- **Shared Navigation Bar**: Top navigation links with active highlighting across all 6 pages.
-- **Global Apps Launcher**: 9-dots waffle menu flyout with instant access to all AURA services.
-- **Cross-Page Theme Engine**: Synchronized across *Obsidian Dark*, *Cyber Neon*, *Deep Space Navy*, and *Light Luxe*.
-- **Integrated Toast System**: Cross-page feedback notifications.
+## 🚀 One-Command Launch
 
----
-
-## 🚀 How to Run Locally
-
-### Option 1: Direct File Opening
-Double click any HTML page in [`Test/`](file:///c:/Users/DELL/OneDrive/Desktop/Outcome-Indexed%20AI%20Spend%20Router/Test) to open directly in your browser.
-
-### Option 2: Local Web Server
+### Start the Unified Platform (Frontend + Backend + Database)
 ```bash
 cd Test
-python -m http.server 8088
+python run_aura.py
 ```
-Then visit **`http://localhost:8088/`** and navigate across all pages via the top navigation bar or apps waffle menu!
+*(Or double-click `start_aura.bat` on Windows)*
+
+Once running, access the entire platform on **`http://127.0.0.1:8000/`**:
+
+- **Search & SERP 3.0**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Vision Studio**: [http://127.0.0.1:8000/studio.html](http://127.0.0.1:8000/studio.html)
+- **Quantum Spatial Maps**: [http://127.0.0.1:8000/maps.html](http://127.0.0.1:8000/maps.html)
+- **Scholar Research Lab**: [http://127.0.0.1:8000/scholar.html](http://127.0.0.1:8000/scholar.html)
+- **Cloud Workspace & AI Docs**: [http://127.0.0.1:8000/workspace.html](http://127.0.0.1:8000/workspace.html)
+- **Global Trends & Velocity**: [http://127.0.0.1:8000/trends.html](http://127.0.0.1:8000/trends.html)
+- **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+## 🛠️ Monolithic Zero-Overhead Architecture
+
+```
+Test/
+├── run_aura.py             # Single-command unified FastAPI production runner
+├── start_aura.bat          # Windows click-to-run batch launcher
+├── README.md               # Architecture documentation
+├── backend/
+│   ├── database.py         # SQLite 3 engine with WAL mode & session factory
+│   ├── models.py           # SQLAlchemy ORM relational models
+│   ├── schemas.py          # Pydantic v2 schemas (no 'any' types)
+│   ├── services.py         # Business logic, synthesis, research, and APIs
+│   ├── main.py             # FastAPI entrypoint, CORS, rate limiter, static mount
+│   └── requirements.txt    # Python dependencies
+├── css/
+│   ├── design-system.css   # Color tokens, themes (Obsidian, Cyber, Navy, Light)
+│   ├── components.css      # SERP 3.0 cards, search pills, knowledge graphs
+│   └── pages.css           # Multi-page layouts for Studio, Maps, Scholar, Workspace, Trends
+├── js/
+│   ├── apiClient.js        # Central REST API client with local fallback
+│   ├── app.js              # Flagship search controller
+│   ├── nav.js              # Waffle app launcher & theme synchronizer
+│   ├── engine/             # Search intent routing & dataset repository
+│   ├── features/           # Knowledge graph, widgets, voice/TTS, research trace
+│   └── pages/              # Dedicated page controllers (Studio, Maps, Scholar, Workspace, Trends)
+├── index.html              # Search & SERP 3.0
+├── studio.html             # Vision Studio
+├── maps.html               # Quantum Maps
+├── scholar.html            # Scholar Lab
+├── workspace.html          # Cloud AI Docs
+└── trends.html             # Global Trends
+```
+
+---
+
+## 🔒 Security & Performance Guarantees
+
+1. **Zero Silent Failures**: All REST endpoints return standardized HTTP exceptions (400, 404, 429, 500) with detailed JSON error messages.
+2. **Token-Bucket Rate Limiter**: 120 requests/min per IP to prevent scraper exhaustion.
+3. **WAL Mode Concurrency**: High-speed concurrent reads and writes with zero database lockups.
+4. **CORS Validation**: Cross-origin headers enabled across all endpoints.

@@ -221,3 +221,11 @@ def synthesize_vision_concept(req: VisionPromptRequest):
         neural_tags=["Quantum Core (99.2%)", "Diffusion Latents (97.8%)", "Atmospheric Glow (96.4%)"],
         palette=["#6366F1", "#A855F7", "#06B6D4", "#090A0F"]
     )
+
+# --- Static Web App Mount (Single-Port Zero-Overhead Serving) ---
+import os
+from fastapi.staticfiles import StaticFiles
+
+STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+
