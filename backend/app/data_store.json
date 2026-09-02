@@ -77,6 +77,19 @@
   "logs": [],
   "auth_records": [
     {
+      "id": "auth_1788288471752",
+      "timestamp": "2026-09-01T18:47:46.236Z",
+      "action": "PLAN_UPGRADE",
+      "name": "Arvind V",
+      "email": "varvind2004@gmail.com",
+      "workspace": "College",
+      "plan_tier": "Free",
+      "monthly_token_quota": 10000,
+      "currency": "USD",
+      "auth_method": "MANUAL",
+      "sheet_id": "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8"
+    },
+    {
       "id": "auth_1788187352486",
       "timestamp": "2026-08-31T14:42:29.306Z",
       "action": "PLAN_UPGRADE",

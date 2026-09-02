@@ -10,11 +10,22 @@ import { Scene05SpeculativeRace } from "./scenes/Scene05SpeculativeRace";
 import { Scene06SlaEscrow } from "./scenes/Scene06SlaEscrow";
 import { Scene07FinOpsDashboard } from "./scenes/Scene07FinOpsDashboard";
 import { Scene08DropInCTA } from "./scenes/Scene08DropInCTA";
+import { SynergySalesMotionGraphic } from "./SynergySalesMotionGraphic";
 import { SCENE_DURATIONS } from "./design/tokens";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      {/* 🌟 SYNERGY SALES MANAGER MOTION GRAPHIC POSTER (1080x1920 @ 30 FPS, 15s) */}
+      <Composition
+        id="SynergySalesMotionGraphic"
+        component={SynergySalesMotionGraphic}
+        durationInFrames={450}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+
       {/* 🎙️ 30-SECOND BEFORE VS AFTER ENHANCED VOICEOVER FILM (900 Frames @ 30 FPS) */}
       <Composition
         id="EnhancedVoiceoverFilm"
