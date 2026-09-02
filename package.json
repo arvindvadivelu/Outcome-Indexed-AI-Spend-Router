@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "perf:test": "node scripts/stress-test.mjs",
-    "test:stress": "node stress-test/realtime-runner.mjs"
+    "perf:test": "node scripts/stress-test.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",
