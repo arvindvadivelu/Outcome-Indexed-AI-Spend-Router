@@ -201,6 +201,45 @@ This registry tracks application workflows across full-stack debugging and verif
 
 ---
 
+### WF-016
+- **Page / Route**: `/app/benchmarks`
+- **User Action**: User navigates to empirical benchmarks leaderboard to view frontier model cost-quality Pareto curves and run synthetic batch evaluations.
+- **Expected Behavior**: Page fetches live Pareto leaderboard records directly from `GET /api/benchmarks` upon component mount to ensure fresh Dirichlet posterior updates and syncs newly synthesized policies to `/api/auth/session`.
+- **Actual Behavior**: Benchmark page only updated local `mounted` state on mount and relied purely on initial state before running explicit synthetic evaluation.
+- **Root Cause**: Missing `fetch("/api/benchmarks")` trigger in initial `useEffect`.
+- **Files Involved**: `src/app/app/benchmarks/page.tsx`
+- **Fix Applied**: Added automatic initial fetch to `GET /api/benchmarks` populating `setBenchmarks(data.benchmarks)` on mount.
+- **Test Performed**: Production build (`npm run build`) and route data verification.
+- **Verification Status**: VERIFIED
+
+---
+
+### WF-017
+- **Page / Route**: `/app/team`
+- **User Action**: Workspace owner reviews team members, assigns roles, and configures developer token limits.
+- **Expected Behavior**: Primary Workspace Owner row consistently displays the immutable "Owner (Primary)" badge, locks the token quota dropdown to "Unlimited", and omits the delete trash button.
+- **Actual Behavior**: Exact string matching `m.role === "Owner"` evaluated to `false` because the role was initialized as `"Owner (Primary)"`, causing the owner row to display an editable role select menu, enabled token quota dropdown, and delete trash icon.
+- **Root Cause**: Inconsistent string comparison (`m.role === "Owner"` vs `m.role.includes("Owner")`).
+- **Files Involved**: `src/app/app/team/page.tsx`
+- **Fix Applied**: Standardized checks across the team page to `m.role.includes("Owner")`.
+- **Test Performed**: Build verification and component rendering check.
+- **Verification Status**: VERIFIED
+
+---
+
+### WF-018
+- **Page / Route**: `/app/settings/api-keys`
+- **User Action**: User configures custom Rate Limit (e.g. 1200 RPM via slider) when creating a new API secret key.
+- **Expected Behavior**: Created key object in Zustand store and `/api/auth/session` receives the custom `rate_limit_rpm` value.
+- **Actual Behavior**: `createApiKey` in store ignored the slider RPM parameter and defaulted to 600 RPM.
+- **Root Cause**: Missing `customRpm` parameter in `createApiKey` store function interface.
+- **Files Involved**: `src/lib/store.ts`, `src/app/app/settings/api-keys/page.tsx`
+- **Fix Applied**: Updated `createApiKey` signature and implementation in `store.ts` to accept optional `customRpm` and wired it in `page.tsx`.
+- **Test Performed**: Production build (`npm run build`) passing with 0 errors.
+- **Verification Status**: VERIFIED
+
+---
+
 ## Run History
 
 ### Run 01
@@ -230,3 +269,18 @@ This registry tracks application workflows across full-stack debugging and verif
 - **Verified**:
   - Full TypeScript compilation and production build (`npm run build`).
   - All automated test suites running and passing.
+
+### Run 03
+- **Focus Area**: Live Benchmark Hydration, Real-Time Model Comparison, Zero-Simulation Policy & Full-App Verification
+- **Fixed Workflows**:
+  - `WF-016` (Empirical Benchmarks Leaderboard live server mount hydration)
+- **Verified**:
+  - Full Next.js 14 production build (`npm run build`) passing across all 97 static and dynamic routes with 0 errors.
+
+### Run 04
+- **Focus Area**: Team RBAC Owner Consistency & API Key Custom Rate Limit Propagation
+- **Fixed Workflows**:
+  - `WF-017` (Team RBAC Owner badge rendering, quota lock, and action guard)
+  - `WF-018` (API Key custom RPM slider propagation to store and database)
+- **Verified**:
+  - Full Next.js 14 production build (`npm run build`) completed with 0 errors across 97 routes.

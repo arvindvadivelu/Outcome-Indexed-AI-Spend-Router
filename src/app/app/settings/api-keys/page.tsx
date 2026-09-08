@@ -61,7 +61,7 @@ export default function ApiKeysPage() {
     if (!newKeyName.trim()) return;
 
     await apiClient.createApiKey(newKeyName.trim(), newKeyEnv, newKeyRpm);
-    const fullKey = createApiKey(newKeyName.trim(), newKeyEnv, newKeyIp);
+    const fullKey = createApiKey(newKeyName.trim(), newKeyEnv, newKeyIp, newKeyRpm);
     setRevealedKey(fullKey);
     setNewKeyName("");
     setNewKeyIp("");

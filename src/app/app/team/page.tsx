@@ -460,7 +460,7 @@ export default function TeamPage() {
                   </td>
 
                   <td className="py-3.5 px-4">
-                    {m.role === "Owner" ? (
+                    {m.role.includes("Owner") ? (
                       <span className="px-3 py-1 rounded-full bg-[#0050FF]/15 text-[#0050FF] dark:text-[#3374FF] font-bold text-xs">
                         Owner (Primary)
                       </span>
@@ -491,7 +491,7 @@ export default function TeamPage() {
                     <select
                       value={m.tokenQuota}
                       onChange={(e) => handleQuotaChange(m.id, e.target.value)}
-                      disabled={m.role === "Owner"}
+                      disabled={m.role.includes("Owner")}
                       className="px-3 py-1 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs font-mono text-[#515154] dark:text-[#A1A1A6] focus:outline-none disabled:opacity-60 cursor-pointer"
                     >
                       <option value="50,000 / mo">50,000 / mo</option>
@@ -536,7 +536,7 @@ export default function TeamPage() {
                       </button>
                     )}
 
-                    {m.role !== "Owner" && (
+                    {!m.role.includes("Owner") && (
                       <button
                         onClick={() => handleRemoveMember(m.id)}
                         className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-950/40 text-[#86868B] hover:text-red-600 transition-colors hover:scale-105 active:scale-95"

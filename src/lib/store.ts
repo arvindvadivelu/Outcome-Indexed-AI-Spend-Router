@@ -249,7 +249,7 @@ interface AppState {
   deleteRule: (id: string) => void;
   reorderRule: (currentIndex: number, targetIndex: number) => void;
   updateRulePriority: (id: string, newPriority: string[]) => void;
-  createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string) => string;
+  createApiKey: (name: string, envOrLimit?: string | number, ipRestrictions?: string, customRpm?: number) => string;
   deleteApiKey: (id: string) => void;
   revokeApiKey: (id: string) => void;
   updateApiKeyRateLimit: (id: string, newRpm: number) => void;
@@ -824,9 +824,9 @@ export const useAppStore = create<AppState>()(
           return { rules: updated, routingRules: updated };
         }),
 
-      createApiKey: (name: string, envOrLimit: string | number = "live", ipRestrictions: string = "") => {
+      createApiKey: (name: string, envOrLimit: string | number = "live", ipRestrictions: string = "", customRpm?: number) => {
         const env = typeof envOrLimit === "string" ? (envOrLimit as "live" | "test") : "live";
-        const rateLimit = typeof envOrLimit === "number" ? envOrLimit : 600;
+        const rateLimit = typeof customRpm === "number" ? customRpm : (typeof envOrLimit === "number" ? envOrLimit : 600);
         const secretHex = `${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
         const fullKey = `oir_${env}_${secretHex}`;
         const prefix = `oir_${env}_${secretHex.substring(0, 6)}`;

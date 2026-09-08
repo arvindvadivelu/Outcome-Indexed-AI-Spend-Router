@@ -62,7 +62,15 @@ export default function BenchmarksPage() {
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetch("/api/benchmarks")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.benchmarks && Array.isArray(data.benchmarks) && data.benchmarks.length > 0) {
+          setBenchmarks(data.benchmarks);
+        }
+      })
+      .catch((err) => console.warn("Live benchmark fetch notice:", err));
+  }, [setBenchmarks]);
 
   const activeCurrency = mounted ? currency : "USD";
   const rate = activeCurrency === "INR" ? 86.5 : 1;
