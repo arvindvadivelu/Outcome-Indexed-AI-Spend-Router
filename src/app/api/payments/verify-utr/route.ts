@@ -3,7 +3,7 @@ import { verifyPaymentReference, getUserPaymentHistory } from "@/lib/payment-gat
 
 export async function POST(req: Request) {
   try {
-    const { transactionId, referenceCode, email } = await req.json().catch(() => ({}));
+    const { transactionId, referenceCode, email, planTier, currency } = await req.json().catch(() => ({}));
 
     if (!referenceCode || !email) {
       return NextResponse.json(
@@ -12,7 +12,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const verification = verifyPaymentReference(transactionId || "", referenceCode, email);
+    const verification = verifyPaymentReference(
+      transactionId || "",
+      referenceCode,
+      email,
+      planTier,
+      currency
+    );
 
     return NextResponse.json({
       success: verification.success,

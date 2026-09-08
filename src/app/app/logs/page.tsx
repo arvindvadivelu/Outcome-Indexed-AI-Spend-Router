@@ -66,6 +66,15 @@ export default function LogsPage() {
 
   const handleRecordOutcome = (id: string, success: boolean) => {
     recordOutcome(id, success);
+    fetch("/api/v1/feedback/outcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request_id: id,
+        outcome_success: success
+      })
+    }).catch((e) => console.warn("Outcome feedback API sync notice:", e));
+
     if (user?.email) {
       fetch("/api/auth/session", {
         method: "POST",

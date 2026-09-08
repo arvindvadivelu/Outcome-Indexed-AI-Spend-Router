@@ -226,6 +226,15 @@ export function SimulateRequestModal({ onClose }: { onClose: () => void }) {
     setFeedbackGiven(success);
     if (result) {
       recordOutcome(result.requestId, success);
+      fetch("/api/v1/feedback/outcome", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          request_id: result.requestId,
+          outcome_success: success,
+          metric_name: result.targetMetric || "demo_booked"
+        })
+      }).catch((e) => console.warn("Outcome feedback sync notice:", e));
     }
   };
 

@@ -151,7 +151,9 @@ export function createPaymentIntent(
 export function verifyPaymentReference(
   transactionId: string,
   referenceCode: string,
-  userEmail: string
+  userEmail: string,
+  targetPlan?: "starter" | "growth" | "enterprise",
+  targetCurrency?: "INR" | "USD"
 ): {
   success: boolean;
   message: string;
@@ -168,15 +170,21 @@ export function verifyPaymentReference(
   const payments = ensurePaymentsStorage();
   const tx = payments.find((p) => p.id === transactionId || p.userEmail === userEmail.toLowerCase().trim());
 
+  const selectedPlan = targetPlan || tx?.planTier || "growth";
+  const isINR = targetCurrency ? targetCurrency === "INR" : (cleanRef.length === 12 && /^\d+$/.test(cleanRef));
+  const planInfo = PAYMENT_CONFIG.planPricing[selectedPlan] || PAYMENT_CONFIG.planPricing.growth;
+  const amount = isINR ? planInfo.inr : planInfo.usd;
+  const curr = isINR ? "INR" : "USD";
+
   if (!tx) {
     // If no prior intent was recorded, create one on the fly
     const fallbackTx: PaymentTransaction = {
       id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       userEmail: userEmail.toLowerCase().trim(),
-      planTier: "growth",
-      currency: cleanRef.length === 12 && /^\d+$/.test(cleanRef) ? "INR" : "USD",
-      amount: cleanRef.length === 12 && /^\d+$/.test(cleanRef) ? 8500 : 99,
-      paymentMethod: cleanRef.length === 12 && /^\d+$/.test(cleanRef) ? "GPAY_UPI" : "ICICI_WIRE_TRANSFER",
+      planTier: selectedPlan,
+      currency: curr,
+      amount,
+      paymentMethod: isINR ? "GPAY_UPI" : "ICICI_WIRE_TRANSFER",
       status: "COMPLETED",
       referenceUtr: cleanRef,
       createdAt: new Date().toISOString(),
@@ -186,7 +194,7 @@ export function verifyPaymentReference(
     payments.push(fallbackTx);
     savePayments(payments);
 
-    const planTokens = PAYMENT_CONFIG.planPricing[fallbackTx.planTier].tokens;
+    const planTokens = planInfo.tokens;
     updateUserPlanTier(fallbackTx.userEmail, fallbackTx.planTier, planTokens);
 
     return {
@@ -197,16 +205,17 @@ export function verifyPaymentReference(
   }
 
   tx.status = "COMPLETED";
+  tx.planTier = selectedPlan;
   tx.referenceUtr = cleanRef;
   tx.verifiedAt = new Date().toISOString();
   savePayments(payments);
 
-  const planTokens = PAYMENT_CONFIG.planPricing[tx.planTier].tokens;
-  updateUserPlanTier(tx.userEmail, tx.planTier, planTokens);
+  const planTokens = planInfo.tokens;
+  updateUserPlanTier(tx.userEmail, selectedPlan, planTokens);
 
   return {
     success: true,
-    message: `Payment reference ${cleanRef} successfully verified! Workspace upgraded to ${tx.planTier.toUpperCase()} plan.`,
+    message: `Payment reference ${cleanRef} successfully verified! Workspace upgraded to ${selectedPlan.toUpperCase()} plan.`,
     transaction: tx
   };
 }

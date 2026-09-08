@@ -314,9 +314,13 @@ export async function POST(req: Request) {
     return NextResponse.json(responsePayload, {
       status: 200,
       headers: {
-        "X-Outcome-Router-Model": selectedModel.name,
-        "X-Outcome-Router-Saved-Pct": `${spendAvoidedPct}%`,
+        "X-Outcome-Request-Id": responsePayload.id,
+        "X-Outcome-Router-Model": modelExecution.modelUsed || selectedModel.name,
         "X-Outcome-Router-Cost-USD": actualCost.toFixed(6),
+        "X-Outcome-Router-Saved-USD": capitalSavedUsd.toFixed(6),
+        "X-Outcome-Router-Saved-Pct": `${spendAvoidedPct}%`,
+        "X-Outcome-Router-Latency-MS": String(ttftMs),
+        "X-Outcome-Router-Cached": String(semanticCacheHit),
         "X-Outcome-Router-Tokens-Remaining": String(quotaCheck.remaining),
         "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`
       }
