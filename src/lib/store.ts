@@ -432,6 +432,16 @@ const DEFAULT_INTEGRATIONS: IntegrationItem[] = [
   }
 ];
 
+const syncUserSession = (email?: string, payload?: Record<string, any>) => {
+  if (email && payload && typeof window !== "undefined") {
+    fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, ...payload })
+    }).catch(() => {});
+  }
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -460,8 +470,15 @@ export const useAppStore = create<AppState>()(
         }),
 
       currency: "USD",
-      setCurrency: (currency) => set({ currency }),
-      toggleCurrency: () => set((state) => ({ currency: state.currency === "USD" ? "INR" : "USD" })),
+      setCurrency: (currency) => {
+        set({ currency });
+        syncUserSession(get().user?.email, { currency });
+      },
+      toggleCurrency: () => {
+        const next = get().currency === "USD" ? "INR" : "USD";
+        set({ currency: next });
+        syncUserSession(get().user?.email, { currency: next });
+      },
       
       // Auth State - null by default until user signs in or registers
       user: null,
@@ -488,7 +505,10 @@ export const useAppStore = create<AppState>()(
       }),
 
       orgName: "Acme AI Lab",
-      setOrgName: (orgName: string) => set({ orgName }),
+      setOrgName: (orgName: string) => {
+        set({ orgName });
+        syncUserSession(get().user?.email, { workspace: orgName });
+      },
       planTier: "free",
       setPlanTier: (tier) =>
         set((state) => {
@@ -497,6 +517,7 @@ export const useAppStore = create<AppState>()(
           else if (tier === "growth") quota = 500000;
           else if (tier === "enterprise") quota = 2000000;
           const newCurrent = Math.min(quota, state.currentTokens || 0);
+          syncUserSession(state.user?.email, { plan_tier: tier, monthly_token_quota: quota });
           return {
             planTier: tier,
             monthlyQuota: quota,
@@ -567,10 +588,13 @@ export const useAppStore = create<AppState>()(
         quality_weight_w1: 0.70
       },
 
-      setMonthlyBudget: (budget: number) =>
+      setMonthlyBudget: (budget: number) => {
         set((state) => ({
-          autopilot: { ...state.autopilot, monthly_budget_usd: budget }
-        })),
+          autopilot: { ...state.autopilot, monthly_budget_usd: budget },
+          hasConfiguredBudget: true
+        }));
+        syncUserSession(get().user?.email, { monthlyBudgetUSD: budget, hasConfiguredBudget: true });
+      },
 
       prewarmMetrics: {
         totalEvents: 0,
@@ -611,9 +635,11 @@ export const useAppStore = create<AppState>()(
       },
 
       setWebhookConfig: (config) =>
-        set((state) => ({
-          webhookConfig: { ...state.webhookConfig, ...config }
-        })),
+        set((state) => {
+          const updated = { ...state.webhookConfig, ...config };
+          syncUserSession(state.user?.email, { webhookConfig: updated });
+          return { webhookConfig: updated };
+        }),
 
       webhookLogs: [],
 
@@ -623,14 +649,18 @@ export const useAppStore = create<AppState>()(
         })),
 
       setFederationWeight: (weight: number) =>
-        set((state) => ({
-          federationSettings: { ...state.federationSettings, weight }
-        })),
+        set((state) => {
+          const updated = { ...state.federationSettings, weight };
+          syncUserSession(state.user?.email, { federationSettings: updated });
+          return { federationSettings: updated };
+        }),
 
       toggleFederation: () =>
-        set((state) => ({
-          federationSettings: { ...state.federationSettings, enabled: !state.federationSettings.enabled }
-        })),
+        set((state) => {
+          const updated = { ...state.federationSettings, enabled: !state.federationSettings.enabled };
+          syncUserSession(state.user?.email, { federationSettings: updated });
+          return { federationSettings: updated };
+        }),
 
       addSlaContract: (contract: SlaContractItem) =>
         set((state) => ({
@@ -638,14 +668,17 @@ export const useAppStore = create<AppState>()(
         })),
 
       setAutopilotMode: (mode) =>
-        set((state) => ({
-          autopilot: {
-            ...state.autopilot,
-            mode,
-            cost_weight_w2: mode === "aggressive_savings" ? 40.0 : mode === "quality_boost" ? 15.0 : 25.0,
-            quality_weight_w1: mode === "aggressive_savings" ? 0.50 : mode === "quality_boost" ? 0.85 : 0.70
-          }
-        })),
+        set((state) => {
+          syncUserSession(state.user?.email, { autopilotMode: mode });
+          return {
+            autopilot: {
+              ...state.autopilot,
+              mode,
+              cost_weight_w2: mode === "aggressive_savings" ? 40.0 : mode === "quality_boost" ? 15.0 : 25.0,
+              quality_weight_w1: mode === "aggressive_savings" ? 0.50 : mode === "quality_boost" ? 0.85 : 0.70
+            }
+          };
+        }),
 
       toggleAutopilot: () =>
         set((state) => ({
@@ -750,6 +783,7 @@ export const useAppStore = create<AppState>()(
       addRule: (rule: RoutingRule) =>
         set((state) => {
           const updated = [rule, ...state.routingRules];
+          syncUserSession(state.user?.email, { rules: updated });
           return { rules: updated, routingRules: updated };
         }),
 
@@ -758,12 +792,14 @@ export const useAppStore = create<AppState>()(
           const updated = state.routingRules.map((r) =>
             r.id === id ? { ...r, is_active: !r.is_active, enabled: !r.enabled } : r
           );
+          syncUserSession(state.user?.email, { rules: updated });
           return { rules: updated, routingRules: updated };
         }),
 
       deleteRule: (id: string) =>
         set((state) => {
           const updated = state.routingRules.filter((r) => r.id !== id);
+          syncUserSession(state.user?.email, { rules: updated });
           return { rules: updated, routingRules: updated };
         }),
 
@@ -775,6 +811,7 @@ export const useAppStore = create<AppState>()(
           }
           const [moved] = list.splice(currentIndex, 1);
           list.splice(targetIndex, 0, moved);
+          syncUserSession(state.user?.email, { rules: list });
           return { rules: list, routingRules: list };
         }),
 
@@ -783,6 +820,7 @@ export const useAppStore = create<AppState>()(
           const updated = state.routingRules.map((r) =>
             r.id === id ? { ...r, priority_models: newPriority, models_priority: newPriority } : r
           );
+          syncUserSession(state.user?.email, { rules: updated });
           return { rules: updated, routingRules: updated };
         }),
 
@@ -809,29 +847,35 @@ export const useAppStore = create<AppState>()(
           expires_at: "Never"
         };
 
-        set((state) => ({
-          apiKeys: [newKey, ...state.apiKeys]
-        }));
+        const updatedKeys = [newKey, ...get().apiKeys];
+        set({ apiKeys: updatedKeys });
+        syncUserSession(get().user?.email, { apiKeys: updatedKeys });
 
         return fullKey;
       },
 
       deleteApiKey: (id: string) =>
-        set((state) => ({
-          apiKeys: state.apiKeys.filter((k) => k.id !== id)
-        })),
+        set((state) => {
+          const updated = state.apiKeys.filter((k) => k.id !== id);
+          syncUserSession(state.user?.email, { apiKeys: updated });
+          return { apiKeys: updated };
+        }),
 
       revokeApiKey: (id: string) =>
-        set((state) => ({
-          apiKeys: state.apiKeys.filter((k) => k.id !== id)
-        })),
+        set((state) => {
+          const updated = state.apiKeys.filter((k) => k.id !== id);
+          syncUserSession(state.user?.email, { apiKeys: updated });
+          return { apiKeys: updated };
+        }),
 
       updateApiKeyRateLimit: (id: string, newRpm: number) =>
-        set((state) => ({
-          apiKeys: state.apiKeys.map((k) =>
+        set((state) => {
+          const updated = state.apiKeys.map((k) =>
             k.id === id ? { ...k, rate_limit: newRpm, rate_limit_rpm: newRpm } : k
-          )
-        })),
+          );
+          syncUserSession(state.user?.email, { apiKeys: updated });
+          return { apiKeys: updated };
+        }),
 
       addLog: (log: LogItem) =>
         set((state) => {

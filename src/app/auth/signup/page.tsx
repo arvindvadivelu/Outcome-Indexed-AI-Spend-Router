@@ -132,6 +132,7 @@ export default function SignUpPage() {
         monthlySpendUSD: 0,
         baselineSpendUSD: 0,
         currency: activeCurrency,
+        apiKeys: data.user.apiKeys || [],
         hasConfiguredBudget: false,
         isBudgetSetupModalOpen: true,
         autopilot: {

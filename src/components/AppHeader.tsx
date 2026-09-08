@@ -104,7 +104,8 @@ export function AppHeader() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: user.email,
-            name: editName.trim()
+            name: editName.trim(),
+            ...(editPin.trim().length === 6 ? { pin: editPin.trim() } : {})
           })
         });
       } catch (err) {

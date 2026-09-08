@@ -311,6 +311,51 @@ export async function POST(req: Request) {
       }
     }
 
+    if (body.stream === true) {
+      const encoder = new TextEncoder();
+      const content = modelExecution.content || "";
+      const words = content.split(" ");
+      const stream = new ReadableStream({
+        start(controller) {
+          for (let i = 0; i < words.length; i++) {
+            const chunk = {
+              id: responsePayload.id,
+              object: "chat.completion.chunk",
+              created: responsePayload.created,
+              model: responsePayload.model,
+              choices: [
+                {
+                  index: 0,
+                  delta: { content: (i === 0 ? "" : " ") + words[i] },
+                  finish_reason: i === words.length - 1 ? "stop" : null
+                }
+              ]
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        }
+      });
+
+      return new NextResponse(stream, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+          "X-Outcome-Request-Id": responsePayload.id,
+          "X-Outcome-Router-Model": modelExecution.modelUsed || selectedModel.name,
+          "X-Outcome-Router-Cost-USD": actualCost.toFixed(6),
+          "X-Outcome-Router-Saved-USD": capitalSavedUsd.toFixed(6),
+          "X-Outcome-Router-Saved-Pct": `${spendAvoidedPct}%`,
+          "X-Outcome-Router-Latency-MS": String(ttftMs),
+          "X-Outcome-Router-Cached": String(semanticCacheHit),
+          "X-Outcome-Router-Tokens-Remaining": String(quotaCheck.remaining),
+          "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`
+        }
+      });
+    }
+
     return NextResponse.json(responsePayload, {
       status: 200,
       headers: {

@@ -77,7 +77,8 @@ export async function POST(req: Request) {
         plan_tier: user.plan_tier,
         monthly_token_quota: user.monthly_token_quota,
         currency: user.currency,
-        hasConfiguredBudget: false
+        hasConfiguredBudget: false,
+        apiKeys: user.apiKeys || [initialKey]
       }
     });
   } catch (error: any) {

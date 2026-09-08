@@ -10,12 +10,16 @@ import { syncAuthUserToGoogleSheets } from "@/lib/google-sheets";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [hasUrlEmail, setHasUrlEmail] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const qEmail = params.get("email");
-      if (qEmail) setEmail(qEmail);
+      if (qEmail) {
+        setEmail(qEmail);
+        setHasUrlEmail(true);
+      }
     }
   }, []);
 
@@ -97,6 +101,11 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setErrorMsg("");
 
+    if (!email.trim() || !email.includes("@")) {
+      setErrorMsg("Please provide a valid registered email address.");
+      return;
+    }
+
     const p1 = pin.join("");
     const p2 = confirmPin.join("");
 
@@ -171,7 +180,11 @@ export default function ResetPasswordPage() {
                 Set New Security PIN
               </h1>
               <p className="text-xs text-[#86868B]">
-                Choose a 6-digit numeric PIN for <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{email}</span>
+                {email ? (
+                  <>Choose a 6-digit numeric PIN for <span className="font-semibold text-[#1D1D1F] dark:text-[#F5F5F7]">{email}</span></>
+                ) : (
+                  <>Enter your registered account email and set a new 6-digit security PIN</>
+                )}
               </p>
             </div>
 
@@ -189,6 +202,24 @@ export default function ResetPasswordPage() {
                   <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2 animate-in fade-in">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span>{errorMsg}</span>
+                  </div>
+                )}
+
+                {/* Email Input Field if not provided in URL */}
+                {(!hasUrlEmail || !email) && (
+                  <div className="space-y-1">
+                    <label className="font-semibold text-[#86868B]">Registered Work Email</label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setErrorMsg("");
+                      }}
+                      placeholder="alex@company.com"
+                      className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-xs text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none focus:border-[#0050FF]/50"
+                    />
                   </div>
                 )}
 

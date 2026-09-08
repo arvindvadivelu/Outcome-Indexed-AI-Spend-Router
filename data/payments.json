@@ -88,5 +88,18 @@
     "status": "PENDING_VERIFICATION",
     "createdAt": "2026-09-01T03:12:23.214Z",
     "invoiceNumber": "INV-OIR-USD-961568"
+  },
+  {
+    "id": "tx_1788893749170_g4d9m",
+    "userEmail": "test_verification@enterprise.ai",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "COMPLETED",
+    "referenceUtr": "428194829103",
+    "createdAt": "2026-09-08T18:55:49.170Z",
+    "verifiedAt": "2026-09-08T18:58:16.865Z",
+    "invoiceNumber": "INV-OIR-REC-443886"
   }
 ]
