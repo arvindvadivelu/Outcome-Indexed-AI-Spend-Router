@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { findUserByEmail, findUserByApiKey, consumeUserTokens, updateUserAccountState } from "@/lib/auth-db";
 import { dispatchRealOrIntelligentModel } from "@/lib/real-model-provider";
+import { scanAndSanitizePrompt } from "@/lib/prompt-sanitizer";
 
 // Live Model Cost Matrix (per 1K tokens - USD)
 const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCostPer1K: number; outputCostPer1K: number; avgTtftMs: number; winRate: number }> = {
@@ -96,6 +97,27 @@ export async function POST(req: Request) {
     const lastMessage = messages[messages.length - 1]?.content || "";
     const promptText = typeof lastMessage === "string" ? lastMessage : JSON.stringify(lastMessage);
     const lowerPrompt = promptText.toLowerCase();
+
+    // Adversarial Prompt Injection & Delimiter Guard
+    const promptScan = scanAndSanitizePrompt(promptText);
+    if (!promptScan.isSafe) {
+      return NextResponse.json(
+        {
+          error: {
+            message: `Security Prompt Guard: ${promptScan.reason}`,
+            type: "security_violation_error",
+            code: 422,
+            detected_patterns: promptScan.detectedPatterns
+          }
+        },
+        {
+          status: 422,
+          headers: {
+            "X-Outcome-Security-Threat": promptScan.threatLevel
+          }
+        }
+      );
+    }
 
     // Strategy & Outcome Target Metric from Headers or Body
     const strategy = headers.get("x-outcome-strategy") || body.strategy || "outcome_optimized";
