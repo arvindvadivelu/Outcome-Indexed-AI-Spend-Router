@@ -76,3 +76,32 @@ export function listAvailableSnapshots(): string[] {
   if (!fs.existsSync(BACKUP_DIR)) return [];
   return fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".json"));
 }
+
+export function restoreProductionSnapshot(snapshotIdOrFilename: string): { success: boolean; restoredTables: string[]; error?: string } {
+  try {
+    const filename = snapshotIdOrFilename.endsWith(".json") ? snapshotIdOrFilename : `${snapshotIdOrFilename}.json`;
+    const targetFile = path.join(BACKUP_DIR, filename);
+    if (!fs.existsSync(targetFile)) {
+      return { success: false, restoredTables: [], error: `Snapshot '${filename}' not found` };
+    }
+    const raw = fs.readFileSync(targetFile, "utf-8");
+    const parsed = JSON.parse(raw);
+    const tables = parsed.tables || {};
+    const restoredTables: string[] = [];
+
+    const { atomicWriteJson } = require("./atomic-file-writer");
+
+    if (Array.isArray(tables.users)) {
+      atomicWriteJson(path.join(DATA_DIR, "users.json"), tables.users);
+      restoredTables.push("users.json");
+    }
+    if (Array.isArray(tables.payments)) {
+      atomicWriteJson(path.join(DATA_DIR, "payments.json"), tables.payments);
+      restoredTables.push("payments.json");
+    }
+
+    return { success: true, restoredTables };
+  } catch (err: any) {
+    return { success: false, restoredTables: [], error: err?.message || "Failed to restore snapshot" };
+  }
+}

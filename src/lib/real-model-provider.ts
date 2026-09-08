@@ -13,6 +13,7 @@
  */
 
 import { generateIntelligentPromptResponse, ModelCompletionResult } from "./dynamic-prompt-answering";
+import { circuitRegistry } from "./circuit-breaker";
 
 export interface ProviderCallParams {
   messages: Array<{ role: string; content: string }>;
@@ -66,7 +67,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
   // -------------------------------------------------------------
   // 1. GROQ INFERENCE GATEWAY (Ultra-Fast LPU)
   // -------------------------------------------------------------
-  if ((modelKey.includes("groq") || modelKey.includes("llama")) && isRealKey(groqKey)) {
+  if ((modelKey.includes("groq") || modelKey.includes("llama")) && isRealKey(groqKey) && circuitRegistry.isAvailable("groq")) {
     try {
       const groqModel = modelKey.includes("70b") ? "llama-3.3-70b-versatile" : "llama-3.1-8b-instant";
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -89,6 +90,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
         const latencyMs = Math.round(performance.now() - startTime);
         const choice = data.choices?.[0];
         if (choice?.message?.content) {
+          circuitRegistry.recordSuccess("groq");
           return {
             content: choice.message.content,
             modelUsed: `Groq (${groqModel})`,
@@ -101,8 +103,11 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
             providerStatus: "LIVE_GROQ_LPU_EXECUTION"
           };
         }
+      } else {
+        circuitRegistry.recordFailure("groq");
       }
     } catch (err: any) {
+      circuitRegistry.recordFailure("groq");
       console.warn("Groq live dispatch failed, falling back:", err?.message);
     }
   }
@@ -110,7 +115,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
   // -------------------------------------------------------------
   // 2. OPENAI INFERENCE GATEWAY
   // -------------------------------------------------------------
-  if ((modelKey.includes("gpt") || modelKey.includes("openai") || modelKey.includes("o1")) && isRealKey(openaiKey)) {
+  if ((modelKey.includes("gpt") || modelKey.includes("openai") || modelKey.includes("o1")) && isRealKey(openaiKey) && circuitRegistry.isAvailable("openai")) {
     try {
       const openaiModel = modelKey.includes("4o-mini") ? "gpt-4o-mini" : (modelKey.includes("o1") ? "o1-mini" : "gpt-4o");
       const res = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -133,6 +138,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
         const latencyMs = Math.round(performance.now() - startTime);
         const choice = data.choices?.[0];
         if (choice?.message?.content) {
+          circuitRegistry.recordSuccess("openai");
           return {
             content: choice.message.content,
             modelUsed: `OpenAI (${openaiModel})`,
@@ -145,8 +151,11 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
             providerStatus: "LIVE_OPENAI_EXECUTION"
           };
         }
+      } else {
+        circuitRegistry.recordFailure("openai");
       }
     } catch (err: any) {
+      circuitRegistry.recordFailure("openai");
       console.warn("OpenAI live dispatch failed, falling back:", err?.message);
     }
   }
@@ -154,7 +163,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
   // -------------------------------------------------------------
   // 3. ANTHROPIC CLAUDE INFERENCE GATEWAY
   // -------------------------------------------------------------
-  if ((modelKey.includes("claude") || modelKey.includes("anthropic")) && isRealKey(anthropicKey)) {
+  if ((modelKey.includes("claude") || modelKey.includes("anthropic")) && isRealKey(anthropicKey) && circuitRegistry.isAvailable("anthropic")) {
     try {
       const claudeModel = modelKey.includes("haiku") ? "claude-3-haiku-20240307" : "claude-3-5-sonnet-20241022";
       const systemMsg = messages.find((m) => m.role === "system")?.content;
@@ -184,6 +193,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
         const latencyMs = Math.round(performance.now() - startTime);
         const textContent = data.content?.[0]?.text;
         if (textContent) {
+          circuitRegistry.recordSuccess("anthropic");
           return {
             content: textContent,
             modelUsed: `Anthropic (${claudeModel})`,
@@ -196,8 +206,11 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
             providerStatus: "LIVE_ANTHROPIC_CLAUDE_EXECUTION"
           };
         }
+      } else {
+        circuitRegistry.recordFailure("anthropic");
       }
     } catch (err: any) {
+      circuitRegistry.recordFailure("anthropic");
       console.warn("Anthropic live dispatch failed, falling back:", err?.message);
     }
   }
@@ -205,7 +218,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
   // -------------------------------------------------------------
   // 4. DEEPSEEK INFERENCE GATEWAY
   // -------------------------------------------------------------
-  if ((modelKey.includes("deepseek") || modelKey.includes("coder")) && isRealKey(deepseekKey)) {
+  if ((modelKey.includes("deepseek") || modelKey.includes("coder")) && isRealKey(deepseekKey) && circuitRegistry.isAvailable("deepseek")) {
     try {
       const deepseekModel = modelKey.includes("coder") ? "deepseek-coder" : "deepseek-chat";
       const res = await fetch("https://api.deepseek.com/chat/completions", {
@@ -228,6 +241,7 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
         const latencyMs = Math.round(performance.now() - startTime);
         const choice = data.choices?.[0];
         if (choice?.message?.content) {
+          circuitRegistry.recordSuccess("deepseek");
           return {
             content: choice.message.content,
             modelUsed: `DeepSeek (${deepseekModel})`,
@@ -240,8 +254,11 @@ export async function dispatchRealOrIntelligentModel(params: ProviderCallParams)
             providerStatus: "LIVE_DEEPSEEK_EXECUTION"
           };
         }
+      } else {
+        circuitRegistry.recordFailure("deepseek");
       }
     } catch (err: any) {
+      circuitRegistry.recordFailure("deepseek");
       console.warn("DeepSeek live dispatch failed, falling back:", err?.message);
     }
   }
