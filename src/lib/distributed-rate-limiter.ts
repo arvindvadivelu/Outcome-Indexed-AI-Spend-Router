@@ -1,6 +1,7 @@
 /**
- * ⚡ Distributed Dynamic Token Bucket Rate Limiter
- * Implements token bucket algorithm with tier-based refill rates and burst capacities.
+ * ⚡ Distributed Dynamic Token Bucket Rate Limiter with Anti-Stampede Jitter
+ * Implements token bucket algorithm with tier-based refill rates, burst capacities,
+ * and randomized entropy jitter to prevent synchronized retry spikes.
  */
 
 export interface TokenBucket {
@@ -8,6 +9,7 @@ export interface TokenBucket {
   lastRefillTimestamp: number;
   capacity: number;
   refillRatePerSec: number;
+  jitterOffsetSec: number;
 }
 
 export interface TierQuotaConfig {
@@ -26,23 +28,41 @@ const TIER_CONFIGS: Record<string, TierQuotaConfig> = {
 class DistributedTokenBucketLimiter {
   private buckets: Map<string, TokenBucket> = new Map();
 
-  public checkTokenBucket(identifier: string, planTier: string = "growth", cost: number = 1): {
+  private calculateBucketJitter(identifier: string): number {
+    let hash = 0;
+    for (let i = 0; i < identifier.length; i++) {
+      hash = (hash << 5) - hash + identifier.charCodeAt(i);
+      hash |= 0;
+    }
+    const normalized = (Math.abs(hash) % 1000) / 1000;
+    return Number(((normalized - 0.5) * 0.2).toFixed(3)); // ±10% jitter in seconds
+  }
+
+  public checkTokenBucket(
+    identifier: string,
+    planTier: string = "growth",
+    cost: number = 1,
+    enableJitter: boolean = true
+  ): {
     allowed: boolean;
     remainingTokens: number;
     capacity: number;
     refillRate: number;
     resetSeconds: number;
+    jitterAppliedSec: number;
   } {
     const config = TIER_CONFIGS[planTier.toLowerCase()] || TIER_CONFIGS.growth;
     const now = Date.now();
 
     let bucket = this.buckets.get(identifier);
     if (!bucket) {
+      const jitterOffsetSec = enableJitter ? this.calculateBucketJitter(identifier) : 0;
       bucket = {
         tokens: config.capacity,
         lastRefillTimestamp: now,
         capacity: config.capacity,
-        refillRatePerSec: config.refillRatePerSec
+        refillRatePerSec: config.refillRatePerSec,
+        jitterOffsetSec
       };
       this.buckets.set(identifier, bucket);
     }
@@ -54,23 +74,27 @@ class DistributedTokenBucketLimiter {
 
     if (bucket.tokens >= cost) {
       bucket.tokens -= cost;
-      const resetSec = Math.ceil((bucket.capacity - bucket.tokens) / bucket.refillRatePerSec);
+      const baseResetSec = (bucket.capacity - bucket.tokens) / bucket.refillRatePerSec;
+      const resetSec = Math.max(1, Math.ceil(baseResetSec + bucket.jitterOffsetSec));
       return {
         allowed: true,
         remainingTokens: Math.floor(bucket.tokens),
         capacity: bucket.capacity,
         refillRate: bucket.refillRatePerSec,
-        resetSeconds: resetSec
+        resetSeconds: resetSec,
+        jitterAppliedSec: bucket.jitterOffsetSec
       };
     } else {
       const neededTokens = cost - bucket.tokens;
-      const waitSeconds = Math.ceil(neededTokens / bucket.refillRatePerSec);
+      const baseWaitSeconds = neededTokens / bucket.refillRatePerSec;
+      const waitSeconds = Math.max(1, Math.ceil(baseWaitSeconds + bucket.jitterOffsetSec));
       return {
         allowed: false,
         remainingTokens: 0,
         capacity: bucket.capacity,
         refillRate: bucket.refillRatePerSec,
-        resetSeconds: waitSeconds
+        resetSeconds: waitSeconds,
+        jitterAppliedSec: bucket.jitterOffsetSec
       };
     }
   }
@@ -86,3 +110,4 @@ class DistributedTokenBucketLimiter {
 }
 
 export const distributedRateLimiter = new DistributedTokenBucketLimiter();
+

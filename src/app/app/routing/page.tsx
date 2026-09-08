@@ -29,7 +29,10 @@ import {
   SlidersHorizontal,
   Play,
   Lock,
-  AlertCircle
+  AlertCircle,
+  ShieldAlert,
+  Flame,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { SimulateRequestModal } from "@/components/SimulateRequestModal";
@@ -85,6 +88,59 @@ export default function RoutingRulesPage() {
 
   // In-Page Simulation Modal Trigger
   const [showSimulate, setShowSimulate] = useState(false);
+
+  // Anomaly Status & Chaos Simulation State
+  const [anomalyData, setAnomalyData] = useState<any>(null);
+  const [isFetchingAnomaly, setIsFetchingAnomaly] = useState(false);
+  const [chaosTarget, setChaosTarget] = useState("openai");
+  const [chaosFault, setChaosFault] = useState<"LATENCY_SPIKE" | "HTTP_500_ERROR" | "RATE_LIMIT_429">("LATENCY_SPIKE");
+  const [isInjectingChaos, setIsInjectingChaos] = useState(false);
+  const [chaosResult, setChaosResult] = useState<any>(null);
+
+  const fetchAnomalyStatus = async () => {
+    try {
+      setIsFetchingAnomaly(true);
+      const res = await fetch("/api/routing/anomaly-status");
+      const data = await res.json();
+      if (data.success) {
+        setAnomalyData(data);
+      }
+    } catch (err) {
+      console.warn("Anomaly status fetch error:", err);
+    } finally {
+      setIsFetchingAnomaly(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnomalyStatus();
+    const interval = setInterval(fetchAnomalyStatus, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleInjectChaos = async () => {
+    try {
+      setIsInjectingChaos(true);
+      const res = await fetch("/api/routing/chaos-simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetProvider: chaosTarget,
+          faultType: chaosFault,
+          latencySpikeMs: 450
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setChaosResult(data);
+        fetchAnomalyStatus();
+      }
+    } catch (err) {
+      console.warn("Chaos injection notice:", err);
+    } finally {
+      setIsInjectingChaos(false);
+    }
+  };
 
   const syncRulesToSession = (updatedRules: RoutingRule[]) => {
     if (user?.email) {
@@ -609,6 +665,135 @@ export default function RoutingRulesPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* 4.5 Live Provider Anomaly Health & Chaos Simulation Harness */}
+      <div className="rounded-[32px] bg-white/75 dark:bg-[#151518]/75 backdrop-blur-3xl border border-black/[0.06] dark:border-white/[0.08] p-6 sm:p-8 shadow-sm space-y-6" suppressHydrationWarning>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="h-5 w-5 text-amber-500" />
+            <div>
+              <h3 className="text-base font-bold text-[#1D1D1F] dark:text-[#F5F5F7] tracking-tight">
+                Live Anomaly Detector & Chaos Injection Mesh
+              </h3>
+              <p className="text-xs text-[#86868B]">
+                Real-time circuit breaker trip sensors and sub-100ms failover harness
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={fetchAnomalyStatus}
+            disabled={isFetchingAnomaly}
+            className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] text-[#515154] dark:text-[#A1A1A6] hover:text-[#0050FF] flex items-center gap-1.5 transition-all"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetchingAnomaly ? "animate-spin text-[#0050FF]" : ""}`} />
+            <span>Refresh Telemetry</span>
+          </button>
+        </div>
+
+        {/* Provider Anomaly Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {[
+            { id: "openai", name: "OpenAI", primaryModel: "GPT-4o", defaultP95: 240 },
+            { id: "anthropic", name: "Anthropic", primaryModel: "Claude 3.5 Sonnet", defaultP95: 210 },
+            { id: "deepseek", name: "DeepSeek", primaryModel: "DeepSeek-V3", defaultP95: 78 },
+            { id: "groq", name: "Groq LPU", primaryModel: "Llama 3.3 70B", defaultP95: 38 }
+          ].map((prov) => {
+            const status = anomalyData?.providers?.find((p: any) => p.provider === prov.id);
+            const isDegraded = status?.anomalyDetected || false;
+
+            return (
+              <div
+                key={prov.id}
+                className={`p-4 rounded-2xl border transition-all ${
+                  isDegraded
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400"
+                    : "bg-[#F7F7F9]/70 dark:bg-[#1A1A1E]/70 border-black/[0.04] dark:border-white/[0.06]"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-xs text-[#1D1D1F] dark:text-[#F5F5F7]">{prov.name}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      isDegraded
+                        ? "bg-rose-500 text-white"
+                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
+                    {isDegraded ? "CIRCUIT OPEN" : "HEALTHY"}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#86868B] space-y-1">
+                  <div>Model: <span className="font-mono text-[#1D1D1F] dark:text-[#F5F5F7]">{prov.primaryModel}</span></div>
+                  <div>P95 Latency: <span className="font-mono">{status?.p95LatencyMs || prov.defaultP95}ms</span></div>
+                  <div>Error Rate: <span className="font-mono">{status ? `${(status.errorRate * 100).toFixed(1)}%` : "0.0%"}</span></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Chaos Injection Controls */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-500/5 to-rose-500/5 border border-amber-500/20 space-y-4">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#1D1D1F] dark:text-[#F5F5F7]">
+            <Flame className="h-4 w-4 text-rose-500" />
+            <span>Interactive Chaos Injection Control</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="text-[11px] font-semibold text-[#86868B] block mb-1">Target Provider</label>
+              <select
+                value={chaosTarget}
+                onChange={(e) => setChaosTarget(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl bg-white dark:bg-[#1A1A1E] border border-black/[0.08] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+              >
+                <option value="openai">OpenAI (GPT-4o)</option>
+                <option value="anthropic">Anthropic (Claude 3.5 Sonnet)</option>
+                <option value="deepseek">DeepSeek (DeepSeek-V3)</option>
+                <option value="groq">Groq (Llama 3.3 70B)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-semibold text-[#86868B] block mb-1">Injected Fault</label>
+              <select
+                value={chaosFault}
+                onChange={(e: any) => setChaosFault(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl bg-white dark:bg-[#1A1A1E] border border-black/[0.08] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+              >
+                <option value="LATENCY_SPIKE">Latency Spike (450ms overshoot)</option>
+                <option value="HTTP_500_ERROR">HTTP 500 Internal Error</option>
+                <option value="RATE_LIMIT_429">HTTP 429 Rate Limit Breach</option>
+              </select>
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleInjectChaos}
+                disabled={isInjectingChaos}
+                className="w-full h-9 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 hover:scale-102 active:scale-98 disabled:opacity-50"
+              >
+                <Flame className="h-3.5 w-3.5" />
+                <span>{isInjectingChaos ? "Injecting Fault..." : "Inject Chaos Fault"}</span>
+              </button>
+            </div>
+          </div>
+
+          {chaosResult && (
+            <div className="p-4 rounded-xl bg-white/90 dark:bg-[#1A1A1E]/90 border border-black/[0.06] dark:border-white/[0.08] space-y-2 text-xs">
+              <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 font-bold">
+                <span>✓ Seamless Failover Verification Executed</span>
+                <span className="font-mono text-[11px]">{chaosResult.result?.totalRoundtripLatencyMs}ms total</span>
+              </div>
+              <p className="text-[#515154] dark:text-[#A1A1A6] text-[11px]">
+                {chaosResult.message}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 5. Active Routing Policies Table */}

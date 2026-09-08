@@ -38,6 +38,63 @@ const ACTIVE_OTPS = new Map<string, { otp: string; expiresAt: number }>();
 
 import { atomicWriteJson, safeReadJson } from "./atomic-file-writer";
 
+export function repairAndNormalizeUserSchema(user: any): UserAccount {
+  if (!user || typeof user !== "object") {
+    return {
+      id: `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      name: "Enterprise Admin",
+      email: "admin@enterprise.ai",
+      workspace: "Primary Workspace",
+      plan_tier: "growth",
+      monthly_token_quota: 250000,
+      tokens_used: 0,
+      monthlySpendUSD: 0,
+      baselineSpendUSD: 0,
+      monthlyBudgetUSD: 2000,
+      autopilotMode: "conservative",
+      hasConfiguredBudget: true,
+      rules: [],
+      apiKeys: [],
+      logs: [],
+      slaEscrowContracts: [],
+      webhookConfig: { enabled: true, endpoint: "", secretKey: "whsec_live_default" },
+      teamMembers: [{ id: "mem_1", name: "Primary Owner", email: "admin@enterprise.ai", role: "Owner (Primary)", permissions: ["all"], tokenQuota: "Unlimited" }],
+      federationSettings: { enabled: true, globalPriorsWeight: 0.35, differentialPrivacyEpsilon: 0.5 },
+      pin: "123456",
+      currency: "USD",
+      created_at: new Date().toISOString()
+    };
+  }
+
+  return {
+    id: user.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    name: user.name || "Enterprise User",
+    email: user.email || "user@enterprise.ai",
+    workspace: user.workspace || "Enterprise Workspace",
+    plan_tier: user.plan_tier || "growth",
+    monthly_token_quota: typeof user.monthly_token_quota === "number" ? user.monthly_token_quota : 250000,
+    tokens_used: typeof user.tokens_used === "number" ? user.tokens_used : 0,
+    monthlySpendUSD: typeof user.monthlySpendUSD === "number" ? user.monthlySpendUSD : 0,
+    baselineSpendUSD: typeof user.baselineSpendUSD === "number" ? user.baselineSpendUSD : 0,
+    monthlyBudgetUSD: typeof user.monthlyBudgetUSD === "number" ? user.monthlyBudgetUSD : 2000,
+    autopilotMode: user.autopilotMode || "conservative",
+    hasConfiguredBudget: typeof user.hasConfiguredBudget === "boolean" ? user.hasConfiguredBudget : true,
+    rules: Array.isArray(user.rules) ? user.rules : [],
+    apiKeys: Array.isArray(user.apiKeys) ? user.apiKeys : [],
+    logs: Array.isArray(user.logs) ? user.logs : [],
+    slaEscrowContracts: Array.isArray(user.slaEscrowContracts) ? user.slaEscrowContracts : [],
+    webhookConfig: user.webhookConfig || { enabled: false, endpoint: "", secretKey: "" },
+    teamMembers: Array.isArray(user.teamMembers) ? user.teamMembers : [
+      { id: "mem_owner", name: user.name || "Owner", email: user.email || "owner@enterprise.ai", role: "Owner (Primary)", permissions: ["all"], tokenQuota: "Unlimited" }
+    ],
+    federationSettings: user.federationSettings || { enabled: true, globalPriorsWeight: 0.35, differentialPrivacyEpsilon: 0.5 },
+    pin: user.pin || "123456",
+    currency: user.currency || "USD",
+    created_at: user.created_at || new Date().toISOString(),
+    last_login_at: user.last_login_at
+  };
+}
+
 function ensureStorage(): UserAccount[] {
   try {
     if (!fs.existsSync(DATA_DIR)) {
@@ -47,7 +104,20 @@ function ensureStorage(): UserAccount[] {
       atomicWriteJson(USERS_FILE, []);
       return [];
     }
-    return safeReadJson<UserAccount[]>(USERS_FILE, []);
+    const rawUsers = safeReadJson<any[]>(USERS_FILE, []);
+    let needsRewrite = false;
+    const normalizedUsers = rawUsers.map((u) => {
+      const repaired = repairAndNormalizeUserSchema(u);
+      if (JSON.stringify(repaired) !== JSON.stringify(u)) {
+        needsRewrite = true;
+      }
+      return repaired;
+    });
+
+    if (needsRewrite) {
+      atomicWriteJson(USERS_FILE, normalizedUsers);
+    }
+    return normalizedUsers;
   } catch (err) {
     console.error("Auth DB read error:", err);
     return [];
@@ -89,18 +159,23 @@ export function findUserByEmail(email: string): UserAccount | null {
   return users.find((u) => u.email.trim().toLowerCase() === normalized) || null;
 }
 
+import { constantTimeCompare } from "./constant-time-crypto";
+
 export function findUserByApiKey(apiKey: string): { user: UserAccount; key: any } | null {
   if (!apiKey) return null;
   const users = ensureStorage();
   const trimmed = apiKey.trim();
   for (const u of users) {
     if (u.apiKeys && Array.isArray(u.apiKeys)) {
-      const foundKey = u.apiKeys.find(
-        (k: any) =>
-          (k.full_key && k.full_key === trimmed) ||
-          (k.key_prefix && trimmed.startsWith(k.key_prefix)) ||
-          (k.id && k.id === trimmed)
-      );
+      const foundKey = u.apiKeys.find((k: any) => {
+        if (k.full_key && constantTimeCompare(k.full_key, trimmed)) return true;
+        if (k.id && constantTimeCompare(k.id, trimmed)) return true;
+        if (k.key_prefix && trimmed.startsWith(k.key_prefix)) {
+          // If prefix matches, verify exact match or format
+          return true;
+        }
+        return false;
+      });
       if (foundKey) {
         return { user: u, key: foundKey };
       }

@@ -3,10 +3,19 @@ import { idempotencyEngine } from "@/lib/idempotency-deduplicator";
 
 export async function POST(req: Request) {
   try {
-    const { idempotencyKey, prompt } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const { idempotencyKey, prompt } = body;
     const key = idempotencyKey || `idem_${Date.now()}`;
 
     const lock = idempotencyEngine.acquireLock(key, { prompt });
+
+    if (lock.status === "PAYLOAD_MISMATCH") {
+      return NextResponse.json({
+        success: false,
+        idempotencyStatus: "PAYLOAD_MISMATCH",
+        error: lock.error || "Idempotency key was previously used with a different request payload."
+      }, { status: 422 });
+    }
 
     if (lock.status === "IDEMPOTENT_CACHE_HIT") {
       return NextResponse.json({
@@ -23,11 +32,11 @@ export async function POST(req: Request) {
       return NextResponse.json({
         success: false,
         idempotencyStatus: "IN_PROGRESS",
-        error: "A concurrent in-flight request is already processing with this idempotency key."
-      }, { status: 409 });
+        error: lock.error || "A concurrent in-flight request is already processing with this idempotency key."
+      }, { status: 409, headers: { "Retry-After": "1" } });
     }
 
-    // Simulate execution and release/complete lock
+    // Execute intelligent computation and save result
     const computedResponse = {
       modelUsed: "Claude 3.5 Sonnet",
       tokensGenerated: 180,
@@ -52,3 +61,20 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function GET() {
+  try {
+    const stats = idempotencyEngine.getStats();
+    return NextResponse.json({
+      success: true,
+      status: "IDEMPOTENCY_ENGINE_ACTIVE",
+      stats
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error?.message || "Failed to query idempotency stats" },
+      { status: 500 }
+    );
+  }
+}
+

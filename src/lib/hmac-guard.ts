@@ -3,12 +3,15 @@ import crypto from "crypto";
 /**
  * 🛡️ Constant-Time Cryptographic HMAC SHA-256 Signature Guard
  * Eliminates side-channel timing attack vectors when verifying inbound webhook signatures.
+ * Supports Dual-Secret Staged Key Rollover during enterprise secret rotation windows.
  */
 
 export interface HmacVerificationResult {
   valid: boolean;
   timestamp: number;
   toleranceDeltaMs: number;
+  matchedSecret?: string;
+  isRotatedSecretUsed?: boolean;
   reason?: string;
 }
 
@@ -21,10 +24,12 @@ export function generateHmacSignature(payloadStr: string, secretKey: string, tim
 export function verifyHmacSignature(
   headerString: string,
   payloadStr: string,
-  secretKey: string,
+  secretKey: string | string[],
   maxToleranceSeconds: number = 300 // 5 minutes
 ): HmacVerificationResult {
-  if (!headerString || !secretKey) {
+  const secrets = Array.isArray(secretKey) ? secretKey.filter(Boolean) : [secretKey].filter(Boolean);
+
+  if (!headerString || secrets.length === 0) {
     return { valid: false, timestamp: 0, toleranceDeltaMs: 0, reason: "Missing header or secret" };
   }
 
@@ -56,24 +61,29 @@ export function verifyHmacSignature(
     };
   }
 
-  // Reconstruct expected signature
   const expectedPayload = `${timestamp}.${payloadStr}`;
-  const expectedHash = crypto.createHmac("sha256", secretKey).update(expectedPayload).digest("hex");
-
-  // Constant-time comparison to prevent timing attacks
   const receivedBuf = Buffer.from(receivedHash, "hex");
-  const expectedBuf = Buffer.from(expectedHash, "hex");
 
-  if (receivedBuf.length !== expectedBuf.length) {
-    return { valid: false, timestamp, toleranceDeltaMs: deltaSeconds * 1000, reason: "Signature length mismatch" };
+  for (let i = 0; i < secrets.length; i++) {
+    const candidateSecret = secrets[i];
+    const expectedHash = crypto.createHmac("sha256", candidateSecret).update(expectedPayload).digest("hex");
+    const expectedBuf = Buffer.from(expectedHash, "hex");
+
+    if (receivedBuf.length === expectedBuf.length && crypto.timingSafeEqual(receivedBuf, expectedBuf)) {
+      return {
+        valid: true,
+        timestamp,
+        toleranceDeltaMs: deltaSeconds * 1000,
+        matchedSecret: candidateSecret.slice(0, 10) + "...",
+        isRotatedSecretUsed: i > 0
+      };
+    }
   }
 
-  const matches = crypto.timingSafeEqual(receivedBuf, expectedBuf);
-
   return {
-    valid: matches,
+    valid: false,
     timestamp,
     toleranceDeltaMs: deltaSeconds * 1000,
-    reason: matches ? undefined : "Signature hash mismatch"
+    reason: "Signature hash mismatch against all candidate secrets in truststore"
   };
 }

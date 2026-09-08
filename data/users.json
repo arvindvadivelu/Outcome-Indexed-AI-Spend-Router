@@ -1,22 +1,19 @@
 [
   {
+    "id": "usr_1788604391404_doqjq",
     "name": "Arvind V",
     "email": "varvind2004@gmail.com",
     "workspace": "Solvst",
     "plan_tier": "starter",
     "monthly_token_quota": 100000,
-    "pin": "111111",
-    "currency": "USD",
-    "apiKeys": [],
     "tokens_used": 2000,
-    "id": "usr_1788604391404_doqjq",
-    "created_at": "2026-09-05T10:33:11.404Z",
+    "monthlySpendUSD": 0.0135,
+    "baselineSpendUSD": 0.0208,
     "monthlyBudgetUSD": 2,
     "autopilotMode": "optimal_pace",
     "hasConfiguredBudget": true,
-    "monthlySpendUSD": 0.0135,
-    "baselineSpendUSD": 0.0208,
     "rules": [],
+    "apiKeys": [],
     "logs": [
       {
         "id": "chatcmpl-oir-7a70c6734320e69e",
@@ -186,6 +183,11 @@
         "cryptographicHash": "0xcul6cz9woa7fv8nspmo34"
       }
     ],
+    "webhookConfig": {
+      "enabled": false,
+      "endpoint": "",
+      "secretKey": ""
+    },
     "teamMembers": [
       {
         "id": 1,
@@ -196,26 +198,31 @@
         "mfaActive": true,
         "lastActive": "Just now"
       }
-    ]
+    ],
+    "federationSettings": {
+      "enabled": true,
+      "globalPriorsWeight": 0.35,
+      "differentialPrivacyEpsilon": 0.5
+    },
+    "pin": "111111",
+    "currency": "USD",
+    "created_at": "2026-09-05T10:33:11.404Z"
   },
   {
+    "id": "usr_1788194124405_t5366",
     "name": "Alex",
     "email": "alex@company.com",
     "workspace": "Dem",
     "plan_tier": "free",
     "monthly_token_quota": 10000,
-    "pin": "111111",
-    "currency": "USD",
-    "apiKeys": [],
     "tokens_used": 3500,
-    "id": "usr_1788194124405_t5366",
-    "created_at": "2026-08-31T16:35:24.405Z",
+    "monthlySpendUSD": 0.0083,
+    "baselineSpendUSD": 0.0364,
     "monthlyBudgetUSD": 500,
     "autopilotMode": "aggressive_savings",
     "hasConfiguredBudget": true,
-    "monthlySpendUSD": 0.0083,
-    "baselineSpendUSD": 0.0364,
     "rules": [],
+    "apiKeys": [],
     "logs": [
       {
         "id": "chatcmpl-oir-5e14ed0fa40782cb",
@@ -483,16 +490,47 @@
         "refundTokens": 0,
         "cryptographicHash": "0xo0r75ukw910rzr6re4bq9p"
       }
-    ]
+    ],
+    "webhookConfig": {
+      "enabled": false,
+      "endpoint": "",
+      "secretKey": ""
+    },
+    "teamMembers": [
+      {
+        "id": "mem_owner",
+        "name": "Alex",
+        "email": "alex@company.com",
+        "role": "Owner (Primary)",
+        "permissions": [
+          "all"
+        ],
+        "tokenQuota": "Unlimited"
+      }
+    ],
+    "federationSettings": {
+      "enabled": true,
+      "globalPriorsWeight": 0.35,
+      "differentialPrivacyEpsilon": 0.5
+    },
+    "pin": "111111",
+    "currency": "USD",
+    "created_at": "2026-08-31T16:35:24.405Z"
   },
   {
+    "id": "usr_1788193612701_oy7o7",
     "name": "ram",
     "email": "ram@gmail.com",
     "workspace": "Demo",
     "plan_tier": "free",
     "monthly_token_quota": 10000,
-    "pin": "111111",
-    "currency": "INR",
+    "tokens_used": 0,
+    "monthlySpendUSD": 0,
+    "baselineSpendUSD": 0,
+    "monthlyBudgetUSD": 1500,
+    "autopilotMode": "optimal_pace",
+    "hasConfiguredBudget": true,
+    "rules": [],
     "apiKeys": [
       {
         "id": "key_1788193612700",
@@ -507,11 +545,32 @@
         "is_active": true
       }
     ],
-    "tokens_used": 0,
-    "id": "usr_1788193612701_oy7o7",
-    "created_at": "2026-08-31T16:26:52.701Z",
-    "monthlyBudgetUSD": 1500,
-    "autopilotMode": "optimal_pace",
-    "hasConfiguredBudget": true
+    "logs": [],
+    "slaEscrowContracts": [],
+    "webhookConfig": {
+      "enabled": false,
+      "endpoint": "",
+      "secretKey": ""
+    },
+    "teamMembers": [
+      {
+        "id": "mem_owner",
+        "name": "ram",
+        "email": "ram@gmail.com",
+        "role": "Owner (Primary)",
+        "permissions": [
+          "all"
+        ],
+        "tokenQuota": "Unlimited"
+      }
+    ],
+    "federationSettings": {
+      "enabled": true,
+      "globalPriorsWeight": 0.35,
+      "differentialPrivacyEpsilon": 0.5
+    },
+    "pin": "111111",
+    "currency": "INR",
+    "created_at": "2026-08-31T16:26:52.701Z"
   }
 ]

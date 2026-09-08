@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { checkAndRelieveMemoryPressure } from "@/lib/gc-pressure-guard";
+import { checkAndRelieveMemoryPressure, forcePurgeAllCachesAndQueues } from "@/lib/gc-pressure-guard";
 
 export async function GET() {
   try {
@@ -16,3 +16,22 @@ export async function GET() {
     );
   }
 }
+
+export async function POST() {
+  try {
+    const purgeResult = forcePurgeAllCachesAndQueues();
+    const freshStatus = checkAndRelieveMemoryPressure();
+    return NextResponse.json({
+      success: true,
+      message: "Proactive memory purge and buffer flush completed successfully",
+      purgeResult,
+      freshStatus
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error?.message || "Failed to execute proactive memory purge" },
+      { status: 500 }
+    );
+  }
+}
+

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, deleteUser } from "@/lib/auth-db";
+import { findUserByEmail, deleteUser, updateUserAccountState } from "@/lib/auth-db";
+import { verifyAndUpgradeCredential } from "@/lib/salt-rotation-guard";
 
 export async function POST(req: Request) {
   try {
@@ -55,11 +56,18 @@ export async function POST(req: Request) {
       );
     }
 
-    if (user.pin !== pin.trim()) {
+    const pinCheck = verifyAndUpgradeCredential(pin, user.pin);
+
+    if (!pinCheck.valid) {
       return NextResponse.json(
         { success: false, error: "Incorrect 6-digit security PIN. Please try again or use Email OTP / Reset PIN." },
         { status: 401 }
       );
+    }
+
+    // Transparently upgrade legacy or rotated salt hashes to current generation
+    if (pinCheck.needsRehash && pinCheck.upgradedHash) {
+      updateUserAccountState(user.email, { pin: pinCheck.upgradedHash });
     }
 
     const tokensUsed = user.tokens_used ?? 0;

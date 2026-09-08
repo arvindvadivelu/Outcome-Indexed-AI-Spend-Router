@@ -3,6 +3,9 @@ import crypto from "crypto";
 import { findUserByEmail, findUserByApiKey, consumeUserTokens, updateUserAccountState } from "@/lib/auth-db";
 import { dispatchRealOrIntelligentModel } from "@/lib/real-model-provider";
 import { scanAndSanitizePrompt } from "@/lib/prompt-sanitizer";
+import { drainManager } from "@/lib/drain-manager";
+import { createChildSpan } from "@/lib/w3c-tracing";
+import { idempotencyEngine } from "@/lib/idempotency-deduplicator";
 
 // Live Model Cost Matrix (per 1K tokens - USD)
 const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCostPer1K: number; outputCostPer1K: number; avgTtftMs: number; winRate: number }> = {
@@ -49,10 +52,60 @@ const MODEL_REGISTRY: Record<string, { name: string; provider: string; inputCost
 };
 
 export async function POST(req: Request) {
+  if (drainManager.isDraining()) {
+    return NextResponse.json(
+      { error: { message: "Server is draining in-flight connections for graceful shutdown. Please retry on alternate cluster node.", type: "server_draining_error" } },
+      { status: 503, headers: { "Retry-After": "2" } }
+    );
+  }
+
   const startTime = performance.now();
+  const traceCtx = createChildSpan(req.headers.get("traceparent"));
   try {
     const body = await req.json().catch(() => ({}));
     const headers = req.headers;
+    const idempotencyKey = headers.get("idempotency-key") || headers.get("x-idempotency-key") || body.idempotency_key || "";
+
+    // Idempotency Deduplication & Replay Guard
+    if (idempotencyKey) {
+      const lock = idempotencyEngine.acquireLock(idempotencyKey, body);
+      if (lock.status === "PAYLOAD_MISMATCH") {
+        return NextResponse.json(
+          {
+            error: {
+              message: "Idempotency key was previously used with a different request payload.",
+              type: "idempotency_payload_mismatch",
+              code: 422
+            }
+          },
+          { status: 422, headers: { "traceparent": traceCtx.rawHeader } }
+        );
+      }
+
+      if (lock.status === "IDEMPOTENT_CACHE_HIT") {
+        return NextResponse.json(lock.cachedResponse, {
+          status: 200,
+          headers: {
+            "X-Idempotent-Replay": "true",
+            "X-Outcome-Request-Id": lock.cachedResponse?.id || "chatcmpl-oir-replay",
+            "traceparent": traceCtx.rawHeader
+          }
+        });
+      }
+
+      if (lock.status === "DUPLICATE_IN_PROGRESS") {
+        return NextResponse.json(
+          {
+            error: {
+              message: "A concurrent in-flight request is already processing with this idempotency key.",
+              type: "concurrent_idempotency_conflict",
+              code: 409
+            }
+          },
+          { status: 409, headers: { "Retry-After": "1", "traceparent": traceCtx.rawHeader } }
+        );
+      }
+    }
 
     // Identify user email via API key or direct header
     const authHeader = headers.get("authorization") || "";
@@ -360,6 +413,10 @@ export async function POST(req: Request) {
         }
       });
 
+      if (idempotencyKey) {
+        idempotencyEngine.completeLock(idempotencyKey, responsePayload);
+      }
+
       return new NextResponse(stream, {
         headers: {
           "Content-Type": "text/event-stream; charset=utf-8",
@@ -373,9 +430,14 @@ export async function POST(req: Request) {
           "X-Outcome-Router-Latency-MS": String(ttftMs),
           "X-Outcome-Router-Cached": String(semanticCacheHit),
           "X-Outcome-Router-Tokens-Remaining": String(quotaCheck.remaining),
-          "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`
+          "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`,
+          "traceparent": traceCtx.rawHeader
         }
       });
+    }
+
+    if (idempotencyKey) {
+      idempotencyEngine.completeLock(idempotencyKey, responsePayload);
     }
 
     return NextResponse.json(responsePayload, {
@@ -389,7 +451,8 @@ export async function POST(req: Request) {
         "X-Outcome-Router-Latency-MS": String(ttftMs),
         "X-Outcome-Router-Cached": String(semanticCacheHit),
         "X-Outcome-Router-Tokens-Remaining": String(quotaCheck.remaining),
-        "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`
+        "X-Outcome-Router-SLA-Nonce": `0x${contractNonce.slice(0, 16)}`,
+        "traceparent": traceCtx.rawHeader
       }
     });
   } catch (error: any) {

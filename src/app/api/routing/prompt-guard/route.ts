@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { scanAndSanitizePrompt } from "@/lib/prompt-sanitizer";
+import { scanAndSanitizePrompt, scanCompletionForCanaryLeak } from "@/lib/prompt-sanitizer";
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json().catch(() => ({}));
-    const testPrompt = prompt || "Draft a warm introduction email to our new enterprise customer.";
+    const body = await req.json().catch(() => ({}));
+    const testPrompt = body.prompt || "Draft a warm introduction email to our new enterprise customer.";
+    const canaries = Array.isArray(body.knownCanaries) ? body.knownCanaries : [];
 
-    const scan = scanAndSanitizePrompt(testPrompt);
+    const scan = scanAndSanitizePrompt(testPrompt, canaries);
 
     return NextResponse.json({
       success: scan.isSafe,
       scannedAt: new Date().toISOString(),
+      threatLevel: scan.threatLevel,
+      canaryLeakDetected: scan.canaryLeakDetected,
       scan
     }, {
       status: scan.isSafe ? 200 : 422

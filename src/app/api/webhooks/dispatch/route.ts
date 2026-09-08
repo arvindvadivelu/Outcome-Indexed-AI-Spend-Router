@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { webhookDlq } from "@/lib/webhook-dlq";
 
 export async function POST(req: Request) {
   try {
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
     const headerSignature = `t=${timestamp},v1=${signature}`;
     let realHttpStatus = 200;
     let deliveryLatencyMs = 28;
+    let dlqRecord = null;
 
     // Execute real HTTP webhook delivery if external URL is provided
     if (endpointUrl && (endpointUrl.startsWith("http://") || endpointUrl.startsWith("https://")) && !endpointUrl.includes("yourcompany.com")) {
@@ -51,9 +53,28 @@ export async function POST(req: Request) {
         });
         deliveryLatencyMs = Math.round(performance.now() - t0);
         realHttpStatus = remoteRes.status;
+
+        if (!remoteRes.ok) {
+          dlqRecord = webhookDlq.enqueueFailure(
+            endpointUrl,
+            topic,
+            payload,
+            headerSignature,
+            realHttpStatus,
+            `Remote server responded with HTTP ${realHttpStatus}`
+          );
+        }
       } catch (e: any) {
         deliveryLatencyMs = Math.round(performance.now() - t0);
         realHttpStatus = 502;
+        dlqRecord = webhookDlq.enqueueFailure(
+          endpointUrl,
+          topic,
+          payload,
+          headerSignature,
+          502,
+          e?.message || "Connection timeout or refused"
+        );
       }
     }
 
