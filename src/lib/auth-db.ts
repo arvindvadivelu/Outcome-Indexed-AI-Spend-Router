@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { atomicWriteJson, safeReadJson } from "./atomic-file-writer";
+import { constantTimeCompare } from "./constant-time-crypto";
 
 export interface UserAccount {
   id: string;
@@ -30,13 +32,51 @@ export interface UserAccount {
 const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
-// Default initial accounts seeded for instant login (Empty for clean production slate)
-const DEFAULT_USERS: UserAccount[] = [];
+const GOOGLE_SHEETS_WEBHOOK_URL =
+  process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
+  "https://script.google.com/macros/s/AKfycbwGKherD18I8NfCC3ih1Vps6thXyA0b0uEAhYsEX9imxnS7Yk9gSKLkZHvza7KxaypZ3A/exec";
 
 // Active in-memory OTP storage: email -> { otp: string, expiresAt: number }
 const ACTIVE_OTPS = new Map<string, { otp: string; expiresAt: number }>();
 
-import { atomicWriteJson, safeReadJson } from "./atomic-file-writer";
+/**
+ * 🚀 Real-Time Google Sheet Auto-Sync Dispatcher
+ * Dispatches changes asynchronously so local requests never block or lag.
+ */
+export async function dispatchGoogleSheetSync(record: {
+  action: string;
+  name?: string;
+  email?: string;
+  workspace?: string;
+  plan_tier?: string;
+  monthly_token_quota?: number;
+  currency?: string;
+  auth_method?: string;
+  created_at?: string;
+  users?: any[];
+}) {
+  try {
+    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL;
+    if (!webhookUrl) return;
+
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...record,
+        timestamp: new Date().toISOString(),
+        localTime: new Date().toLocaleString()
+      }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(5000)
+    }).catch((err) => {
+      // Quiet background warning
+      console.warn("[GoogleSheetAutoSync] Background dispatch notice:", err?.message || err);
+    });
+  } catch (err) {
+    // Non-blocking
+  }
+}
 
 export function repairAndNormalizeUserSchema(user: any): UserAccount {
   if (!user || typeof user !== "object") {
@@ -126,6 +166,7 @@ function ensureStorage(): UserAccount[] {
 
 export function clearAllUsers(): void {
   saveUsers([]);
+  dispatchGoogleSheetSync({ action: "CLEAR_ALL" });
 }
 
 function saveUsers(users: UserAccount[]) {
@@ -145,11 +186,27 @@ export function updateUserAccountState(email: string, updates: Partial<UserAccou
   const normalized = email.trim().toLowerCase();
   const index = users.findIndex((u) => u.email.trim().toLowerCase() === normalized);
   if (index === -1) return null;
+
   users[index] = {
     ...users[index],
     ...updates
   };
+
   saveUsers(users);
+
+  // Auto-sync user state update to Google Sheet in real time
+  dispatchGoogleSheetSync({
+    action: "UPSERT",
+    name: users[index].name,
+    email: users[index].email,
+    workspace: users[index].workspace,
+    plan_tier: users[index].plan_tier,
+    monthly_token_quota: users[index].monthly_token_quota,
+    currency: users[index].currency,
+    auth_method: "PIN_PASSWORD",
+    created_at: users[index].created_at
+  });
+
   return users[index];
 }
 
@@ -158,8 +215,6 @@ export function findUserByEmail(email: string): UserAccount | null {
   const normalized = email.trim().toLowerCase();
   return users.find((u) => u.email.trim().toLowerCase() === normalized) || null;
 }
-
-import { constantTimeCompare } from "./constant-time-crypto";
 
 export function findUserByApiKey(apiKey: string): { user: UserAccount; key: any } | null {
   if (!apiKey) return null;
@@ -171,7 +226,6 @@ export function findUserByApiKey(apiKey: string): { user: UserAccount; key: any 
         if (k.full_key && constantTimeCompare(k.full_key, trimmed)) return true;
         if (k.id && constantTimeCompare(k.id, trimmed)) return true;
         if (k.key_prefix && trimmed.startsWith(k.key_prefix)) {
-          // If prefix matches, verify exact match or format
           return true;
         }
         return false;
@@ -203,6 +257,20 @@ export function registerUser(user: Omit<UserAccount, "id" | "created_at">): User
   }
 
   saveUsers(users);
+
+  // Auto-sync newly registered user to Google Sheet in real time
+  dispatchGoogleSheetSync({
+    action: "SIGNUP",
+    name: newUser.name,
+    email: newUser.email,
+    workspace: newUser.workspace,
+    plan_tier: newUser.plan_tier,
+    monthly_token_quota: newUser.monthly_token_quota,
+    currency: newUser.currency,
+    auth_method: "PIN_PASSWORD",
+    created_at: newUser.created_at
+  });
+
   return newUser;
 }
 
@@ -212,7 +280,6 @@ export function consumeUserTokens(email: string, amount: number): { allowed: boo
   let user = users.find((u) => u.email.trim().toLowerCase() === normalized);
 
   if (!user) {
-    // If not found, default to free tier with 10k quota
     return {
       allowed: true,
       tokens_used: amount,
@@ -260,9 +327,7 @@ export function resetUserTokens(email: string): boolean {
 
 export function generateEmailOtp(email: string): string {
   const normalized = email.trim().toLowerCase();
-  // Generate cryptographically random 6-digit code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
-  // 10 minutes expiry
   ACTIVE_OTPS.set(normalized, { otp: code, expiresAt: Date.now() + 10 * 60 * 1000 });
   return code;
 }
@@ -289,6 +354,9 @@ export function deleteUser(email: string): boolean {
   if (index === -1) return false;
   users.splice(index, 1);
   saveUsers(users);
+
+  // Auto-sync deletion to Google Sheet in real time
+  dispatchGoogleSheetSync({ action: "DELETE", email: normalized });
   return true;
 }
 
@@ -301,6 +369,7 @@ export function updateUserPlanTier(
   const normalized = email.trim().toLowerCase();
   const user = users.find((u) => u.email.trim().toLowerCase() === normalized);
   if (!user) return false;
+
   user.plan_tier = newPlanTier;
   if (quota) {
     user.monthly_token_quota = quota;
@@ -310,7 +379,79 @@ export function updateUserPlanTier(
     else if (newPlanTier === "growth") user.monthly_token_quota = 500000;
     else if (newPlanTier === "enterprise") user.monthly_token_quota = 2000000;
   }
+
   saveUsers(users);
+
+  // Auto-sync plan upgrade to Google Sheet in real time
+  dispatchGoogleSheetSync({
+    action: "PLAN_UPGRADE",
+    name: user.name,
+    email: user.email,
+    workspace: user.workspace,
+    plan_tier: user.plan_tier,
+    monthly_token_quota: user.monthly_token_quota,
+    currency: user.currency
+  });
+
   return true;
 }
 
+/**
+ * 📂 Automated Real-Time File Watcher
+ * Detects any manual or external edits to data/users.json and auto-syncs rows to Google Sheets.
+ */
+let isWatcherActive = false;
+let watcherDebounceTimer: NodeJS.Timeout | null = null;
+
+function setupUsersFileWatcher() {
+  if (isWatcherActive || typeof window !== "undefined") return;
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(USERS_FILE)) {
+      atomicWriteJson(USERS_FILE, []);
+    }
+
+    fs.watch(USERS_FILE, (eventType) => {
+      if (eventType === "change" || eventType === "rename") {
+        if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
+        watcherDebounceTimer = setTimeout(async () => {
+          try {
+            const raw = fs.readFileSync(USERS_FILE, "utf-8");
+            const parsed = JSON.parse(raw || "[]");
+            if (Array.isArray(parsed)) {
+              if (parsed.length === 0) {
+                await dispatchGoogleSheetSync({ action: "CLEAR_ALL" });
+              } else {
+                for (const u of parsed) {
+                  if (u && u.email) {
+                    await dispatchGoogleSheetSync({
+                      action: "UPSERT",
+                      name: u.name || "User",
+                      email: u.email,
+                      workspace: u.workspace || "Primary Workspace",
+                      plan_tier: u.plan_tier || "free",
+                      monthly_token_quota: u.monthly_token_quota || 10000,
+                      currency: u.currency || "USD",
+                      auth_method: "PIN_PASSWORD",
+                      created_at: u.created_at
+                    });
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore transient lock during write
+          }
+        }, 1200);
+      }
+    });
+    isWatcherActive = true;
+  } catch (e) {
+    // Watcher fallback
+  }
+}
+
+// Initialize watcher on server start
+setupUsersFileWatcher();

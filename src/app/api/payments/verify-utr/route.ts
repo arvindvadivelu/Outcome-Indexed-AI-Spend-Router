@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       const updatedUser = findUserByEmail(email);
       const webhookUrl =
         process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-        "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
+        "https://script.google.com/macros/s/AKfycbwGKherD18I8NfCC3ih1Vps6thXyA0b0uEAhYsEX9imxnS7Yk9gSKLkZHvza7KxaypZ3A/exec";
 
       if (webhookUrl && updatedUser) {
         try {

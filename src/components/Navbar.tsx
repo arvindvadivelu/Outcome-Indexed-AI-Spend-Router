@@ -3,13 +3,21 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, ArrowRight, User } from "lucide-react";
+import { Zap, ArrowRight } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
+const NAV_LINKS = [
+  { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/case-studies", label: "Case Studies" },
+  { href: "/docs", label: "Docs" },
+  { href: "/about", label: "About" },
+];
+
 export function Navbar() {
   const pathname = usePathname();
-  const { user, currency } = useAppStore();
+  const { user } = useAppStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -26,21 +34,13 @@ export function Navbar() {
         .slice(0, 2)
     : "AV";
 
-  const isUserLoggedIn = mounted && !!user;
-
-  const navLinks = [
-    { href: "/features", label: "Features" },
-    { href: "/pricing", label: "Pricing" },
-    { href: "/case-studies", label: "Case Studies" },
-    { href: "/docs", label: "Docs" },
-    { href: "/about", label: "About" },
-  ];
+  const isUserLoggedIn = mounted && Boolean(user);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl transition-all" suppressHydrationWarning>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8" suppressHydrationWarning>
+    <header className="sticky top-0 z-50 w-full border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#161618]/80 backdrop-blur-xl transition-all">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Theme Toggle & Logo */}
-        <div className="flex items-center gap-3" suppressHydrationWarning>
+        <div className="flex items-center gap-3">
           <ThemeToggle />
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0050FF] shadow-md shadow-[#0050FF]/25 group-hover:scale-105 transition-transform">
@@ -57,7 +57,7 @@ export function Navbar() {
 
         {/* Navigation links */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => {
+          {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
@@ -74,8 +74,8 @@ export function Navbar() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-3" suppressHydrationWarning>
-          {isUserLoggedIn ? (
+        <div className="flex items-center gap-3">
+          {mounted && isUserLoggedIn ? (
             <Link
               href="/app/dashboard"
               className="flex items-center gap-2 p-1 pl-2.5 rounded-full hover:bg-black/[0.04] dark:hover:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] transition-all hover:scale-105 active:scale-95"
@@ -98,7 +98,7 @@ export function Navbar() {
           )}
 
           <Link
-            href={isUserLoggedIn ? "/app/dashboard" : "/auth/signin"}
+            href={mounted && isUserLoggedIn ? "/app/dashboard" : "/auth/signin"}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#0050FF] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0040CC] transition-all shadow-sm shadow-[#0050FF]/20 hover:scale-[1.02]"
           >
             <span>Open Console</span>

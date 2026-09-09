@@ -3,16 +3,31 @@
 // Spreadsheet: https://docs.google.com/spreadsheets/d/1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8/edit
 //
 // Features:
-// 1. Clean User Database structure (No Action column).
-// 2. Unique Email Rows.
+// 1. Strict 1-User = 1-Row Architecture (Zero duplicate rows).
+// 2. Real-Time Automatic In-Place Updates for Name, Email, Workspace, Plan, Quota.
 // 3. Delete Account -> DELETES the user's specific row from the sheet entirely.
-// 4. doGet() -> Returns all active emails in the sheet so deleted rows prevent logins.
-// 5. CLEAR_ALL -> Clears entire sheet keeping only the header row.
+// 4. doGet() -> Returns all active users & emails in JSON format.
+// 5. CLEAR_ALL -> Clears entire sheet keeping only the 8 formatted table headers.
 // ==============================================================================
+
+var SPREADSHEET_ID = "1F6wOcNxgnQF8X2VXgVxXImFst8sC_wwMdOt95hFe1J8";
+
+function getTargetSheet() {
+  try {
+    if (SPREADSHEET_ID && SPREADSHEET_ID.length > 10) {
+      var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+      var sheets = ss.getSheets();
+      return sheets[0];
+    }
+  } catch (e) {
+    Logger.log("openById fallback: " + e);
+  }
+  return SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+}
 
 function doPost(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var sheet = getTargetSheet();
     var contents = e.postData ? e.postData.contents : "{}";
     var data = JSON.parse(contents);
 
@@ -60,7 +75,7 @@ function doPost(e) {
       });
     }
 
-    // 5. Handle USER REGISTRATION / UPSERT / PLAN UPDATE
+    // 5. Handle USER REGISTRATION / UPSERT / PLAN UPDATE / PROFILE CHANGE
     if (!email) {
       return createJsonResponse({ status: "error", message: "Email is required" });
     }
@@ -84,7 +99,8 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var sheet = getTargetSheet();
+    ensureHeaders(sheet);
     var lastRow = sheet.getLastRow();
     var emails = [];
     var users = [];
@@ -93,7 +109,7 @@ function doGet(e) {
       var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
       for (var i = 0; i < data.length; i++) {
         var rowEmail = (data[i][1] || "").toString().trim().toLowerCase();
-        if (rowEmail) {
+        if (rowEmail && rowEmail !== "work email") {
           emails.push(rowEmail);
           users.push({
             name: data[i][0],
@@ -140,16 +156,17 @@ function ensureHeaders(sheet) {
     "Last Active / Updated"
   ];
 
-  if (sheet.getLastRow() === 0) {
+  if (sheet.getLastRow() < 1) {
     sheet.appendRow(headers);
     formatHeaderRow(sheet);
-  } else {
-    var firstRow = sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues()[0];
-    if (firstRow[0] !== "Full Name" || firstRow[1] !== "Work Email") {
-      sheet.clear();
-      sheet.appendRow(headers);
-      formatHeaderRow(sheet);
-    }
+    return;
+  }
+
+  var firstCell = sheet.getRange(1, 1).getValue().toString().trim();
+  if (firstCell !== "Full Name") {
+    sheet.insertRowBefore(1);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    formatHeaderRow(sheet);
   }
 }
 
@@ -165,13 +182,18 @@ function findUserRowIndex(sheet, email) {
   var lastRow = sheet.getLastRow();
   if (lastRow < 2) return -1;
 
-  var emailValues = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-  var normalizedEmail = email.trim().toLowerCase();
+  var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  var target = email.trim().toLowerCase();
 
-  for (var i = 0; i < emailValues.length; i++) {
-    var rowEmail = (emailValues[i][0] || "").toString().trim().toLowerCase();
-    if (rowEmail === normalizedEmail) {
-      return i + 2; // 1-indexed (header is row 1)
+  for (var i = 0; i < data.length; i++) {
+    // Smart search across column 2 first, then all columns
+    if ((data[i][1] || "").toString().trim().toLowerCase() === target) {
+      return i + 2;
+    }
+    for (var c = 0; c < data[i].length; c++) {
+      if ((data[i][c] || "").toString().trim().toLowerCase() === target) {
+        return i + 2;
+      }
     }
   }
   return -1;
@@ -181,7 +203,7 @@ function deleteUserRowByEmail(sheet, email) {
   var rowIndex = findUserRowIndex(sheet, email);
   var deletedAny = false;
 
-  // Remove any instances of this email in the sheet
+  // Clean up all instances of this email
   while (rowIndex !== -1) {
     sheet.deleteRow(rowIndex);
     deletedAny = true;
@@ -192,7 +214,8 @@ function deleteUserRowByEmail(sheet, email) {
 }
 
 function upsertUserRow(sheet, data) {
-  var email = (data.email || "").trim();
+  ensureHeaders(sheet);
+  var email = (data.email || "").trim().toLowerCase();
   var rowIndex = findUserRowIndex(sheet, email);
   var nowFormatted = new Date().toLocaleString();
   var registeredAt = data.created_at || data.timestamp || nowFormatted;
@@ -209,7 +232,19 @@ function upsertUserRow(sheet, data) {
   ];
 
   if (rowIndex !== -1) {
+    var existingRegDate = sheet.getRange(rowIndex, 7).getValue();
+    if (existingRegDate && existingRegDate.toString().length > 4) {
+      rowData[6] = existingRegDate;
+    }
     sheet.getRange(rowIndex, 1, 1, 8).setValues([rowData]);
+    
+    // Purge any accidental duplicate rows that might have existed below it
+    var nextDuplicate = findUserRowIndex(sheet, email);
+    while (nextDuplicate !== -1 && nextDuplicate !== rowIndex) {
+      sheet.deleteRow(nextDuplicate);
+      nextDuplicate = findUserRowIndex(sheet, email);
+    }
+
     return { action: "UPDATED", rowIndex: rowIndex };
   } else {
     sheet.appendRow(rowData);
@@ -230,7 +265,7 @@ function syncAllUsers(sheet, users) {
     var u = users[i];
     rows.push([
       u.name || "User",
-      (u.email || "").trim(),
+      (u.email || "").trim().toLowerCase(),
       u.workspace || "Acme AI Lab",
       u.plan_tier || "free",
       Number(u.monthly_token_quota || 10000),

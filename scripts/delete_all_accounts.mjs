@@ -4,7 +4,7 @@ import path from "path";
 const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const PAYMENTS_FILE = path.join(DATA_DIR, "payments.json");
-const WEBHOOK_URL = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
+const WEBHOOK_URL = process.env.GOOGLE_SHEETS_WEBHOOK_URL || "https://script.google.com/macros/s/AKfycbwGKherD18I8NfCC3ih1Vps6thXyA0b0uEAhYsEX9imxnS7Yk9gSKLkZHvza7KxaypZ3A/exec";
 
 async function purgeAllAccounts() {
   console.log("==================================================");

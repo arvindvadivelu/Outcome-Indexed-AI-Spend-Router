@@ -60,6 +60,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"general" | "finops" | "sla" | "security" | "danger">("general");
 
   // Form states
+  const [userName, setUserName] = useState(user?.name || "");
   const [workspaceName, setWorkspaceName] = useState(orgName || "Acme AI Lab");
   const [workspaceSlug, setWorkspaceSlug] = useState("acme-ai-lab");
   const [contactEmail, setContactEmail] = useState(user?.email || "");
@@ -88,19 +89,24 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (orgName) setWorkspaceName(orgName);
-  }, [orgName]);
+    if (user?.name) setUserName(user.name);
+    if (user?.email) setContactEmail(user.email);
+  }, [orgName, user]);
 
   const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     setOrgName(workspaceName);
-    if (user && contactEmail) {
-      updateUserProfile(user.name, contactEmail);
+    if (userName || contactEmail) {
+      updateUserProfile(userName || user?.name || "User", contactEmail || user?.email || "");
     }
     setMonthlyBudget(monthlyBudgetLimit);
     setFederationWeight(privacyEpsilon);
 
-    // 1. Persist workspace and user profile to database
-    const targetEmail = user?.email || contactEmail;
+    // 1. Persist workspace and user profile to database (which auto-syncs to Google Sheet in real time)
+    const targetEmail = contactEmail || user?.email;
+    const planQuotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
+    const currentQuota = planQuotaMap[planTier || "free"] || 10000;
+
     if (targetEmail) {
       try {
         await fetch("/api/auth/session", {
@@ -109,7 +115,9 @@ export default function SettingsPage() {
           body: JSON.stringify({
             email: targetEmail,
             workspace: workspaceName,
-            name: user?.name,
+            name: userName || user?.name || "User",
+            plan_tier: planTier || "free",
+            monthly_token_quota: currentQuota,
             currency: activeCurrency,
             monthlyBudgetUSD: monthlyBudgetLimit,
             hasConfiguredBudget: true,
@@ -124,20 +132,6 @@ export default function SettingsPage() {
         console.warn("Failed to persist workspace settings to database:", err);
       }
     }
-
-    // 2. Sync to Google Sheet with correct plan quota
-    const planQuotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
-    const currentQuota = planQuotaMap[planTier || "free"] || 10000;
-    await syncAuthUserToGoogleSheets({
-      action: "PLAN_UPGRADE",
-      name: user?.name || "",
-      email: contactEmail,
-      workspace: workspaceName,
-      plan_tier: planTier || "free",
-      monthly_token_quota: currentQuota,
-      currency: activeCurrency,
-      auth_method: "MANUAL"
-    });
 
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
@@ -344,7 +338,30 @@ export default function SettingsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
               <div className="space-y-1.5">
-                <label className="font-semibold text-[#86868B]">Organization Name</label>
+                <label className="font-semibold text-[#86868B]">User Full Name</label>
+                <input
+                  type="text"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  placeholder="e.g. Arvind V"
+                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-[#86868B]">Primary Work Email</label>
+                <input
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-[#86868B]">Organization / Workspace Name</label>
                 <input
                   type="text"
                   value={workspaceName}
@@ -364,17 +381,6 @@ export default function SettingsPage() {
                   value={workspaceSlug}
                   onChange={(e) => setWorkspaceSlug(e.target.value)}
                   className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] font-mono text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-semibold text-[#86868B]">Primary Billing Contact Email</label>
-                <input
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full h-11 px-4 rounded-full bg-[#F7F7F9] dark:bg-[#1E1E22] border border-black/[0.06] dark:border-white/[0.08] font-medium text-[#1D1D1F] dark:text-[#F5F5F7] focus:outline-none"
                   required
                 />
               </div>
