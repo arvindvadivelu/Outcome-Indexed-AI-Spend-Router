@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyPaymentReference, getUserPaymentHistory } from "@/lib/payment-gateway";
+import { findUserByEmail } from "@/lib/auth-db";
 
 export async function POST(req: Request) {
   try {
@@ -19,6 +20,36 @@ export async function POST(req: Request) {
       planTier,
       currency
     );
+
+    if (verification.success) {
+      // Sync the plan upgrade in-place to Google Sheets
+      const updatedUser = findUserByEmail(email);
+      const webhookUrl =
+        process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
+        "https://script.google.com/macros/s/AKfycbyuqBubGh1SrxAspikzQj4vfatQkaSMq0KeSH0qsavVOYlVUTCvYZtafASHQrph28CfZQ/exec";
+
+      if (webhookUrl && updatedUser) {
+        try {
+          await fetch(webhookUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "PLAN_UPGRADE",
+              email: updatedUser.email,
+              name: updatedUser.name,
+              workspace: updatedUser.workspace,
+              plan_tier: updatedUser.plan_tier,
+              monthly_token_quota: updatedUser.monthly_token_quota,
+              currency: updatedUser.currency || currency || "USD",
+              timestamp: new Date().toISOString()
+            }),
+            signal: AbortSignal.timeout(4000)
+          });
+        } catch (e) {
+          console.warn("Payment verify Google Sheet sync notice:", e);
+        }
+      }
+    }
 
     return NextResponse.json({
       success: verification.success,
