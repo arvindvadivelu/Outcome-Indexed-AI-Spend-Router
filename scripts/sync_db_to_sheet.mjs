@@ -4,7 +4,7 @@ import path from "path";
 const USERS_FILE = path.join(process.cwd(), "data", "users.json");
 const WEBHOOK_URL =
   process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-  "https://script.google.com/macros/s/AKfycbwGKherD18I8NfCC3ih1Vps6thXyA0b0uEAhYsEX9imxnS7Yk9gSKLkZHvza7KxaypZ3A/exec";
+  "https://script.google.com/macros/s/AKfycbxXU-gpZpy7b77qstegW4Fa4LASLK4Am10qOm2o2RhOjDQPcrqt9hPhNVTf36CxKjXv/exec";
 
 async function main() {
   if (!fs.existsSync(USERS_FILE)) {

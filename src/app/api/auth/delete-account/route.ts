@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     // 2. Dispatch deletion record to Google Apps Script Webhook
     const webhookUrl =
       process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-      "https://script.google.com/macros/s/AKfycbwGKherD18I8NfCC3ih1Vps6thXyA0b0uEAhYsEX9imxnS7Yk9gSKLkZHvza7KxaypZ3A/exec";
+      "https://script.google.com/macros/s/AKfycbxXU-gpZpy7b77qstegW4Fa4LASLK4Am10qOm2o2RhOjDQPcrqt9hPhNVTf36CxKjXv/exec";
 
     try {
       await fetch(webhookUrl, {
