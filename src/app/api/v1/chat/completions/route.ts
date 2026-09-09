@@ -187,6 +187,10 @@ export async function POST(req: Request) {
     // -------------------------------------------------------------
     const quotaCheck = consumeUserTokens(userEmail, totalRequestTokens);
     if (!quotaCheck.allowed) {
+      const host = req.headers.get("host") || "localhost:3000";
+      const proto = req.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+      const appBase = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`;
+
       return NextResponse.json(
         {
           error: {
@@ -196,8 +200,8 @@ export async function POST(req: Request) {
             tokens_used: quotaCheck.tokens_used,
             monthly_quota: quotaCheck.monthly_token_quota,
             plan_tier: planTier,
-            upgrade_url: "http://localhost:3000/pricing",
-            dashboard_url: "http://localhost:3000/app/dashboard"
+            upgrade_url: `${appBase}/pricing`,
+            dashboard_url: `${appBase}/app/dashboard`
           }
         },
         { status: 429 }

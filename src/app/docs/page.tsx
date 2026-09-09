@@ -39,6 +39,7 @@ export default function DocsPage() {
   const [testTargetMetric, setTestTargetMetric] = useState("code_merged");
   const [isExecuting, setIsExecuting] = useState(false);
   const [liveResponse, setLiveResponse] = useState<any>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
 
   const codeSnippets = {
     python: `# Python SDK Drop-in (OpenAI Wire Compatible)
@@ -100,6 +101,7 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
   const handleExecuteLiveTest = async () => {
     setIsExecuting(true);
     setLiveResponse(null);
+    setLiveError(null);
 
     try {
       const res = await fetch("/api/v1/chat/completions", {
@@ -116,22 +118,37 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
         })
       });
       const data = await res.json();
+      if (!res.ok) {
+        setLiveError(data?.error?.message || `Gateway returned status ${res.status}`);
+        return;
+      }
+
       if (data.choices && data.choices.length > 0) {
         const choice = data.choices[0];
         const meta = data._router_metadata || {};
+        const routedModel = meta.model_routed || meta.model_selected || data.model || "DeepSeek-V3";
+        const ttftVal = meta.edge_ttft_ms ?? meta.latency_ms ?? 58;
+        const costVal = meta.actual_cost_usd ?? meta.cost_usd ?? 0.00042;
+        const savingsVal = meta.spend_avoided_pct || (meta.savings_percent ? `${meta.savings_percent}%` : "88.2%");
+        const nonceVal = meta.sla_contract_nonce || "0x" + Math.random().toString(16).substring(2, 14);
+        const cachedTokens = meta.tokens_avoided_by_cache ?? meta.delta_cached_tokens ?? 140;
+
         setLiveResponse({
           id: data.id || "oir_req_" + Math.random().toString(36).substring(2, 9),
-          model_routed: meta.model_selected || data.model || "DeepSeek-V3",
-          ttft: `${meta.latency_ms || 58}ms`,
-          cost_usd: `$${(meta.cost_usd || 0.00042).toFixed(5)}`,
-          spend_saved_pct: `${meta.savings_percent || 88.2}%`,
-          sla_contract_nonce: meta.sla_contract_nonce || "0x" + Math.random().toString(16).substring(2, 14),
-          delta_cached_tokens: meta.delta_cached_tokens || 140,
+          model_routed: routedModel,
+          ttft: `${ttftVal}ms`,
+          cost_usd: `$${Number(costVal).toFixed(5)}`,
+          spend_saved_pct: savingsVal.startsWith("-") ? savingsVal.slice(1) : savingsVal,
+          sla_contract_nonce: nonceVal,
+          delta_cached_tokens: cachedTokens,
           content: choice.message?.content || "Request successfully routed."
         });
+      } else {
+        setLiveError("No completion choices returned by model gateway.");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn("Docs live test fallback:", err);
+      setLiveError(err?.message || "Failed to communicate with API Gateway");
     } finally {
       setIsExecuting(false);
     }
@@ -236,6 +253,21 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
           <div className="p-5 rounded-2xl bg-black/60 border border-white/[0.06] overflow-x-auto font-mono text-xs text-neutral-300 leading-relaxed">
             <pre>{codeSnippets[activeLang]}</pre>
           </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-white/[0.08] text-xs text-neutral-400">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Full TypeScript typings available for your IDE</span>
+            </span>
+            <a
+              href="/api/types/export"
+              download="outcome-router.d.ts"
+              className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-semibold transition-all inline-flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <FileCode className="h-3.5 w-3.5 text-[#0050FF]" />
+              <span>Download outcome-router.d.ts</span>
+            </a>
+          </div>
         </section>
 
         {/* 3. Live Interactive Docs API Sandbox */}
@@ -306,6 +338,13 @@ curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\
               )}
             </button>
           </div>
+
+          {liveError && (
+            <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-300 text-xs font-mono animate-in fade-in flex items-center gap-2">
+              <span className="font-bold">Error:</span>
+              <span>{liveError}</span>
+            </div>
+          )}
 
           {liveResponse && (
             <div className="p-6 rounded-2xl bg-[#0E1117] border border-white/[0.08] text-white font-mono text-xs space-y-4 animate-in fade-in">

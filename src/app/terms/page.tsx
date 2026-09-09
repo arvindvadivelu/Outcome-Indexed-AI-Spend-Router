@@ -32,6 +32,14 @@ export default function TermsPage() {
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
+            <a
+              href="/api/compliance/dpa-export?mode=terms&download=true"
+              download="outcome-router-sla-terms.json"
+              className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              <span>Export SLA &amp; Service Terms (JSON)</span>
+            </a>
             <Link
               href="/privacy"
               className="px-5 py-2.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
@@ -48,9 +56,9 @@ export default function TermsPage() {
             </Link>
             <Link
               href="/contact"
-              className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-5 py-2.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
             >
-              <Mail className="h-3.5 w-3.5" />
+              <Mail className="h-3.5 w-3.5 text-[#86868B]" />
               <span>Contact Legal &amp; Sales</span>
             </Link>
           </div>

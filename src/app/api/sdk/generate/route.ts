@@ -31,7 +31,11 @@ const completion = await router.chat({
 });
 console.log("Model Used:", completion._routerMetadata.modelUsed);`;
 
-    const curlSnippet = `curl -X POST http://localhost:3000/v1/chat/completions \\
+    const host = req.headers.get("host") || "localhost:3000";
+    const proto = req.headers.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+    const appBase = process.env.NEXT_PUBLIC_APP_URL || `${proto}://${host}`;
+
+    const curlSnippet = `curl -X POST ${appBase}/v1/chat/completions \\
   -H "Authorization: Bearer ${apiKey}" \\
   -H "Content-Type: application/json" \\
   -H "X-Outcome-Strategy: outcome_optimized" \\

@@ -101,5 +101,49 @@
     "createdAt": "2026-09-08T18:55:49.170Z",
     "verifiedAt": "2026-09-08T19:32:16.603Z",
     "invoiceNumber": "INV-OIR-REC-443886"
+  },
+  {
+    "id": "tx_1788898990667_bn4s1",
+    "userEmail": "finance@client.in",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-08T20:23:10.667Z",
+    "invoiceNumber": "INV-OIR-INR-323116"
+  },
+  {
+    "id": "tx_1788899007884_2qogk",
+    "userEmail": "finance@client.in",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-08T20:23:27.884Z",
+    "invoiceNumber": "INV-OIR-INR-385645"
+  },
+  {
+    "id": "tx_1788899021575_yjqkw",
+    "userEmail": "finance@client.in",
+    "planTier": "growth",
+    "currency": "INR",
+    "amount": 8500,
+    "paymentMethod": "GPAY_UPI",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-08T20:23:41.575Z",
+    "invoiceNumber": "INV-OIR-INR-162194"
+  },
+  {
+    "id": "tx_1788899021583_7ylyc",
+    "userEmail": "cfo@client.com",
+    "planTier": "enterprise",
+    "currency": "USD",
+    "amount": 499,
+    "paymentMethod": "ICICI_WIRE_TRANSFER",
+    "status": "PENDING_VERIFICATION",
+    "createdAt": "2026-09-08T20:23:41.583Z",
+    "invoiceNumber": "INV-OIR-USD-560539"
   }
 ]

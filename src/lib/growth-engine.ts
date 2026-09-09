@@ -27,9 +27,11 @@ export function calculateReferralStats(userEmail: string, currentPlan: string = 
   const baseReward = 50000; // 50,000 bonus tokens
   const multiplier = currentPlan === "enterprise" ? 2.5 : (currentPlan === "growth" ? 1.5 : 1.0);
 
+  const baseUrl = (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) || "https://gateway.outcomerouter.ai";
+
   return {
     referralCode: code,
-    shareableUrl: `http://localhost:3000/auth/signup?ref=${encodeURIComponent(code)}`,
+    shareableUrl: `${baseUrl}/auth/signup?ref=${encodeURIComponent(code)}`,
     totalInvitesSent: 12,
     successfulSignups: 4,
     bonusTokensEarned: Math.round(4 * baseReward * multiplier),

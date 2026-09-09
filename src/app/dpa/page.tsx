@@ -34,12 +34,35 @@ export default function DPAPage() {
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3">
-            <Link
-              href="/contact"
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/compliance/dpa-export");
+                  const data = await res.json();
+                  if (data.success && data.dpaAgreement) {
+                    const blob = new Blob([JSON.stringify(data.dpaAgreement, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `OutcomeRouter_GDPR_DPA_${data.dpaAgreement.agreementId}.json`;
+                    a.click();
+                  }
+                } catch (e) {
+                  console.warn("DPA download fallback:", e);
+                }
+              }}
               className="px-5 py-2.5 rounded-full bg-[#0050FF] text-white text-xs font-semibold hover:bg-[#0043D6] transition-all shadow-xs flex items-center gap-1.5 hover:scale-[1.02] active:scale-[0.98]"
             >
+              <FileCheck className="h-3.5 w-3.5" />
+              <span>Download Signed DPA Certificate (JSON)</span>
+            </button>
+            <Link
+              href="/contact"
+              className="px-5 py-2.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
+            >
               <Mail className="h-3.5 w-3.5" />
-              <span>Execute Mutual Enterprise DPA</span>
+              <span>Execute Custom Enterprise DPA</span>
             </Link>
             <Link
               href="/privacy"
@@ -47,13 +70,6 @@ export default function DPAPage() {
             >
               <ShieldCheck className="h-3.5 w-3.5 text-[#0050FF]" />
               <span>Privacy Policy</span>
-            </Link>
-            <Link
-              href="/terms"
-              className="px-5 py-2.5 rounded-full bg-white dark:bg-[#242428] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold text-[#1D1D1F] dark:text-[#F5F5F7] hover:text-[#0050FF] transition-all flex items-center gap-1.5 shadow-2xs hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Scale className="h-3.5 w-3.5 text-[#86868B]" />
-              <span>Terms of Service</span>
             </Link>
           </div>
         </section>

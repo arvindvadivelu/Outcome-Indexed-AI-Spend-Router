@@ -117,11 +117,9 @@ export default function LogsPage() {
     } catch (err) {
       console.warn("Log inspection fallback:", err);
     } finally {
-      setIsAiExplaining(false);
+      setAiExplaining(false);
     }
   };
-
-  const setIsAiExplaining = setAiExplaining;
 
   const handleCopyCurl = (log: LogItem) => {
     const snippet = `curl -X POST https://gateway.outcomerouter.ai/v1/chat/completions \\\n  -H "Authorization: Bearer oir_live_8f9a2b..." \\\n  -H "X-Outcome-Strategy: outcome_optimized" \\\n  -H "X-Task-Type: ${log.task_type}" \\\n  -d '{"messages": [{"role": "user", "content": "${log.prompt_preview.replace(/"/g, '\\"')}"}]}'`;
