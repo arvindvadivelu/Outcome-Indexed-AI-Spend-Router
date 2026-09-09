@@ -14,7 +14,7 @@
 
 <br />
 
-**[Key Innovations](#-key-architectural-innovations)** • **[System Architecture](#-system-architecture--decision-pipeline)** • **[Mathematical Foundation](#-mathematical-foundation--algorithms)** • **[Quickstart](#-5-minute-quickstart)** • **[API Reference](#-api-specification--endpoints)** • **[SDKs & Extensions](#-client-sdks--extensions)** • **[Deployment](#-production-deployment--docker)** • **[Enterprise Security](#-enterprise-security--compliance)**
+**[Executive Summary](#-executive-summary)** • **[System Architecture](#-system-architecture--decision-pipeline)** • **[Mathematical Foundation](#-mathematical-foundation--algorithms)** • **[Performance Matrix](#-comparative-performance-matrix)** • **[Core SRE Engine](#-production-reliability--sre-architecture)** • **[Quickstart](#-5-minute-quickstart)** • **[API Specification](#-api-specification--endpoints)** • **[SDKs & Extensions](#-client-sdks--extensions)** • **[Deployment](#-production-deployment--docker)** • **[Security & Compliance](#-enterprise-security--compliance)**
 
 </div>
 
@@ -22,75 +22,79 @@
 
 ## 📌 Executive Summary
 
-Modern AI gateways route requests by optimizing for **cost per raw token** or **fixed rule sets**. In production workloads, this creates a critical failure mode: sending complex reasoning tasks to cheap models leads to degraded quality, retry loops, and missed business conversions. Conversely, sending all traffic to flagship models wastes over 40% of enterprise AI budgets.
+Modern AI gateways route requests by optimizing for **cost per raw token** or **fixed static rule sets**. In real-world enterprise production workloads, this creates a critical failure mode: sending complex reasoning tasks to budget models leads to degraded quality, expensive retry loops, and missed business conversions. Conversely, routing all traffic blindly to flagship models wastes **over 40% of enterprise AI budgets**.
 
 $$\text{Effective Cost Per Business Outcome} = \frac{\sum \text{Prompt \& Completion Costs}}{\text{Verified Outcome Conversion Rate}}$$
 
-The **Outcome-Indexed AI Spend Router** is an intelligent, high-throughput LLM gateway that aligns model selection with **actual business KPI outcomes** (e.g., booked sales meetings, merged PRs, resolved customer support tickets, and verified SQL queries) via **Empirical Bayesian Multi-Armed Bandits (Thompson Sampling)**, **Zero-Shot Semantic Complexity Classification**, and **Micro-SLA Escrow Guarantees**.
+The **Outcome-Indexed AI Spend Router** is an intelligent, high-throughput LLM gateway that aligns model selection with **actual business KPI outcomes** (e.g., booked sales demos, merged pull requests, resolved customer support tickets, and verified SQL queries) via **Empirical Bayesian Multi-Armed Bandits (Thompson Sampling)**, **Zero-Shot Semantic Complexity Classification**, and **Micro-SLA Escrow Guarantees**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │  Average Net Enterprise Savings: 41.8%   │   P99 Latency Reduction: 1.82x (Speculative)   │
 │  Zero-Shot Decision Overhead: < 2.1ms    │   Outcome Conversion Rate: +14.6% vs Default │
+│  Automated Verification Pass: 100%       │   Micro-SLA Auto-Refund Ceiling: < 250ms      │
 └──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+> [!IMPORTANT]
+> The gateway acts as a **100% drop-in replacement for the standard OpenAI `/v1/chat/completions` API**. Migration requires only swapping your `base_url` and pointing to your Outcome Router instance.
 
 ---
 
 ## 📸 System Architecture & Decision Pipeline
 
 ```
-                              ┌───────────────────────────────────┐
-                              │  Client Application / SDK Ingress │
-                              │   (OpenAI-Compatible Drop-In API) │
-                              └─────────────────┬─────────────────┘
-                                                │
-                                                ▼
-                              ┌───────────────────────────────────┐
-                              │   Edge Ingress & Payload Guard   │
-                              │   (mTLS, Rate Limit, Shannon Auth)│
-                              └─────────────────┬─────────────────┘
-                                                │
-                 ┌──────────────────────────────┴──────────────────────────────┐
-                 │                                                             │
-                 ▼                                                             ▼
-  ┌──────────────────────────────┐                              ┌──────────────────────────────┐
-  │ Zero-Shot Task Classifier    │                              │ Semantic Token Diff Engine   │
-  │ • Task Intent & Context Tree │                              │ • Prompt deduplication       │
-  │ • Depth evaluation (<2ms)    │                              │ • 60% Token Avoidance cache  │
-  └──────────────┬───────────────┘                              └──────────────┬───────────────┘
-                 │                                                             │
-                 └──────────────────────────────┬──────────────────────────────┘
-                                                │
-                                                ▼
-                              ┌───────────────────────────────────┐
-                              │ Thompson Sampling Bandit Selector │
-                              │  Beta(α, β) Empirical Posterior   │
-                              │   Multi-Objective Pareto Ranking  │
-                              └─────────────────┬─────────────────┘
-                                                │
-                 ┌──────────────────────────────┼──────────────────────────────┐
-                 │                              │                              │
-                 ▼                              ▼                              ▼
+                               ┌───────────────────────────────────┐
+                               │  Client Application / SDK Ingress │
+                               │   (OpenAI-Compatible Drop-In API) │
+                               └─────────────────┬─────────────────┘
+                                                 │
+                                                 ▼
+                               ┌───────────────────────────────────┐
+                               │   Edge Ingress & Payload Guard    │
+                               │  (mTLS, Sliding Rate Limit, WAF)  │
+                               └─────────────────┬─────────────────┘
+                                                 │
+                 ┌───────────────────────────────┴───────────────────────────────┐
+                 │                                                               │
+                 ▼                                                               ▼
+  ┌──────────────────────────────┐                                ┌──────────────────────────────┐
+  │ Zero-Shot Task Classifier    │                                │ Semantic Token Diff Engine   │
+  │ • Task Intent & Context Tree │                                │ • Context deduplication      │
+  │ • Depth evaluation (< 2.1ms) │                                │ • 60% Token Avoidance cache  │
+  └──────────────┬───────────────┘                                └──────────────┬───────────────┘
+                 │                                                               │
+                 └───────────────────────────────┬───────────────────────────────┘
+                                                 │
+                                                 ▼
+                               ┌───────────────────────────────────┐
+                               │ Thompson Sampling Bandit Selector │
+                               │  Beta(α, β) Empirical Posterior   │
+                               │   Multi-Objective Pareto Ranking  │
+                               └─────────────────┬─────────────────┘
+                                                 │
+                 ┌───────────────────────────────┼───────────────────────────────┐
+                 │                               │                               │
+                 ▼                               ▼                               ▼
   ┌──────────────────────────────┐ ┌──────────────────────────┐ ┌──────────────────────────────┐
-  │ Speculative Pre-Warming      │ │ Micro-SLA Escrow Ledger  │ │ Dirichlet Auto-Pilot         │
+  │ Speculative Pre-Warming      │ │ Micro-SLA Escrow Ledger  │ │ Dirichlet Budget Governor    │
   │ Dual-model hot slot racing   │ │ SHA-256 Nonce generator  │ │ Dynamic budget pacing &      │
   │ 1.82x TTFT acceleration      │ │ Automatic latency refund │ │ $0 Overrun strict guarantee  │
   └──────────────┬───────────────┘ └────────────┬─────────────┘ └──────────────┬───────────────┘
-                 │                              │                              │
-                 └──────────────────────────────┼──────────────────────────────┘
-                                                │
-                                                ▼
-                              ┌───────────────────────────────────┐
-                              │ Upstream Provider Failover Mesh   │
-                              │  (Anthropic, DeepSeek, Groq, etc) │
-                              └─────────────────┬─────────────────┘
-                                                │
-                                                ▼
-                              ┌───────────────────────────────────┐
-                              │ Verified Outcome Feedback Loop    │
-                              │ (Conversion signals update Beta)  │
-                              └───────────────────────────────────┘
+                 │                               │                               │
+                 └───────────────────────────────┼───────────────────────────────┘
+                                                 │
+                                                 ▼
+                               ┌───────────────────────────────────┐
+                               │ Upstream Provider Failover Mesh   │
+                               │ (Anthropic, DeepSeek, Groq, etc.) │
+                               └─────────────────┬─────────────────┘
+                                                 │
+                                                 ▼
+                               ┌───────────────────────────────────┐
+                               │ Verified Outcome Feedback Loop    │
+                               │ (Conversion signals update Beta)  │
+                               └───────────────────────────────────┘
 ```
 
 ---
@@ -98,10 +102,10 @@ The **Outcome-Indexed AI Spend Router** is an intelligent, high-throughput LLM g
 ## 🌟 Key Architectural Innovations
 
 ### 1. Bayesian Multi-Armed Bandit with Thompson Sampling
-Rather than static weight routing or manual heuristics, candidate models $M_i$ for a given task domain $T$ maintain a conjugate **Beta distribution** $\text{Beta}(\alpha_{M_i, T}, \beta_{M_i, T})$ updated in real-time by verified business feedback loops.
+Rather than relying on static routing tables or manual heuristics, candidate models $M_i$ for a given task domain $T$ maintain a conjugate **Beta distribution** $\text{Beta}(\alpha_{M_i, T}, \beta_{M_i, T})$. These priors are continuously updated in real-time by verified business feedback signals (success/failure conversions).
 
 ### 2. Multi-Objective Pareto Frontier Optimization
-Models are ranked dynamically using a composite loss function balancing outcome probability, cost per token, and P95 latency thresholds:
+Models are ranked dynamically on an active Pareto frontier using a multi-objective loss function balancing outcome probability, cost per token, and P95 latency thresholds:
 
 $$\mathcal{S}(M) = w_1 \cdot \theta_M - w_2 \cdot \left(\frac{\text{Cost}(M)}{\text{Cost}_{\text{max}}}\right) - w_3 \cdot \left(\frac{\text{Latency}(M)}{\text{Latency}_{\text{SLA}}}\right)$$
 
@@ -145,7 +149,7 @@ sequenceDiagram
     MAB-->>Gateway: Selected Winning Model (Claude 3.5 Sonnet)
     Gateway->>Escrow: Generate SHA-256 Escrow Nonce
     Gateway->>LLM: Dispatch Stream Request
-    LLM-->>Gateway: Response Stream (<250ms)
+    LLM-->>Gateway: Response Stream (< 250ms)
     Gateway-->>App: Return Completion + X-Outcome-Router-Saved-USD
     App->>Gateway: POST /api/v1/feedback/outcome (Outcome: SUCCESS)
     Gateway->>Storage: Update α_M = α_M + 1 (Atomic Sync)
@@ -167,6 +171,31 @@ $$\text{Escrow Credit USD} = \max\left(0, (t_{\text{latency}} - t_{\text{SLA}}) 
 Federated prior updates across organizations utilize Laplace perturbation mechanism with privacy budget $\epsilon$:
 
 $$\tilde{\alpha} = \alpha + \text{Laplace}\left(0, \frac{\Delta S}{\epsilon}\right)$$
+
+---
+
+## 🛡️ Production Reliability & SRE Architecture
+
+The gateway codebase contains **78+ specialized core modules** structured for mission-critical enterprise resilience:
+
+```
+src/lib/
+├── Fault Isolation & Resilience  → [circuit-breaker.ts, drain-manager.ts, deadlock-detector.ts, chaos-harness.ts]
+├── Edge Security & Hardening     → [waf-challenge-guard.ts, hmac-guard.ts, ip-geofence-guard.ts, mtls-guard.ts]
+├── High-Performance Streaming   → [sse-wire-buffer.ts, sse-backpressure.ts, adaptive-batcher.ts, speculative-hedging.ts]
+├── Storage & Data Integrity      → [atomic-file-writer.ts, atomic-lock.ts, schema-mutation-guard.ts, shadow-dual-write.ts]
+├── Multi-Region Distributed Sync → [redis-cluster-sync.ts, crdt-replication.ts, consistent-hash-ring.ts, geo-dns-router.ts]
+├── Observability & Telemetry     → [w3c-tracing.ts, latency-histogram.ts, sre-logger.ts, sla-credit-ledger.ts]
+└── FinOps & Growth Engine        → [roi-calculator.ts, upstream-budget-guard.ts, payment-gateway.ts, google-sheets.ts]
+```
+
+### Key Reliability Pillars:
+- **In-flight Connection Draining (`drain-manager.ts`)**: Graceful SIGTERM/SIGINT teardown allowing active streams up to 15 seconds to complete.
+- **Circuit Breaker Isolation (`circuit-breaker.ts`)**: Auto-quarantines degraded upstream providers after 4 consecutive failures with 30s half-open probes.
+- **Dual-Secret Webhook Rollover (`webhook-dlq.ts`, `hmac-guard.ts`)**: Zero-downtime key rotation with automated Dead-Letter Queue retry backoff.
+- **Dual-Stack VPC Geofencing (`ip-geofence-guard.ts`)**: CIDR-level IPv4/IPv6 egress and ingress boundary enforcement.
+- **Cryptographic Staging (`atomic-file-writer.ts`)**: SHA-256 verified `.tmp` atomic file renaming with automated `.bak` snapshot generation.
+- **W3C Distributed Tracing (`w3c-tracing.ts`)**: End-to-end `traceparent` and `tracestate` baggage propagation across upstream providers.
 
 ---
 
@@ -280,13 +309,18 @@ X-Outcome-Router-Cached: true
 | HTTP Method | Route | Description | Auth Required |
 | :--- | :--- | :--- | :---: |
 | `POST` | `/v1/chat/completions` | OpenAI drop-in compatible completions gateway | Yes (`Bearer`) |
-| `POST` | `/api/v1/feedback/outcome` | Ingest verified conversion outcome to update Thompson sampling posteriors | Yes (`Bearer`) |
+| `POST` | `/api/v1/chat/completions` | Canonical v1 completions route with SSE streaming | Yes (`Bearer`) |
+| `POST` | `/api/v1/feedback/outcome` | Ingest verified conversion outcome to update Thompson posteriors | Yes (`Bearer`) |
+| `GET` | `/api/benchmarks` | Real-time multi-model Pareto leaderboard & win-rates | Yes (`Bearer`) |
 | `POST` | `/api/growth/roi-calculator` | Real-time FinOps spend simulation and savings projection | No |
-| `GET` | `/api/benchmarks` | Real-time multi-model Pareto leaderboard & latency metrics | Yes |
-| `POST` | `/api/routing/synthesize` | Natural language prompt directive to Thompson rule compiler | Yes |
-| `GET` | `/api/billing/forecast` | Predictive budget burn and Dirichlet pacing model | Yes |
-| `GET` | `/api/compliance/dpa-export` | Automated GDPR / SOC 2 Data Protection Addendum generator | Yes |
-| `GET` | `/api/v1/health` | Gateway health check and cluster readiness probe | No |
+| `POST` | `/api/routing/synthesize` | Natural language prompt directive to Thompson rule compiler | Yes (`Bearer`) |
+| `GET` | `/api/billing/forecast` | Predictive budget burn and Dirichlet pacing model | Yes (`Bearer`) |
+| `POST` | `/api/payments/verify-utr` | Instant UPI & Bank Wire UTR verification with Google Sheets sync | Yes (`Bearer`) |
+| `GET` | `/api/compliance/dpa-export` | Automated GDPR Article 28 / SOC 2 Data Protection Addendum | Yes (`Bearer`) |
+| `GET` | `/api/health` | Gateway liveness and uptime status probe | No |
+| `GET` | `/api/v1/health` | Enterprise cluster health check alias | No |
+| `GET` | `/api/system/readiness` | Deep readiness probe (DB status, circuit breakers, memory GC) | No |
+| `POST` | `/api/system/restore` | Atomic disaster recovery snapshot restoration | Yes (`Admin`) |
 
 ---
 
@@ -297,6 +331,7 @@ The project provides official first-party client bindings:
 * [**`sdks/nodejs/`**](sdks/nodejs/) — Official TypeScript / Node.js client package.
 * [**`sdks/python/`**](sdks/python/) — Official Python client library with decorator-based KPI telemetry.
 * [**`vscode-extension/`**](vscode-extension/) — Developer extension for routing local Ollama / Continue.dev / LMStudio requests through the Outcome Router.
+* [**`telemetry/`**](telemetry/) — Prometheus scraping manifests and Grafana dashboard templates.
 
 ---
 
@@ -304,7 +339,7 @@ The project provides official first-party client bindings:
 
 ### 1. Multi-Container Orchestration (`docker-compose`)
 
-The repository includes a production-ready `docker-compose.yml` deploying the Next.js frontend console, FastAPI routing engine, and Redis telemetry cache:
+The repository includes a production-ready `docker-compose.yml` deploying PostgreSQL pgvector, Redis telemetry cache, FastAPI backend, and Next.js frontend:
 
 ```bash
 # Clone the repository
@@ -324,13 +359,17 @@ docker-compose up -d --build
 # 1. Install Node.js dependencies
 npm install
 
-# 2. Build optimized Next.js production bundle
+# 2. Run automated test suites & verification scripts
+npm run perf:test
+node scripts/verify-all-endpoints.mjs
+
+# 3. Build optimized Next.js production bundle
 npm run build
 
-# 3. Start Next.js frontend & API Gateway (Port 3000)
+# 4. Start Next.js frontend & API Gateway (Port 3000)
 npm run start
 
-# 4. (Optional) Run FastAPI backend service (Port 8000)
+# 5. (Optional) Run FastAPI backend service (Port 8000)
 cd backend
 pip install -r requirements.txt
 python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -342,14 +381,19 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 | Variable | Type | Description | Default |
 | :--- | :---: | :--- | :---: |
+| `DATABASE_URL` | String | PostgreSQL pgvector connection string | `postgresql+asyncpg://...` |
+| `REDIS_URL` | String | Redis cache & cluster sync instance | `redis://localhost:6379/0` |
 | `NEXT_PUBLIC_APP_URL` | String | Base URL for web console & API gateway | `http://localhost:3000` |
-| `FASTAPI_BACKEND_URL` | String | Upstream FastAPI backend URL | `http://127.0.0.1:8000` |
+| `FASTAPI_BACKEND_URL` | String | Upstream FastAPI backend service URL | `http://127.0.0.1:8000` |
 | `JWT_SECRET` | String | HMAC secret for session authentication tokens | *Required* |
 | `OPENAI_API_KEY` | String | Upstream OpenAI provider key (optional) | `sk-...` |
 | `ANTHROPIC_API_KEY` | String | Upstream Anthropic provider key (optional) | `sk-ant-...` |
 | `GROQ_API_KEY` | String | Upstream Groq provider key (optional) | `gsk_...` |
 | `DEEPSEEK_API_KEY` | String | Upstream DeepSeek provider key (optional) | `sk-...` |
-| `DEFAULT_MONTHLY_BUDGET_USD`| Number | Baseline monthly ceiling per new organization | `2500` |
+| `NEXT_PUBLIC_MERCHANT_UPI_ID` | String | Business UPI ID for direct checkout rail | `varvind2004@okaxis` |
+| `ICICI_ACCOUNT_NUMBER` | String | Business bank account number for wire transfers | `000405001234` |
+| `GOOGLE_SHEETS_WEBHOOK_URL` | String | Google Apps Script URL for payment sync | `https://script.google.com/...` |
+| `DEFAULT_MONTHLY_BUDGET_USD`| Number | Baseline monthly spend ceiling per tenant | `2500` |
 | `DEFAULT_SLA_LATENCY_MS` | Number | Maximum allowable latency before micro-SLA refund | `250` |
 | `ENABLE_SPECULATIVE_RACING` | Boolean| Enable dual-model pre-warming on Enterprise tier | `true` |
 
@@ -363,6 +407,7 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 * **Automated Secret Redaction**: SRE structured loggers strip credentials, bearer tokens, PINs, and API keys into `[REDACTED_SECRET]` prior to persistence.
 * **Cryptographic Atomic Storage (`atomicWriteJson`)**: Multi-step file writing preventing zero-byte disk corruption during sudden shutdowns or crashes.
 * **Role-Based Access Control (RBAC)**: Fine-grained permissions with immutable Workspace Owner security preventing accidental privilege downgrade.
+* **GDPR Article 28 Compliance**: Built-in cryptographic Data Protection Addendum generator with digital verification signatures (`/api/compliance/dpa-export`).
 
 ---
 
@@ -375,8 +420,12 @@ Outcome-Indexed-AI-Spend-Router/
 │   │   ├── api/                    # 60+ Next.js REST & Gateway Route Handlers
 │   │   │   ├── auth/               # Session, registration, OTP, PIN authentication
 │   │   │   ├── billing/            # Invoices, forecasting, SLA credit escrow
+│   │   │   ├── compliance/         # GDPR Article 28 DPA export generator
+│   │   │   ├── feedback/           # Real-time Thompson Sampling posterior update
 │   │   │   ├── growth/             # ROI calculator, A/B experiments, lifecycle
+│   │   │   ├── payments/           # UPI QR code & ICICI wire UTR validation
 │   │   │   ├── routing/            # Dry-run, Thompson synthesis, failover mesh
+│   │   │   ├── system/             # Readiness probes & snapshot disaster restore
 │   │   │   └── v1/                 # OpenAI drop-in /chat/completions endpoint
 │   │   └── app/                    # Authenticated Apple Spatial Web Console
 │   │       ├── dashboard/          # Real-time FinOps & Avoided Spend telemetry
@@ -390,7 +439,7 @@ Outcome-Indexed-AI-Spend-Router/
 │   │       ├── integrations/       # Multi-provider bridge manager & latency diagnostics
 │   │       └── webhooks/           # HMAC-SHA256 signature tester & delivery dispatcher
 │   ├── components/                 # Glassmorphic React UI components & charts
-│   └── lib/                        # Core algorithms, bandit engines, and SRE utilities
+│   └── lib/                        # 78+ Core algorithms, bandit engines, and SRE utilities
 ├── backend/                        # High-throughput FastAPI Gateway Service
 │   ├── app/
 │   │   ├── api/v1/                 # Python REST routing controllers
@@ -404,6 +453,7 @@ Outcome-Indexed-AI-Spend-Router/
 ├── telemetry/                      # Grafana dashboards & Prometheus alerts
 ├── database/                       # SQL schema definitions & seed scripts
 ├── docs/                           # OpenAPI & Mintlify documentation specifications
+├── scripts/                        # Automated end-to-end verification test suites
 ├── Dockerfile                      # Production container image definition
 ├── docker-compose.yml              # Multi-container service deployment manifest
 ├── package.json                    # Node dependencies & build scripts
