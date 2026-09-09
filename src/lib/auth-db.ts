@@ -32,9 +32,7 @@ export interface UserAccount {
 const DATA_DIR = path.join(process.cwd(), "data");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 
-const GOOGLE_SHEETS_WEBHOOK_URL =
-  process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-  "https://script.google.com/macros/s/AKfycbxXU-gpZpy7b77qstegW4Fa4LASLK4Am10qOm2o2RhOjDQPcrqt9hPhNVTf36CxKjXv/exec";
+import { getGoogleSheetsWebhookUrl } from "./google-sheets";
 
 // Active in-memory OTP storage: email -> { otp: string, expiresAt: number }
 const ACTIVE_OTPS = new Map<string, { otp: string; expiresAt: number }>();
@@ -47,6 +45,7 @@ export async function dispatchGoogleSheetSync(record: {
   action: string;
   name?: string;
   email?: string;
+  old_email?: string;
   workspace?: string;
   plan_tier?: string;
   monthly_token_quota?: number;
@@ -56,7 +55,7 @@ export async function dispatchGoogleSheetSync(record: {
   users?: any[];
 }) {
   try {
-    const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL || GOOGLE_SHEETS_WEBHOOK_URL;
+    const webhookUrl = getGoogleSheetsWebhookUrl();
     if (!webhookUrl) return;
 
     fetch(webhookUrl, {
@@ -169,11 +168,18 @@ export function clearAllUsers(): void {
   dispatchGoogleSheetSync({ action: "CLEAR_ALL" });
 }
 
+let isInternalWrite = false;
+
 function saveUsers(users: UserAccount[]) {
   try {
+    isInternalWrite = true;
     atomicWriteJson(USERS_FILE, users);
+    setTimeout(() => {
+      isInternalWrite = false;
+    }, 600);
   } catch (err) {
     console.error("Auth DB write error:", err);
+    isInternalWrite = false;
   }
 }
 
@@ -181,11 +187,13 @@ export function getAllUsers(): UserAccount[] {
   return ensureStorage();
 }
 
-export function updateUserAccountState(email: string, updates: Partial<UserAccount>): UserAccount | null {
+export function updateUserAccountState(lookupEmail: string, updates: Partial<UserAccount>): UserAccount | null {
   const users = ensureStorage();
-  const normalized = email.trim().toLowerCase();
+  const normalized = lookupEmail.trim().toLowerCase();
   const index = users.findIndex((u) => u.email.trim().toLowerCase() === normalized);
   if (index === -1) return null;
+
+  const oldEmail = users[index].email;
 
   users[index] = {
     ...users[index],
@@ -197,6 +205,7 @@ export function updateUserAccountState(email: string, updates: Partial<UserAccou
   // Auto-sync user state update to Google Sheet in real time
   dispatchGoogleSheetSync({
     action: "UPSERT",
+    old_email: oldEmail,
     name: users[index].name,
     email: users[index].email,
     workspace: users[index].workspace,
@@ -414,9 +423,11 @@ function setupUsersFileWatcher() {
     }
 
     fs.watch(USERS_FILE, (eventType) => {
+      if (isInternalWrite) return;
       if (eventType === "change" || eventType === "rename") {
         if (watcherDebounceTimer) clearTimeout(watcherDebounceTimer);
         watcherDebounceTimer = setTimeout(async () => {
+          if (isInternalWrite) return;
           try {
             const raw = fs.readFileSync(USERS_FILE, "utf-8");
             const parsed = JSON.parse(raw || "[]");

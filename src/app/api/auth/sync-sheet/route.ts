@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getGoogleSheetsWebhookUrl } from "@/lib/google-sheets";
 
 export async function POST(req: Request) {
   try {
@@ -39,9 +40,7 @@ export async function POST(req: Request) {
     };
 
     // 2. Dispatch to Google Apps Script Webhook (Performs in-place row update by email)
-    const webhookUrl =
-      process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-      "https://script.google.com/macros/s/AKfycbxXU-gpZpy7b77qstegW4Fa4LASLK4Am10qOm2o2RhOjDQPcrqt9hPhNVTf36CxKjXv/exec";
+    const webhookUrl = getGoogleSheetsWebhookUrl();
 
     if (webhookUrl) {
       try {

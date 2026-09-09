@@ -103,17 +103,18 @@ export default function SettingsPage() {
     setFederationWeight(privacyEpsilon);
 
     // 1. Persist workspace and user profile to database (which auto-syncs to Google Sheet in real time)
-    const targetEmail = contactEmail || user?.email;
+    const currentAccountEmail = user?.email || contactEmail;
     const planQuotaMap: Record<string, number> = { free: 10000, starter: 100000, growth: 500000, enterprise: 2000000 };
     const currentQuota = planQuotaMap[planTier || "free"] || 10000;
 
-    if (targetEmail) {
+    if (currentAccountEmail) {
       try {
         await fetch("/api/auth/session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: targetEmail,
+            currentEmail: currentAccountEmail,
+            email: contactEmail || currentAccountEmail,
             workspace: workspaceName,
             name: userName || user?.name || "User",
             plan_tier: planTier || "free",

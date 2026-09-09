@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { registerUser, findUserByEmail } from "@/lib/auth-db";
+import { getGoogleSheetsWebhookUrl } from "@/lib/google-sheets";
 
 export async function POST(req: Request) {
   try {
@@ -40,33 +41,6 @@ export async function POST(req: Request) {
       currency: currency || "USD",
       apiKeys: [initialKey]
     });
-
-    // Dispatch directly to Google Apps Script Webhook
-    const webhookUrl =
-      process.env.GOOGLE_SHEETS_WEBHOOK_URL ||
-      "https://script.google.com/macros/s/AKfycbxXU-gpZpy7b77qstegW4Fa4LASLK4Am10qOm2o2RhOjDQPcrqt9hPhNVTf36CxKjXv/exec";
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          localTime: new Date().toLocaleString(),
-          action: "SIGNUP",
-          name: user.name,
-          email: user.email,
-          workspace: user.workspace,
-          plan_tier: user.plan_tier,
-          monthly_token_quota: user.monthly_token_quota,
-          currency: user.currency,
-          auth_method: "PIN_PASSWORD"
-        }),
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000)
-      });
-    } catch (e) {
-      console.warn("Google Sheet webhook notice:", e);
-    }
 
     return NextResponse.json({
       success: true,

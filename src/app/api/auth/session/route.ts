@@ -66,6 +66,8 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const payload = body.updates ? { ...body, ...body.updates } : body;
     const {
+      currentEmail,
+      oldEmail,
       email,
       name,
       workspace,
@@ -88,11 +90,15 @@ export async function POST(req: Request) {
       federationSettings
     } = payload;
 
-    if (!email) {
+    const lookupEmail = (currentEmail || oldEmail || email || "").trim().toLowerCase();
+    if (!lookupEmail) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 });
     }
 
     const updates: Record<string, any> = {};
+    if (email && email.trim().toLowerCase() !== lookupEmail) {
+      updates.email = email.trim().toLowerCase();
+    }
     if (name !== undefined) updates.name = name;
     if (workspace !== undefined) updates.workspace = workspace;
     if (plan_tier !== undefined) updates.plan_tier = plan_tier;
@@ -113,7 +119,7 @@ export async function POST(req: Request) {
     if (teamMembers !== undefined) updates.teamMembers = teamMembers;
     if (federationSettings !== undefined) updates.federationSettings = federationSettings;
 
-    const updated = updateUserAccountState(email, updates);
+    const updated = updateUserAccountState(lookupEmail, updates);
 
     if (!updated) {
       return NextResponse.json({ success: false, error: "User not found" }, { status: 404 });
